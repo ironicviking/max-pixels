@@ -324,9 +324,13 @@ export class GraphicsEngine {
             ...attributes
         });
         
+        const surfaceColor = attributes.surfaceColor || '#8b4513';
+        const coreColor = attributes.coreColor || '#654321';
+        const atmosphereColor = attributes.atmosphereColor || '#4444ff';
+        
         const gradientId = this.createGradient('radial', [
-            { offset: '0%', color: attributes.surfaceColor || '#8b4513' },
-            { offset: '70%', color: attributes.coreColor || '#654321' },
+            { offset: '0%', color: surfaceColor },
+            { offset: '70%', color: coreColor },
             { offset: '100%', color: '#2c1810' }
         ], {
             cx: '30%',
@@ -335,14 +339,127 @@ export class GraphicsEngine {
         
         const body = this.createCircle(0, 0, radius, {
             fill: `url(#${gradientId})`,
-            stroke: attributes.atmosphereColor || '#4444ff',
+            stroke: atmosphereColor,
             'stroke-width': 2,
             opacity: 0.9
         });
         
         planet.appendChild(body);
         
+        // Generate surface features
+        this.addPlanetCraters(planet, radius, surfaceColor);
+        this.addPlanetContinents(planet, radius, surfaceColor);
+        this.addPlanetAtmosphere(planet, radius, atmosphereColor);
+        
         return planet;
+    }
+    
+    addPlanetCraters(planet, radius, surfaceColor) {
+        const craterCount = 3 + Math.floor(Math.random() * 4);
+        
+        for (let i = 0; i < craterCount; i++) {
+            const angle = Math.random() * Math.PI * 2;
+            const distance = Math.random() * radius * 0.7;
+            const craterX = Math.cos(angle) * distance;
+            const craterY = Math.sin(angle) * distance;
+            const craterRadius = Math.random() * radius * 0.15 + radius * 0.05;
+            
+            // Darker crater base
+            const craterBase = this.createCircle(craterX, craterY, craterRadius, {
+                fill: this.darkenColor(surfaceColor, 0.4),
+                opacity: 0.8
+            });
+            
+            // Crater rim highlight
+            const craterRim = this.createCircle(craterX, craterY, craterRadius * 0.9, {
+                fill: 'none',
+                stroke: this.lightenColor(surfaceColor, 0.2),
+                'stroke-width': 1,
+                opacity: 0.6
+            });
+            
+            planet.appendChild(craterBase);
+            planet.appendChild(craterRim);
+        }
+    }
+    
+    addPlanetContinents(planet, radius, surfaceColor) {
+        const continentCount = 2 + Math.floor(Math.random() * 3);
+        
+        for (let i = 0; i < continentCount; i++) {
+            const angle = Math.random() * Math.PI * 2;
+            const distance = Math.random() * radius * 0.4;
+            const continentX = Math.cos(angle) * distance;
+            const continentY = Math.sin(angle) * distance;
+            
+            // Create irregular continent shape
+            const points = 5 + Math.floor(Math.random() * 3);
+            let pathData = '';
+            
+            for (let j = 0; j < points; j++) {
+                const pointAngle = (j / points) * 2 * Math.PI;
+                const pointRadius = radius * (0.2 + Math.random() * 0.3);
+                const px = continentX + Math.cos(pointAngle) * pointRadius;
+                const py = continentY + Math.sin(pointAngle) * pointRadius;
+                
+                if (j === 0) {
+                    pathData += `M ${px} ${py}`;
+                } else {
+                    pathData += ` L ${px} ${py}`;
+                }
+            }
+            pathData += ' Z';
+            
+            const continent = this.createPath(pathData, {
+                fill: this.lightenColor(surfaceColor, 0.3),
+                opacity: 0.4,
+                'clip-path': `circle(${radius}px at 0px 0px)`
+            });
+            
+            planet.appendChild(continent);
+        }
+    }
+    
+    addPlanetAtmosphere(planet, radius, atmosphereColor) {
+        // Atmospheric glow
+        const atmosphereGradient = this.createGradient('radial', [
+            { offset: '85%', color: atmosphereColor, opacity: 0 },
+            { offset: '100%', color: atmosphereColor, opacity: 0.3 }
+        ], {
+            cx: '50%',
+            cy: '50%'
+        });
+        
+        const atmosphere = this.createCircle(0, 0, radius * 1.15, {
+            fill: `url(#${atmosphereGradient})`,
+            opacity: 0.6
+        });
+        
+        planet.appendChild(atmosphere);
+    }
+    
+    darkenColor(color, factor) {
+        // Simple color darkening (works for hex colors)
+        if (color.startsWith('#')) {
+            const hex = color.slice(1);
+            const r = Math.floor(parseInt(hex.slice(0, 2), 16) * (1 - factor));
+            const g = Math.floor(parseInt(hex.slice(2, 4), 16) * (1 - factor));
+            const b = Math.floor(parseInt(hex.slice(4, 6), 16) * (1 - factor));
+            return `rgb(${r}, ${g}, ${b})`;
+        }
+        return color;
+    }
+    
+    lightenColor(color, factor) {
+        // Simple color lightening (works for hex colors)
+        if (color.startsWith('#')) {
+            const hex = color.slice(1);
+            const r = Math.min(255, Math.floor(parseInt(hex.slice(0, 2), 16) * (1 + factor)));
+            const g = Math.min(255, Math.floor(parseInt(hex.slice(2, 4), 16) * (1 + factor)));
+            const b = Math.min(255, Math.floor(parseInt(hex.slice(4, 6), 16) * (1 + factor)));
+            return `rgb(${r}, ${g}, ${b})`;
+        }
+        return color;
     }
     
     createSpaceStation(x, y, size = 30, attributes = {}) {
