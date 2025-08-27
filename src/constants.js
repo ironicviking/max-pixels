@@ -466,6 +466,29 @@ export const PARTICLES = {
     RANDOM_OFFSET_RANGE: 0.5
 };
 
+// Weapon System Constants
+export const WEAPONS = {
+    // Laser weapon
+    LASER_FIRE_RATE: 300, // milliseconds between shots
+    LASER_RANGE: 500,     // laser beam length in pixels
+    LASER_COLOR: '#ff0000',
+    LASER_GLOW_COLOR: '#ffaaaa',
+    LASER_WIDTH: 3,
+    LASER_DURATION: '0.2s',
+    
+    // Laser impact effects
+    IMPACT_SIZE: 12,
+    IMPACT_COLOR: '#ffff00',
+    IMPACT_RING_COLOR: '#ff8800',
+    IMPACT_DURATION: '0.5s',
+    
+    // Explosion effects on hit
+    HIT_PARTICLE_COUNT: 20,
+    HIT_COLOR: '#ff8800',
+    HIT_VELOCITY_MIN: 40,
+    HIT_VELOCITY_MAX: 100
+};
+
 // Resource Collection Constants
 export const RESOURCES = {
     // Asteroid resource drops

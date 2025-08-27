@@ -13,7 +13,7 @@ import { AuthUI } from './ui/AuthUI.js';
 import { TradingSystem } from './trading/TradingSystem.js';
 import { TradingUI } from './ui/TradingUI.js';
 import { SpaceNavigation } from './navigation/SpaceNavigation.js';
-import { RESOURCES } from './constants.js';
+import { RESOURCES, WEAPONS } from './constants.js';
 
 class MaxPixelsGame {
     constructor() {
@@ -53,7 +53,6 @@ class MaxPixelsGame {
         
         // Weapon system
         this.lastFireTime = 0;
-        this.fireRate = 300; // milliseconds between shots
         
         console.log('Max-Pixels initializing...');
         this.init();
@@ -626,7 +625,7 @@ class MaxPixelsGame {
     
     fireLaser() {
         const currentTime = Date.now();
-        if (currentTime - this.lastFireTime < this.fireRate) {
+        if (currentTime - this.lastFireTime < WEAPONS.LASER_FIRE_RATE) {
             return;
         }
         
@@ -636,19 +635,19 @@ class MaxPixelsGame {
         const laserStartX = this.player.x;
         const laserStartY = this.player.y - this.player.radius;
         
-        // Calculate laser end position (500 pixels ahead of ship)
+        // Calculate laser end position (ahead of ship)
         const laserEndX = this.player.x;
-        const laserEndY = this.player.y - 500;
+        const laserEndY = this.player.y - WEAPONS.LASER_RANGE;
         
         // Create laser beam using graphics engine
         const laser = this.graphics.createLaserBeam(
             laserStartX, laserStartY,
             laserEndX, laserEndY,
             {
-                color: '#ff0000',
-                glowColor: '#ffaaaa',
-                width: 3,
-                duration: '0.2s'
+                color: WEAPONS.LASER_COLOR,
+                glowColor: WEAPONS.LASER_GLOW_COLOR,
+                width: WEAPONS.LASER_WIDTH,
+                duration: WEAPONS.LASER_DURATION
             }
         );
         
@@ -679,18 +678,18 @@ class MaxPixelsGame {
             if (distance < asteroid.size) {
                 // Hit! Create impact effect
                 const impact = this.graphics.createLaserImpact(asteroid.x, asteroid.y, {
-                    size: 12,
-                    color: '#ffff00',
-                    ringColor: '#ff8800',
-                    duration: '0.5s'
+                    size: WEAPONS.IMPACT_SIZE,
+                    color: WEAPONS.IMPACT_COLOR,
+                    ringColor: WEAPONS.IMPACT_RING_COLOR,
+                    duration: WEAPONS.IMPACT_DURATION
                 });
                 this.graphics.addToLayer('game', impact);
                 
                 // Create explosion particle effect
                 this.particles.createExplosionEffect(asteroid.x, asteroid.y, {
-                    particleCount: 20,
-                    color: '#ff8800',
-                    velocity: { min: 40, max: 100 }
+                    particleCount: WEAPONS.HIT_PARTICLE_COUNT,
+                    color: WEAPONS.HIT_COLOR,
+                    velocity: { min: WEAPONS.HIT_VELOCITY_MIN, max: WEAPONS.HIT_VELOCITY_MAX }
                 });
                 
                 // Create debris field particle effect
