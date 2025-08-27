@@ -16,9 +16,11 @@ class MaxPixelsGame {
             x: 960,
             y: 540,
             velocity: { x: 0, y: 0 },
-            speed: 200
+            speed: 200,
+            radius: 25
         };
         
+        this.asteroids = [];
         this.keys = {};
         
         console.log('Max-Pixels initializing...');
@@ -50,8 +52,12 @@ class MaxPixelsGame {
         const stars = this.graphics.createStarField(200);
         this.graphics.addToLayer('background', stars);
         
-        const asteroids = this.graphics.createAsteroidField(15);
-        this.graphics.addToLayer('background', asteroids);
+        this.createAsteroids(15);
+        const asteroidsGroup = this.graphics.getLayer('background').querySelector('#asteroidField');
+        if (!asteroidsGroup) {
+            const asteroidsGroup = this.graphics.createGroup({ id: 'asteroidField' });
+            this.graphics.addToLayer('background', asteroidsGroup);
+        }
         
         const playerShip = this.graphics.createSpaceship(this.player.x, this.player.y, 25, {
             id: 'playerShip'
@@ -99,9 +105,64 @@ class MaxPixelsGame {
         requestAnimationFrame(gameLoop);
     }
     
+    createAsteroids(count) {
+        const bounds = { width: 1920, height: 1080 };
+        
+        for (let i = 0; i < count; i++) {
+            const x = Math.random() * bounds.width;
+            const y = Math.random() * bounds.height;
+            const size = Math.random() * 30 + 10;
+            
+            // Store asteroid data
+            const asteroidData = { x, y, size };
+            this.asteroids.push(asteroidData);
+            
+            // Create visual asteroid
+            const asteroidElement = this.graphics.createAsteroid(x, y, size);
+            this.graphics.addToLayer('background', asteroidElement);
+        }
+    }
+    
+    checkCollisions() {
+        for (let i = 0; i < this.asteroids.length; i++) {
+            const asteroid = this.asteroids[i];
+            const distance = Math.sqrt(
+                Math.pow(this.player.x - asteroid.x, 2) + 
+                Math.pow(this.player.y - asteroid.y, 2)
+            );
+            
+            // Simple circular collision detection
+            if (distance < this.player.radius + asteroid.size) {
+                this.handleCollision(asteroid, i);
+                break;
+            }
+        }
+    }
+    
+    handleCollision(asteroid, index) {
+        // Reset player position to center
+        this.player.x = 960;
+        this.player.y = 540;
+        this.player.velocity.x = 0;
+        this.player.velocity.y = 0;
+        
+        // Update player ship visual position
+        this.playerShip.setAttribute('transform', 
+            `translate(${this.player.x}, ${this.player.y})`);
+            
+        // Visual feedback - briefly flash red
+        this.playerShip.querySelector('path').setAttribute('fill', '#ff4444');
+        setTimeout(() => {
+            this.playerShip.querySelector('path').setAttribute('fill', '#4a90e2');
+        }, 200);
+            
+        console.log('Collision detected! Player reset to center.');
+    }
+
     update(timestamp) {
         this.handleInput();
         this.updatePlayer();
+        this.checkCollisions();
     }
     
     handleInput() {
