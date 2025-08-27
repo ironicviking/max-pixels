@@ -7,6 +7,8 @@ import { GraphicsEngine } from './graphics/GraphicsEngine.js';
 import { InputManager } from './input/InputManager.js';
 import { Camera } from './graphics/Camera.js';
 import { AudioManager } from './audio/AudioManager.js';
+import { AuthService } from './auth/AuthService.js';
+import { AuthUI } from './ui/AuthUI.js';
 
 class MaxPixelsGame {
     constructor() {
@@ -16,6 +18,8 @@ class MaxPixelsGame {
         this.input = new InputManager();
         this.camera = new Camera(this.gameCanvas);
         this.audio = new AudioManager();
+        this.auth = new AuthService();
+        this.authUI = null;
         this.isInitialized = false;
         
         this.player = {
@@ -91,6 +95,7 @@ class MaxPixelsGame {
     async initializeUI() {
         console.log('Initializing UI system...');
         this.createHUD();
+        this.authUI = new AuthUI(this.auth, this.uiContainer);
     }
     
     initializeAudio() {
