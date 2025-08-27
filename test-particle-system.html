@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Particle System Tests - Max-Pixels</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background: #1a1a1a;
+            color: #fff;
+        }
+        #gameCanvas {
+            width: 800px;
+            height: 600px;
+            border: 1px solid #333;
+            background: #000;
+        }
+        .test-results {
+            margin-top: 20px;
+            padding: 20px;
+            background: #333;
+            border-radius: 5px;
+        }
+        .test-pass { color: #4CAF50; }
+        .test-fail { color: #f44336; }
+    </style>
+</head>
+<body>
+    <h1>Max-Pixels Particle System Tests</h1>
+    <div id="gameCanvas"></div>
+    <div id="testResults" class="test-results"></div>
+
+    <script type="module">
+        import { TestRunner, describe, test, assert, assertEqual } from './test/TestFramework.js';
+        import { GraphicsEngine } from './src/graphics/GraphicsEngine.js';
+        import { ParticleSystem } from './src/graphics/ParticleSystem.js';
+
+        // Simple particle system tests
+        describe('Particle System Basic Tests', function() {
+            test('should initialize correctly', function() {
+                const testContainer = TestRunner.setupTestDOM();
+                const canvas = testContainer.querySelector('#gameCanvas');
+                const graphics = new GraphicsEngine(canvas);
+                const particles = new ParticleSystem(graphics);
+                
+                assertEqual(particles.particles.size, 0, 'Should start with no particles');
+                assertEqual(particles.activeEmitters.size, 0, 'Should start with no emitters');
+                
+                particles.stopUpdateLoop();
+                TestRunner.cleanupTestDOM();
+            });
+            
+            test('should create emitter', function() {
+                const testContainer = TestRunner.setupTestDOM();
+                const canvas = testContainer.querySelector('#gameCanvas');
+                const graphics = new GraphicsEngine(canvas);
+                const particles = new ParticleSystem(graphics);
+                
+                const emitterId = particles.createEmitter(100, 200, {
+                    particleCount: 5,
+                    color: '#ff0000',
+                    burst: true
+                });
+                
+                assert(emitterId !== null, 'Should return emitter ID');
+                assertEqual(particles.activeEmitters.size, 1, 'Should have one emitter');
+                
+                particles.stopUpdateLoop();
+                TestRunner.cleanupTestDOM();
+            });
+            
+            test('should create explosion effect', function() {
+                const testContainer = TestRunner.setupTestDOM();
+                const canvas = testContainer.querySelector('#gameCanvas');
+                const graphics = new GraphicsEngine(canvas);
+                const particles = new ParticleSystem(graphics);
+                
+                const emitterId = particles.createExplosionEffect(150, 250);
+                
+                assert(emitterId !== null, 'Should create explosion effect');
+                
+                particles.stopUpdateLoop();
+                TestRunner.cleanupTestDOM();
+            });
+        });
+
+        // Run tests
+        TestRunner.run().then((results) => {
+            const resultDiv = document.getElementById('testResults');
+            let html = `<h2>Test Results</h2>`;
+            html += `<p>Total: ${results.total}, Passed: ${results.passed}, Failed: ${results.failed}</p>`;
+            
+            results.suites.forEach(suite => {
+                html += `<h3>${suite.name}</h3>`;
+                suite.tests.forEach(test => {
+                    const className = test.passed ? 'test-pass' : 'test-fail';
+                    html += `<div class="${className}">• ${test.name}: ${test.passed ? 'PASS' : 'FAIL'}</div>`;
+                    if (!test.passed && test.error) {
+                        html += `<div style="margin-left: 20px; color: #ff9999;">${test.error}</div>`;
+                    }
+                });
+            });
+            
+            resultDiv.innerHTML = html;
+        });
+    </script>
+</body>
+</html>
