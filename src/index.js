@@ -3,10 +3,13 @@
  * Space exploration and trading game built with SVG graphics
  */
 
+import { GraphicsEngine } from './graphics/GraphicsEngine.js';
+
 class MaxPixelsGame {
     constructor() {
         this.gameCanvas = document.getElementById('gameCanvas');
         this.uiContainer = document.getElementById('ui');
+        this.graphics = new GraphicsEngine(this.gameCanvas);
         this.isInitialized = false;
         
         console.log('Max-Pixels initializing...');
@@ -31,31 +34,29 @@ class MaxPixelsGame {
     async initializeGraphics() {
         console.log('Initializing graphics system...');
         
-        const stars = this.createStarField(200);
-        this.gameCanvas.appendChild(stars);
+        const backgroundLayer = this.graphics.createLayer('background', 1);
+        const gameLayer = this.graphics.createLayer('game', 5);
+        
+        const stars = this.graphics.createStarField(200);
+        this.graphics.addToLayer('background', stars);
+        
+        const playerShip = this.graphics.createSpaceship(960, 540, 25, {
+            id: 'playerShip'
+        });
+        this.graphics.addToLayer('game', playerShip);
+        
+        const testPlanet = this.graphics.createPlanet(1200, 300, 60, {
+            surfaceColor: '#8b4513',
+            coreColor: '#654321',
+            atmosphereColor: '#4488ff'
+        });
+        this.graphics.addToLayer('game', testPlanet);
     }
     
     async initializeUI() {
         console.log('Initializing UI system...');
     }
     
-    createStarField(starCount) {
-        const starField = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-        starField.setAttribute('id', 'starField');
-        
-        for (let i = 0; i < starCount; i++) {
-            const star = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-            star.setAttribute('cx', Math.random() * 1920);
-            star.setAttribute('cy', Math.random() * 1080);
-            star.setAttribute('r', Math.random() * 1.5 + 0.5);
-            star.setAttribute('fill', '#ffffff');
-            star.setAttribute('opacity', Math.random() * 0.8 + 0.2);
-            
-            starField.appendChild(star);
-        }
-        
-        return starField;
-    }
     
     startGameLoop() {
         console.log('Starting game loop...');
