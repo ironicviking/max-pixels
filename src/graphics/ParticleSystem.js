@@ -3,6 +3,8 @@
  * Creates dynamic particle effects for enhanced visual feedback
  */
 
+import { PARTICLES } from '../constants.js';
+
 // Particle system constants
 const PARTICLE_DEFAULTS = {
     COUNT: 20,
@@ -89,14 +91,14 @@ export class ParticleSystem {
      */
     createExplosionEffect(x, y, options = {}) {
         const config = {
-            particleCount: 25,
-            particleLife: 1500,
+            particleCount: PARTICLES.EXPLOSION_PARTICLE_COUNT,
+            particleLife: PARTICLES.EXPLOSION_LIFE,
             spread: Math.PI * 2,
-            velocity: { min: 80, max: 150 },
-            size: { min: 3, max: 8 },
+            velocity: { min: PARTICLES.EXPLOSION_VELOCITY_MIN, max: PARTICLES.EXPLOSION_VELOCITY_MAX },
+            size: { min: PARTICLES.EXPLOSION_SIZE_MIN, max: PARTICLES.EXPLOSION_SIZE_MAX },
             color: '#ff6600',
-            opacity: { start: 0.9, end: 0.0 },
-            gravity: { x: 0, y: 20 },
+            opacity: { start: PARTICLES.EXPLOSION_OPACITY_START, end: 0.0 },
+            gravity: { x: 0, y: PARTICLES.EXPLOSION_GRAVITY_Y },
             fadeOut: true,
             shrink: true,
             burst: true,
@@ -116,19 +118,19 @@ export class ParticleSystem {
      */
     createThrusterTrail(x, y, angle, intensity = 1.0) {
         const config = {
-            particleCount: Math.floor(15 * intensity),
-            particleLife: 800,
-            emissionRate: 20 * intensity,
-            spread: Math.PI * 0.3, // narrow cone
-            velocity: { min: 30 * intensity, max: 60 * intensity },
-            size: { min: 2, max: 4 },
-            color: intensity > 0.8 ? '#00aaff' : '#0066ff',
-            opacity: { start: 0.8, end: 0.0 },
+            particleCount: Math.floor(PARTICLES.THRUSTER_BASE_PARTICLES * intensity),
+            particleLife: PARTICLES.THRUSTER_LIFE,
+            emissionRate: PARTICLES.THRUSTER_BASE_EMISSION_RATE * intensity,
+            spread: Math.PI * PARTICLES.THRUSTER_SPREAD, // narrow cone
+            velocity: { min: PARTICLES.THRUSTER_VELOCITY_BASE * intensity, max: PARTICLES.THRUSTER_VELOCITY_RANGE * intensity },
+            size: { min: PARTICLES.THRUSTER_SIZE_MIN, max: PARTICLES.THRUSTER_SIZE_MAX },
+            color: intensity > PARTICLES.THRUSTER_HIGH_INTENSITY ? '#00aaff' : '#0066ff',
+            opacity: { start: PARTICLES.THRUSTER_OPACITY_START, end: 0.0 },
             direction: angle + Math.PI, // opposite to thruster direction
             fadeOut: true,
             shrink: true,
             burst: false,
-            duration: 500
+            duration: PARTICLES.THRUSTER_DURATION
         };
         
         return this.createEmitter(x, y, config);
@@ -142,14 +144,14 @@ export class ParticleSystem {
      */
     createDebrisField(x, y, asteroidSize) {
         const config = {
-            particleCount: Math.floor(asteroidSize / 2),
-            particleLife: 3000,
+            particleCount: Math.floor(asteroidSize / PARTICLES.DEBRIS_SIZE_DIVISOR),
+            particleLife: PARTICLES.DEBRIS_LIFE,
             spread: Math.PI * 2,
-            velocity: { min: 20, max: 80 },
-            size: { min: 1, max: 4 },
+            velocity: { min: PARTICLES.DEBRIS_VELOCITY_MIN, max: PARTICLES.DEBRIS_VELOCITY_MAX },
+            size: { min: PARTICLES.DEBRIS_SIZE_MIN, max: PARTICLES.DEBRIS_SIZE_MAX },
             color: '#8b7355',
-            opacity: { start: 0.8, end: 0.0 },
-            gravity: { x: 0, y: 10 },
+            opacity: { start: PARTICLES.DEBRIS_OPACITY_START, end: 0.0 },
+            gravity: { x: 0, y: PARTICLES.DEBRIS_GRAVITY_Y },
             fadeOut: true,
             burst: true,
             duration: 0
@@ -166,15 +168,15 @@ export class ParticleSystem {
      */
     createSparksEffect(x, y, direction = 0) {
         const config = {
-            particleCount: 15,
-            particleLife: 800,
-            spread: Math.PI * 0.8,
-            velocity: { min: 100, max: 200 },
-            size: { min: 1, max: 3 },
+            particleCount: PARTICLES.SPARKS_COUNT,
+            particleLife: PARTICLES.SPARKS_LIFE,
+            spread: Math.PI * PARTICLES.SPARKS_SPREAD,
+            velocity: { min: PARTICLES.SPARKS_VELOCITY_MIN, max: PARTICLES.SPARKS_VELOCITY_MAX },
+            size: { min: PARTICLES.SPARKS_SIZE_MIN, max: PARTICLES.SPARKS_SIZE_MAX },
             color: '#ffff00',
             opacity: { start: 1.0, end: 0.0 },
             direction: direction,
-            gravity: { x: 0, y: 50 },
+            gravity: { x: 0, y: PARTICLES.SPARKS_GRAVITY_Y },
             fadeOut: true,
             burst: true,
             duration: 0
@@ -201,7 +203,7 @@ export class ParticleSystem {
         
         // Calculate random direction within spread
         const baseDirection = config.direction || 0;
-        const randomAngle = baseDirection + (Math.random() - 0.5) * config.spread;
+        const randomAngle = baseDirection + (Math.random() - PARTICLES.RANDOM_OFFSET_RANGE) * config.spread;
         
         // Calculate velocity
         const speed = config.velocity.min + Math.random() * (config.velocity.max - config.velocity.min);
@@ -213,8 +215,8 @@ export class ParticleSystem {
         
         const particle = {
             id: particleId,
-            x: emitter.x + (Math.random() - 0.5) * 10, // small random offset
-            y: emitter.y + (Math.random() - 0.5) * 10,
+            x: emitter.x + (Math.random() - PARTICLES.RANDOM_OFFSET_RANGE) * PARTICLES.POSITION_OFFSET, // small random offset
+            y: emitter.y + (Math.random() - PARTICLES.RANDOM_OFFSET_RANGE) * PARTICLES.POSITION_OFFSET,
             velX: velX,
             velY: velY,
             size: size,
@@ -249,7 +251,7 @@ export class ParticleSystem {
      */
     update() {
         const currentTime = Date.now();
-        const deltaTime = 1/60; // Assume 60fps
+        const deltaTime = PARTICLES.DELTA_TIME_60FPS; // Assume 60fps
         
         // Update emitters
         for (const [, emitter] of this.activeEmitters) {
@@ -266,7 +268,7 @@ export class ParticleSystem {
             // Emit new particles for continuous emitters
             if (!emitter.config.burst && emitter.active) {
                 const timeSinceLastEmission = currentTime - emitter.lastEmission;
-                const emissionInterval = 1000 / emitter.config.emissionRate;
+                const emissionInterval = PARTICLES.EMISSION_TIME_MS / emitter.config.emissionRate;
                 
                 if (timeSinceLastEmission >= emissionInterval) {
                     this.createParticle(emitter);
@@ -293,7 +295,7 @@ export class ParticleSystem {
             }
             
             // Update life
-            particle.life -= 16; // Approximately 60fps
+            particle.life -= PARTICLES.FRAME_TIME; // Approximately 60fps
             const lifeRatio = particle.life / particle.maxLife;
             
             // Update opacity
@@ -311,7 +313,7 @@ export class ParticleSystem {
             if (particle.element) {
                 particle.element.setAttribute('cx', particle.x);
                 particle.element.setAttribute('cy', particle.y);
-                particle.element.setAttribute('r', Math.max(0.5, particle.size));
+                particle.element.setAttribute('r', Math.max(PARTICLES.SIZE_MIN_RENDER, particle.size));
                 particle.element.setAttribute('opacity', Math.max(0, particle.opacity));
             }
             
@@ -390,7 +392,7 @@ export class ParticleSystem {
         
         this.updateInterval = setInterval(() => {
             this.update();
-        }, 16); // ~60fps
+        }, PARTICLES.FRAME_TIME); // ~60fps
     }
     
     /**

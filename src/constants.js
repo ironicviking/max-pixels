@@ -412,6 +412,60 @@ export const ANIMATION = {
     PARTICLE_LIFE: 2000
 };
 
+// Particle System Constants
+export const PARTICLES = {
+    // Explosion effects
+    EXPLOSION_PARTICLE_COUNT: 25,
+    EXPLOSION_LIFE: 1500,
+    EXPLOSION_VELOCITY_MIN: 80,
+    EXPLOSION_VELOCITY_MAX: 150,
+    EXPLOSION_SIZE_MIN: 3,
+    EXPLOSION_SIZE_MAX: 8,
+    EXPLOSION_GRAVITY_Y: 20,
+    EXPLOSION_OPACITY_START: 0.9,
+    
+    // Thruster trails
+    THRUSTER_BASE_PARTICLES: 15,
+    THRUSTER_LIFE: 800,
+    THRUSTER_BASE_EMISSION_RATE: 20,
+    THRUSTER_SPREAD: 0.3, // fraction of PI
+    THRUSTER_VELOCITY_BASE: 30,
+    THRUSTER_VELOCITY_RANGE: 60,
+    THRUSTER_SIZE_MIN: 2,
+    THRUSTER_SIZE_MAX: 4,
+    THRUSTER_OPACITY_START: 0.8,
+    THRUSTER_DURATION: 500,
+    THRUSTER_HIGH_INTENSITY: 0.8,
+    
+    // Debris fields
+    DEBRIS_SIZE_DIVISOR: 2,
+    DEBRIS_LIFE: 3000,
+    DEBRIS_VELOCITY_MIN: 20,
+    DEBRIS_VELOCITY_MAX: 80,
+    DEBRIS_SIZE_MIN: 1,
+    DEBRIS_SIZE_MAX: 4,
+    DEBRIS_GRAVITY_Y: 10,
+    DEBRIS_OPACITY_START: 0.8,
+    
+    // Spark effects
+    SPARKS_COUNT: 15,
+    SPARKS_LIFE: 800,
+    SPARKS_SPREAD: 0.8, // fraction of PI
+    SPARKS_VELOCITY_MIN: 100,
+    SPARKS_VELOCITY_MAX: 200,
+    SPARKS_SIZE_MIN: 1,
+    SPARKS_SIZE_MAX: 3,
+    SPARKS_GRAVITY_Y: 50,
+    
+    // General particle system
+    POSITION_OFFSET: 10,
+    SIZE_MIN_RENDER: 0.5,
+    FRAME_TIME: 16, // ~60fps
+    DELTA_TIME_60FPS: 1 / 60,
+    EMISSION_TIME_MS: 1000,
+    RANDOM_OFFSET_RANGE: 0.5
+};
+
 // Resource Collection Constants
 export const RESOURCES = {
     // Asteroid resource drops
