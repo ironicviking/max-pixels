@@ -3,6 +3,20 @@
  * Handles user registration, login, and session management
  */
 
+// Authentication constants
+const AUTH_CONSTANTS = {
+    USERNAME_MIN_LENGTH: 3,
+    USERNAME_MAX_LENGTH: 20,
+    PASSWORD_MIN_LENGTH: 6,
+    RANDOM_STRING_BASE: 36,
+    RANDOM_STRING_LENGTH: 9,
+    TOKEN_EXPIRY_HOURS: 24,
+    MINUTES_PER_HOUR: 60,
+    SECONDS_PER_MINUTE: 60,
+    MILLISECONDS_PER_SECOND: 1000,
+    HASH_BIT_SHIFT: 5
+};
+
 export class AuthService {
     constructor() {
         this.currentUser = null;
@@ -142,8 +156,8 @@ export class AuthService {
     
     // Validation helpers
     validateRegistrationData(username, email, password) {
-        if (!username || username.length < 3 || username.length > 20) {
-            throw new Error('Username must be between 3 and 20 characters');
+        if (!username || username.length < AUTH_CONSTANTS.USERNAME_MIN_LENGTH || username.length > AUTH_CONSTANTS.USERNAME_MAX_LENGTH) {
+            throw new Error(`Username must be between ${AUTH_CONSTANTS.USERNAME_MIN_LENGTH} and ${AUTH_CONSTANTS.USERNAME_MAX_LENGTH} characters`);
         }
         
         if (!/^[a-zA-Z0-9_]+$/.test(username)) {
@@ -154,8 +168,8 @@ export class AuthService {
             throw new Error('Please enter a valid email address');
         }
         
-        if (!password || password.length < 6) {
-            throw new Error('Password must be at least 6 characters long');
+        if (!password || password.length < AUTH_CONSTANTS.PASSWORD_MIN_LENGTH) {
+            throw new Error(`Password must be at least ${AUTH_CONSTANTS.PASSWORD_MIN_LENGTH} characters long`);
         }
     }
     
@@ -166,7 +180,7 @@ export class AuthService {
     
     // Utility functions
     generateUserId() {
-        return 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        return 'user_' + Date.now() + '_' + Math.random().toString(AUTH_CONSTANTS.RANDOM_STRING_BASE).substr(2, AUTH_CONSTANTS.RANDOM_STRING_LENGTH);
     }
     
     generateToken(user) {
@@ -174,7 +188,7 @@ export class AuthService {
         const payload = btoa(JSON.stringify({
             username: user.username,
             userId: user.id,
-            exp: Date.now() + (24 * 60 * 60 * 1000) // 24 hours
+            exp: Date.now() + (AUTH_CONSTANTS.TOKEN_EXPIRY_HOURS * AUTH_CONSTANTS.MINUTES_PER_HOUR * AUTH_CONSTANTS.SECONDS_PER_MINUTE * AUTH_CONSTANTS.MILLISECONDS_PER_SECOND) // 24 hours
         }));
         
         // Simple signature (in real app, this would be server-side with secret key)
@@ -188,7 +202,7 @@ export class AuthService {
         let hash = 0;
         for (let i = 0; i < password.length; i++) {
             const char = password.charCodeAt(i);
-            hash = ((hash << 5) - hash) + char;
+            hash = ((hash << AUTH_CONSTANTS.HASH_BIT_SHIFT) - hash) + char;
             hash = hash & hash; // Convert to 32-bit integer
         }
         return hash.toString();
