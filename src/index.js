@@ -12,6 +12,7 @@ import { AuthUI } from './ui/AuthUI.js';
 import { TradingSystem } from './trading/TradingSystem.js';
 import { TradingUI } from './ui/TradingUI.js';
 import { SpaceNavigation } from './navigation/SpaceNavigation.js';
+import { RESOURCES } from './constants.js';
 
 class MaxPixelsGame {
     constructor() {
@@ -204,12 +205,15 @@ class MaxPixelsGame {
             const y = Math.random() * bounds.height;
             const size = Math.random() * 30 + 10;
             
-            // Store asteroid data
-            const asteroidData = { x, y, size };
+            // Generate unique ID for asteroid tracking
+            const asteroidId = `asteroid_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+            
+            // Store asteroid data with unique ID
+            const asteroidData = { id: asteroidId, x, y, size };
             this.asteroids.push(asteroidData);
             
-            // Create visual asteroid
-            const asteroidElement = this.graphics.createAsteroid(x, y, size);
+            // Create visual asteroid with matching ID
+            const asteroidElement = this.graphics.createAsteroid(x, y, size, { id: asteroidId });
             this.graphics.addToLayer('background', asteroidElement);
         }
     }
@@ -224,13 +228,13 @@ class MaxPixelsGame {
             
             // Simple circular collision detection
             if (distance < this.player.radius + asteroid.size) {
-                this.handleCollision(asteroid, i);
+                this.handleCollision(asteroid);
                 break;
             }
         }
     }
     
-    handleCollision(asteroid, index) {
+    handleCollision(asteroid) {
         // Play collision sound
         this.audio.playCollision(0.8);
         
@@ -505,6 +509,11 @@ class MaxPixelsGame {
                     <h3>Speed</h3>
                     <div>Velocity: <span id="player-speed">0</span></div>
                 </div>
+                <div class="hud-section inventory">
+                    <h3>Inventory</h3>
+                    <div>Iron: <span id="inventory-iron">0</span></div>
+                    <div>Copper: <span id="inventory-copper">0</span></div>
+                </div>
                 <div class="hud-section controls">
                     <h3>Controls</h3>
                     <div>WASD / Arrow Keys: Move</div>
@@ -537,6 +546,12 @@ class MaxPixelsGame {
         document.getElementById('player-speed').textContent = Math.round(speed);
         
         document.getElementById('camera-zoom').textContent = this.camera.zoom.toFixed(1);
+        
+        // Update inventory display
+        const ironQuantity = this.trading.getPlayerItemQuantity('ore-iron');
+        const copperQuantity = this.trading.getPlayerItemQuantity('ore-copper');
+        document.getElementById('inventory-iron').textContent = ironQuantity;
+        document.getElementById('inventory-copper').textContent = copperQuantity;
     }
     
     fireLaser() {
@@ -595,14 +610,6 @@ class MaxPixelsGame {
             
             if (distance < asteroid.size) {
                 // Hit! Create impact effect
-                this.graphics.createLaserImpact(asteroid.x, asteroid.y, {
-                    size: 12,
-                    color: '#ffff00',
-                    ringColor: '#ff8800',
-                    duration: '0.5s'
-                });
-                
-                // Add impact to game layer
                 const impact = this.graphics.createLaserImpact(asteroid.x, asteroid.y, {
                     size: 12,
                     color: '#ffff00',
@@ -611,8 +618,11 @@ class MaxPixelsGame {
                 });
                 this.graphics.addToLayer('game', impact);
                 
-                // Remove asteroid (simple destruction)
-                this.destroyAsteroid(i);
+                // Generate resource drop before destroying asteroid
+                this.dropAsteroidResources(asteroid);
+                
+                // Remove asteroid using ID-based tracking
+                this.destroyAsteroid(asteroid.id);
                 
                 console.log('Asteroid destroyed!');
                 break; // Only hit first asteroid in line
@@ -635,19 +645,82 @@ class MaxPixelsGame {
         return Math.sqrt(Math.pow(px - projectionX, 2) + Math.pow(py - projectionY, 2));
     }
     
-    destroyAsteroid(index) {
-        // Remove from data array
-        this.asteroids.splice(index, 1);
+    destroyAsteroid(asteroidId) {
+        // Remove from data array using ID
+        const asteroidIndex = this.asteroids.findIndex(asteroid => asteroid.id === asteroidId);
+        if (asteroidIndex !== -1) {
+            this.asteroids.splice(asteroidIndex, 1);
+        }
         
-        // Find and remove visual element
+        // Find and remove visual element by ID
         const gameLayer = this.graphics.getLayer('background');
         if (gameLayer) {
-            const asteroidElements = gameLayer.querySelectorAll('g');
-            // This is a simple approach - in a real game you'd want better asteroid tracking
-            if (asteroidElements[index]) {
-                this.graphics.remove(asteroidElements[index]);
+            const asteroidElement = gameLayer.querySelector(`#${asteroidId}`);
+            if (asteroidElement) {
+                this.graphics.remove(asteroidElement);
             }
         }
+    }
+    
+    dropAsteroidResources(asteroid) {
+        // Determine resource type based on asteroid size
+        const resourceType = RESOURCES.ASTEROID_RESOURCE_TYPES[
+            Math.floor(Math.random() * RESOURCES.ASTEROID_RESOURCE_TYPES.length)
+        ];
+        
+        // Calculate resource quantity based on asteroid size
+        const resourceQuantity = Math.floor(asteroid.size / RESOURCES.RESOURCE_SIZE_DIVIDER) + RESOURCES.RESOURCE_BASE_QUANTITY;
+        
+        // Add resources to player inventory
+        this.trading.addPlayerItem(resourceType, resourceQuantity);
+        
+        // Create visual resource pickup effect
+        this.showResourcePickup(asteroid.x, asteroid.y, resourceType, resourceQuantity);
+        
+        console.log(`Collected ${resourceQuantity}x ${resourceType} from asteroid`);
+    }
+    
+    showResourcePickup(x, y, resourceType, quantity) {
+        // Create floating text showing the resource gained
+        const resourceElement = document.createElement('div');
+        resourceElement.style.cssText = `
+            position: absolute;
+            left: ${x}px;
+            top: ${y}px;
+            color: #00ff00;
+            font-family: monospace;
+            font-size: 14px;
+            font-weight: bold;
+            pointer-events: none;
+            z-index: 1000;
+            text-shadow: 0 0 4px #000;
+            transform: translate(-50%, -50%);
+        `;
+        
+        const resourceName = resourceType === 'ore-iron' ? 'Iron' : 'Copper';
+        resourceElement.textContent = `+${quantity} ${resourceName}`;
+        
+        document.body.appendChild(resourceElement);
+        
+        // Animate the text floating upward and fading out
+        let opacity = 1;
+        let yOffset = 0;
+        
+        const animateResource = () => {
+            opacity -= RESOURCES.PICKUP_OPACITY_DECAY;
+            yOffset -= RESOURCES.PICKUP_FLOAT_SPEED;
+            
+            resourceElement.style.opacity = opacity;
+            resourceElement.style.transform = `translate(-50%, -50%) translateY(${yOffset}px)`;
+            
+            if (opacity > 0) {
+                requestAnimationFrame(animateResource);
+            } else {
+                document.body.removeChild(resourceElement);
+            }
+        };
+        
+        requestAnimationFrame(animateResource);
     }
     
     initializePlayerInventory() {

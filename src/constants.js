@@ -19,6 +19,7 @@ export const AUDIO = {
     AMBIENT_VOLUME: 0.3,
     THRUSTER_VOLUME: 0.8,
     COLLISION_VOLUME: 0.8,
+    LASER_VOLUME: 0.6,
     
     // Audio context timing
     RAMP_TIME: 0.01,
@@ -35,7 +36,14 @@ export const AUDIO = {
     HUM_FREQUENCY: 43,
     HUM_MIX: 0.2,
     PLAYBACK_MIN: 0.4,
-    PLAYBACK_BASE: 0.7
+    PLAYBACK_BASE: 0.7,
+    
+    // Laser sound parameters
+    LASER_BEAM_DECAY: 8,
+    LASER_ZAP_DECAY: 12,
+    LASER_ENERGY_DECAY: 6,
+    LASER_FREQUENCY_MULT: 2,
+    LASER_ZAP_FREQUENCY_MULT: 4
 };
 
 // Camera Constants
@@ -145,4 +153,18 @@ export const ANIMATION = {
     SMOOTH_TRANSITION: 0.3,
     QUICK_FADE: 0.1,
     PARTICLE_LIFE: 2000
+};
+
+// Resource Collection Constants
+export const RESOURCES = {
+    // Asteroid resource drops
+    RESOURCE_SIZE_DIVIDER: 15,
+    RESOURCE_BASE_QUANTITY: 1,
+    
+    // Resource pickup animation
+    PICKUP_OPACITY_DECAY: 0.02,
+    PICKUP_FLOAT_SPEED: 1,
+    
+    // Resource types available from asteroids
+    ASTEROID_RESOURCE_TYPES: ['ore-iron', 'ore-copper']
 };
