@@ -91,6 +91,42 @@
             font-weight: bold;
         }
         
+        /* Station Interaction Styles */
+        .hud-section.interaction {
+            background: rgba(255, 165, 0, 0.1);
+            border-color: #ffaa00;
+            animation: pulse-orange 2s infinite;
+        }
+        
+        @keyframes pulse-orange {
+            0%, 100% {
+                box-shadow: 0 0 5px rgba(255, 165, 0, 0.3);
+            }
+            50% {
+                box-shadow: 0 0 15px rgba(255, 165, 0, 0.6);
+            }
+        }
+        
+        .hud-section.interaction h3 {
+            color: #ffcc88;
+        }
+        
+        #interaction-text {
+            color: #ffaa00 !important;
+            font-weight: bold;
+            animation: blink 1.5s infinite;
+        }
+        
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+        
+        #station-name {
+            color: #ffffff !important;
+            font-style: italic;
+        }
+        
         /* Authentication UI Styles */
         .auth-section {
             position: absolute;

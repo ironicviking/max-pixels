@@ -32,6 +32,10 @@ class MaxPixelsGame {
         
         this.asteroids = [];
         
+        this.stations = [];
+        this.nearbyStation = null;
+        this.interactionRange = 80;
+        
         this.activeThrusterSound = null;
         this.ambientSound = null;
         
@@ -88,6 +92,15 @@ class MaxPixelsGame {
             id: 'tradingStation'
         });
         this.graphics.addToLayer('game', tradingStation);
+        
+        this.stations.push({
+            id: 'tradingStation',
+            x: 800,
+            y: 600,
+            radius: 40,
+            type: 'trading',
+            name: 'Trading Outpost Alpha'
+        });
         
         this.camera.centerOn(this.player.x, this.player.y);
     }
@@ -179,6 +192,55 @@ class MaxPixelsGame {
             
         console.log('Collision detected! Player reset to center.');
     }
+    
+    checkStationProximity() {
+        let closestStation = null;
+        let closestDistance = Infinity;
+        
+        for (let station of this.stations) {
+            const distance = Math.sqrt(
+                Math.pow(this.player.x - station.x, 2) + 
+                Math.pow(this.player.y - station.y, 2)
+            );
+            
+            if (distance < this.interactionRange && distance < closestDistance) {
+                closestDistance = distance;
+                closestStation = station;
+            }
+        }
+        
+        if (closestStation !== this.nearbyStation) {
+            this.nearbyStation = closestStation;
+            this.updateInteractionPrompt();
+        }
+    }
+    
+    interactWithStation(station) {
+        console.log(`Interacting with ${station.name}!`);
+        
+        if (station.type === 'trading') {
+            this.openTradingInterface(station);
+        }
+    }
+    
+    openTradingInterface(station) {
+        console.log(`Opening trading interface for ${station.name}`);
+        
+        const message = `Welcome to ${station.name}!\n\nTrading system coming soon...\n\nCredits: ${this.auth.currentUser?.credits || 1000}`;
+        alert(message);
+    }
+    
+    updateInteractionPrompt() {
+        const promptElement = document.getElementById('interaction-prompt');
+        const nameElement = document.getElementById('station-name');
+        
+        if (this.nearbyStation) {
+            promptElement.style.display = 'block';
+            nameElement.textContent = this.nearbyStation.name;
+        } else {
+            promptElement.style.display = 'none';
+        }
+    }
 
     update(timestamp) {
         this.handleInput();
@@ -186,6 +248,7 @@ class MaxPixelsGame {
         this.updateThrusterEffects();
         this.updateCamera();
         this.checkCollisions();
+        this.checkStationProximity();
         this.input.update();
     }
     
@@ -204,6 +267,10 @@ class MaxPixelsGame {
         }
         if (this.input.justPressed('KeyE')) {
             this.camera.zoomIn();
+        }
+        
+        if (this.input.justPressed('KeyF') && this.nearbyStation) {
+            this.interactWithStation(this.nearbyStation);
         }
     }
     
@@ -274,6 +341,11 @@ class MaxPixelsGame {
                 <div class="hud-section camera">
                     <h3>Camera</h3>
                     <div>Zoom: <span id="camera-zoom">1.0</span>x</div>
+                </div>
+                <div class="hud-section interaction" id="interaction-prompt" style="display: none;">
+                    <h3>Station Nearby</h3>
+                    <div id="interaction-text">Press F to Dock</div>
+                    <div id="station-name"></div>
                 </div>
             </div>
         `;
