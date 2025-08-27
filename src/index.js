@@ -4,6 +4,7 @@
  */
 
 import { GraphicsEngine } from './graphics/GraphicsEngine.js';
+import { ParticleSystem } from './graphics/ParticleSystem.js';
 import { InputManager } from './input/InputManager.js';
 import { Camera } from './graphics/Camera.js';
 import { AudioManager } from './audio/AudioManager.js';
@@ -19,6 +20,7 @@ class MaxPixelsGame {
         this.gameCanvas = document.getElementById('gameCanvas');
         this.uiContainer = document.getElementById('ui');
         this.graphics = new GraphicsEngine(this.gameCanvas);
+        this.particles = new ParticleSystem(this.graphics);
         this.input = new InputManager();
         this.camera = new Camera(this.gameCanvas);
         this.audio = new AudioManager();
@@ -238,6 +240,16 @@ class MaxPixelsGame {
     handleCollision(asteroid) {
         // Play collision sound
         this.audio.playCollision(0.8);
+        
+        // Create explosion particle effect at collision point
+        this.particles.createExplosionEffect(asteroid.x, asteroid.y, {
+            particleCount: 30,
+            color: '#ff4444',
+            velocity: { min: 60, max: 120 }
+        });
+        
+        // Create sparks effect at player position
+        this.particles.createSparksEffect(this.player.x, this.player.y);
         
         // Reset player position to center
         this.player.x = 960;
@@ -492,6 +504,36 @@ class MaxPixelsGame {
         // Update visual thruster effects
         this.graphics.updateSpaceshipThrusters(this.playerShip, movement, boost);
         
+        // Create thruster particle trail effects
+        if (isMoving) {
+            const intensity = boost ? 1.0 : 0.6;
+            
+            // Main thruster (backward movement - forward thrust)
+            if (movement.y > 0) {
+                const thrusterX = this.player.x;
+                const thrusterY = this.player.y + 30; // Behind the ship
+                const thrusterAngle = this.player.rotation * Math.PI / 180;
+                this.particles.createThrusterTrail(thrusterX, thrusterY, thrusterAngle, intensity);
+            }
+            
+            // Side thrusters for lateral movement
+            if (movement.x !== 0) {
+                const sideIntensity = intensity * 0.7;
+                const thrusterAngle = this.player.rotation * Math.PI / 180;
+                
+                if (movement.x > 0) { // Moving right, left thruster fires
+                    const thrusterX = this.player.x - Math.cos(thrusterAngle + Math.PI/2) * 20;
+                    const thrusterY = this.player.y - Math.sin(thrusterAngle + Math.PI/2) * 20;
+                    this.particles.createThrusterTrail(thrusterX, thrusterY, thrusterAngle - Math.PI/2, sideIntensity);
+                }
+                if (movement.x < 0) { // Moving left, right thruster fires
+                    const thrusterX = this.player.x + Math.cos(thrusterAngle + Math.PI/2) * 20;
+                    const thrusterY = this.player.y + Math.sin(thrusterAngle + Math.PI/2) * 20;
+                    this.particles.createThrusterTrail(thrusterX, thrusterY, thrusterAngle + Math.PI/2, sideIntensity);
+                }
+            }
+        }
+        
         // Manage thruster audio
         if (isMoving) {
             const intensity = boost ? 1.0 : 0.6;
@@ -545,6 +587,10 @@ class MaxPixelsGame {
                     <h3>Camera</h3>
                     <div>Zoom: <span id="camera-zoom">1.0</span>x</div>
                 </div>
+                <div class="hud-section particles">
+                    <h3>Particles</h3>
+                    <div>Active: <span id="particle-count">0</span></div>
+                </div>
                 <div class="hud-section interaction" id="interaction-prompt" style="display: none;">
                     <h3>Station Nearby</h3>
                     <div id="interaction-text">Press F to Dock</div>
@@ -566,6 +612,10 @@ class MaxPixelsGame {
         document.getElementById('player-speed').textContent = Math.round(speed);
         
         document.getElementById('camera-zoom').textContent = this.camera.zoom.toFixed(1);
+        
+        // Update particle system debug info
+        const particleDebug = this.particles.getDebugInfo();
+        document.getElementById('particle-count').textContent = particleDebug.activeParticles;
         
         // Update inventory display
         const ironQuantity = this.trading.getPlayerItemQuantity('ore-iron');
@@ -635,6 +685,16 @@ class MaxPixelsGame {
                     duration: '0.5s'
                 });
                 this.graphics.addToLayer('game', impact);
+                
+                // Create explosion particle effect
+                this.particles.createExplosionEffect(asteroid.x, asteroid.y, {
+                    particleCount: 20,
+                    color: '#ff8800',
+                    velocity: { min: 40, max: 100 }
+                });
+                
+                // Create debris field particle effect
+                this.particles.createDebrisField(asteroid.x, asteroid.y, asteroid.size);
                 
                 // Generate resource drop before destroying asteroid
                 this.dropAsteroidResources(asteroid);
