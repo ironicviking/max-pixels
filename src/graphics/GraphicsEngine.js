@@ -229,7 +229,7 @@ export class GraphicsEngine {
         );
         
         const thrusterCore = this.createPath(
-            `M -${size * 0.03} ${size * 1.0} L 0 ${size * 1.15} L ${size * 0.03} ${size * 1.0} Z`,
+            `M -${Number(size) * 0.03} ${Number(size) * 1.0} L 0 ${Number(size) * 1.15} L ${Number(size) * 0.03} ${Number(size) * 1.0} Z`,
             {
                 fill: '#ffffff',
                 opacity: 0.9
@@ -555,6 +555,87 @@ export class GraphicsEngine {
         return station;
     }
     
+    createJumpGate(x, y, size = 40, attributes = {}) {
+        const gate = this.createGroup({
+            transform: `translate(${x}, ${y})`,
+            ...attributes
+        });
+        
+        // Outer ring - energy field
+        const outerRing = this.createCircle(0, 0, size, {
+            fill: 'none',
+            stroke: '#00ffff',
+            'stroke-width': size * 0.08,
+            opacity: 0.7,
+            'stroke-dasharray': `${size * 0.3} ${size * 0.1}`
+        });
+        
+        // Inner ring - stable structure
+        const innerRing = this.createCircle(0, 0, size * 0.7, {
+            fill: 'none',
+            stroke: '#ffffff',
+            'stroke-width': size * 0.04,
+            opacity: 0.9
+        });
+        
+        // Core energy field
+        const core = this.createCircle(0, 0, size * 0.5, {
+            fill: '#00ffff',
+            opacity: 0.2,
+            'fill-rule': 'evenodd'
+        });
+        
+        // Support struts (4 directions)
+        for (let i = 0; i < 4; i++) {
+            const angle = (i * 90) * Math.PI / 180;
+            const strutStartX = Math.cos(angle) * size * 0.7;
+            const strutStartY = Math.sin(angle) * size * 0.7;
+            const strutEndX = Math.cos(angle) * size * 1.1;
+            const strutEndY = Math.sin(angle) * size * 1.1;
+            
+            const strut = this.createElement('line', {
+                x1: strutStartX,
+                y1: strutStartY,
+                x2: strutEndX,
+                y2: strutEndY,
+                stroke: '#aaaaaa',
+                'stroke-width': size * 0.06
+            });
+            
+            gate.appendChild(strut);
+        }
+        
+        // Energy particles (small circles that appear to rotate)
+        for (let i = 0; i < 8; i++) {
+            const angle = (i * 45) * Math.PI / 180;
+            const particleX = Math.cos(angle) * size * 0.85;
+            const particleY = Math.sin(angle) * size * 0.85;
+            
+            const particle = this.createCircle(particleX, particleY, size * 0.05, {
+                fill: '#00ffff',
+                opacity: 0.8
+            });
+            
+            gate.appendChild(particle);
+        }
+        
+        gate.appendChild(core);
+        gate.appendChild(innerRing);
+        gate.appendChild(outerRing);
+        
+        // Add pulsing animation to outer ring
+        const animateOpacity = this.createElement('animate', {
+            attributeName: 'opacity',
+            values: '0.4;0.9;0.4',
+            dur: '2s',
+            repeatCount: 'indefinite'
+        });
+        
+        outerRing.appendChild(animateOpacity);
+        
+        return gate;
+    }
+    
     addToLayer(layerName, element) {
         const layer = this.getLayer(layerName);
         layer.appendChild(element);
@@ -574,7 +655,7 @@ export class GraphicsEngine {
         }
     }
     
-    animate(element, attributes, duration = 1000, easing = 'ease-in-out') {
+    animate(element, attributes, duration = 1000, _easing = 'ease-in-out') {
         const animation = this.createElement('animateTransform');
         animation.setAttribute('attributeName', 'transform');
         animation.setAttribute('dur', `${duration}ms`);

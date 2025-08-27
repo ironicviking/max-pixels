@@ -11,6 +11,7 @@ import { AuthService } from './auth/AuthService.js';
 import { AuthUI } from './ui/AuthUI.js';
 import { TradingSystem } from './trading/TradingSystem.js';
 import { TradingUI } from './ui/TradingUI.js';
+import { SpaceNavigation } from './navigation/SpaceNavigation.js';
 
 class MaxPixelsGame {
     constructor() {
@@ -24,6 +25,7 @@ class MaxPixelsGame {
         this.authUI = null;
         this.trading = new TradingSystem();
         this.tradingUI = new TradingUI(this.trading, this.auth);
+        this.navigation = new SpaceNavigation();
         this.initializePlayerInventory();
         this.isInitialized = false;
         
@@ -39,6 +41,7 @@ class MaxPixelsGame {
         
         this.stations = [];
         this.nearbyStation = null;
+        this.nearbyJumpGate = null;
         this.interactionRange = 80;
         
         this.activeThrusterSound = null;
@@ -70,42 +73,13 @@ class MaxPixelsGame {
         const backgroundLayer = this.graphics.createLayer('background', 1);
         const gameLayer = this.graphics.createLayer('game', 5);
         
-        const stars = this.graphics.createStarField(200);
-        this.graphics.addToLayer('background', stars);
-        
-        this.createAsteroids(15);
-        const asteroidsGroup = this.graphics.getLayer('background').querySelector('#asteroidField');
-        if (!asteroidsGroup) {
-            const asteroidsGroup = this.graphics.createGroup({ id: 'asteroidField' });
-            this.graphics.addToLayer('background', asteroidsGroup);
-        }
+        this.loadCurrentSector();
         
         const playerShip = this.graphics.createSpaceship(this.player.x, this.player.y, 25, {
             id: 'playerShip'
         });
         this.graphics.addToLayer('game', playerShip);
         this.playerShip = playerShip;
-        
-        const testPlanet = this.graphics.createPlanet(1200, 300, 60, {
-            surfaceColor: '#8b4513',
-            coreColor: '#654321',
-            atmosphereColor: '#4488ff'
-        });
-        this.graphics.addToLayer('game', testPlanet);
-        
-        const tradingStation = this.graphics.createSpaceStation(800, 600, 40, {
-            id: 'tradingStation'
-        });
-        this.graphics.addToLayer('game', tradingStation);
-        
-        this.stations.push({
-            id: 'tradingStation',
-            x: 800,
-            y: 600,
-            radius: 40,
-            type: 'trading',
-            name: 'Trading Outpost Alpha'
-        });
         
         this.camera.centerOn(this.player.x, this.player.y);
     }
@@ -139,9 +113,88 @@ class MaxPixelsGame {
         requestAnimationFrame(gameLoop);
     }
     
-    createAsteroids(count) {
-        const bounds = { width: 1920, height: 1080 };
+    loadCurrentSector() {
+        const sector = this.navigation.getCurrentSector();
+        if (!sector) return;
         
+        console.log(`Loading sector: ${sector.name}`);
+        
+        // Clear existing content
+        this.clearSector();
+        
+        // Set background
+        const backgroundLayer = this.graphics.getLayer('background');
+        if (backgroundLayer) {
+            backgroundLayer.style.backgroundColor = sector.backgroundColor;
+        }
+        
+        // Load stars
+        const stars = this.graphics.createStarField(200);
+        this.graphics.addToLayer('background', stars);
+        
+        // Load asteroids
+        this.createAsteroids(sector.asteroids, sector.bounds);
+        
+        // Load planets
+        sector.planets.forEach(planet => {
+            const planetElement = this.graphics.createPlanet(
+                planet.x, planet.y, planet.radius, {
+                    surfaceColor: planet.surfaceColor,
+                    coreColor: planet.coreColor,
+                    atmosphereColor: planet.atmosphereColor
+                }
+            );
+            this.graphics.addToLayer('game', planetElement);
+        });
+        
+        // Load stations
+        this.stations = [];
+        sector.stations.forEach(station => {
+            const stationElement = this.graphics.createSpaceStation(
+                station.x, station.y, station.radius, {
+                    id: station.id
+                }
+            );
+            this.graphics.addToLayer('game', stationElement);
+            this.stations.push(station);
+        });
+        
+        // Load jump gates
+        sector.jumpGates.forEach(gate => {
+            const gateElement = this.graphics.createJumpGate(
+                gate.x, gate.y, gate.radius, {
+                    id: gate.id
+                }
+            );
+            this.graphics.addToLayer('game', gateElement);
+        });
+    }
+    
+    clearSector() {
+        // Clear asteroids data
+        this.asteroids = [];
+        this.stations = [];
+        
+        // Clear visual elements
+        const backgroundLayer = this.graphics.getLayer('background');
+        const gameLayer = this.graphics.getLayer('game');
+        
+        if (backgroundLayer) {
+            // Keep only the player ship
+            backgroundLayer.innerHTML = '';
+        }
+        
+        if (gameLayer) {
+            // Keep only the player ship
+            const playerShip = gameLayer.querySelector('#playerShip');
+            gameLayer.innerHTML = '';
+            if (playerShip) {
+                gameLayer.appendChild(playerShip);
+            }
+        }
+    }
+    
+    createAsteroids(count, bounds) {
         for (let i = 0; i < count; i++) {
             const x = Math.random() * bounds.width;
             const y = Math.random() * bounds.height;
@@ -233,13 +286,107 @@ class MaxPixelsGame {
         this.tradingUI.openTradingInterface(station);
     }
     
+    checkJumpGateProximity() {
+        const nearbyGate = this.navigation.checkJumpGateProximity(
+            this.player.x, this.player.y, this.interactionRange
+        );
+        
+        if (nearbyGate !== this.nearbyJumpGate) {
+            this.nearbyJumpGate = nearbyGate;
+            this.updateInteractionPrompt();
+        }
+    }
+    
+    async jumpThroughGate(gate) {
+        if (!this.navigation.canJump()) {
+            console.log('Jump on cooldown');
+            return;
+        }
+        
+        console.log(`Jumping through ${gate.name} to ${gate.destination}`);
+        
+        // Jump animation and logic
+        const success = await this.navigation.jumpToSector(
+            gate.destination,
+            (fromSector, toSector) => {
+                // Jump start callback
+                console.log(`Starting jump from ${fromSector} to ${toSector}`);
+                this.showJumpAnimation();
+            },
+            (toSector, sectorData) => {
+                // Jump complete callback
+                console.log(`Jump complete to ${toSector}`);
+                this.onSectorChanged(toSector, sectorData);
+            }
+        );
+        
+        if (!success) {
+            console.error('Jump failed');
+        }
+    }
+    
+    showJumpAnimation() {
+        // Simple screen flash effect
+        const flashElement = document.createElement('div');
+        flashElement.style.cssText = `
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: white;
+            opacity: 0.8;
+            z-index: 1000;
+            pointer-events: none;
+        `;
+        
+        document.body.appendChild(flashElement);
+        
+        setTimeout(() => {
+            flashElement.style.transition = 'opacity 0.5s';
+            flashElement.style.opacity = '0';
+            setTimeout(() => {
+                document.body.removeChild(flashElement);
+            }, 500);
+        }, 100);
+    }
+    
+    onSectorChanged(sectorId, sectorData) {
+        // Update player position to spawn point
+        const spawnPos = this.navigation.getPlayerSpawnPosition(sectorId);
+        this.player.x = spawnPos.x;
+        this.player.y = spawnPos.y;
+        this.player.velocity.x = 0;
+        this.player.velocity.y = 0;
+        
+        // Update player bounds for new sector
+        this.updatePlayerBounds();
+        
+        // Reload sector graphics
+        this.loadCurrentSector();
+        
+        // Re-add player ship to game layer
+        this.graphics.addToLayer('game', this.playerShip);
+        this.playerShip.setAttribute('transform', 
+            `translate(${this.player.x}, ${this.player.y})`);
+        
+        // Update camera
+        this.camera.centerOn(this.player.x, this.player.y);
+        
+        console.log(`Now in ${sectorData.name}`);
+    }
+    
     updateInteractionPrompt() {
         const promptElement = document.getElementById('interaction-prompt');
         const nameElement = document.getElementById('station-name');
+        const actionElement = document.getElementById('interaction-text');
         
         if (this.nearbyStation) {
             promptElement.style.display = 'block';
             nameElement.textContent = this.nearbyStation.name;
+            actionElement.textContent = 'Press F to Dock';
+        } else if (this.nearbyJumpGate) {
+            promptElement.style.display = 'block';
+            nameElement.textContent = this.nearbyJumpGate.name;
+            actionElement.textContent = 'Press F to Jump';
         } else {
             promptElement.style.display = 'none';
         }
@@ -252,6 +399,7 @@ class MaxPixelsGame {
         this.updateCamera();
         this.checkCollisions();
         this.checkStationProximity();
+        this.checkJumpGateProximity();
         this.input.update();
     }
     
@@ -272,8 +420,12 @@ class MaxPixelsGame {
             this.camera.zoomIn();
         }
         
-        if (this.input.justPressed('KeyF') && this.nearbyStation) {
-            this.interactWithStation(this.nearbyStation);
+        if (this.input.justPressed('KeyF')) {
+            if (this.nearbyStation) {
+                this.interactWithStation(this.nearbyStation);
+            } else if (this.nearbyJumpGate) {
+                this.jumpThroughGate(this.nearbyJumpGate);
+            }
         }
     }
     
@@ -283,11 +435,20 @@ class MaxPixelsGame {
         this.player.x += this.player.velocity.x * this.player.speed * deltaTime;
         this.player.y += this.player.velocity.y * this.player.speed * deltaTime;
         
-        this.player.x = Math.max(25, Math.min(1895, this.player.x));
-        this.player.y = Math.max(25, Math.min(1055, this.player.y));
+        // Use current sector bounds
+        const bounds = this.navigation.getSectorBounds();
+        this.player.x = Math.max(25, Math.min(bounds.width - 25, this.player.x));
+        this.player.y = Math.max(25, Math.min(bounds.height - 25, this.player.y));
         
         this.playerShip.setAttribute('transform', 
             `translate(${this.player.x}, ${this.player.y})`);
+    }
+    
+    updatePlayerBounds() {
+        // Called when sector changes to update bounds
+        const bounds = this.navigation.getSectorBounds();
+        this.player.x = Math.max(25, Math.min(bounds.width - 25, this.player.x));
+        this.player.y = Math.max(25, Math.min(bounds.height - 25, this.player.y));
     }
     
     updateThrusterEffects() {
