@@ -775,8 +775,8 @@ export class GraphicsEngine {
         beam.setAttribute('x2', endX);
         beam.setAttribute('y2', endY);
         beam.setAttribute('stroke', attributes.color || '#ff0000');
-        beam.setAttribute('stroke-width', attributes.width || 3);
-        beam.setAttribute('opacity', 0.9);
+        beam.setAttribute('stroke-width', attributes.width || GRAPHICS.LASER_DEFAULT_WIDTH);
+        beam.setAttribute('opacity', GRAPHICS.LASER_BEAM_OPACITY);
         beam.setAttribute('stroke-linecap', 'round');
         
         // Outer glow effect
@@ -786,8 +786,8 @@ export class GraphicsEngine {
         glow.setAttribute('x2', endX);
         glow.setAttribute('y2', endY);
         glow.setAttribute('stroke', attributes.glowColor || '#ffaaaa');
-        glow.setAttribute('stroke-width', (attributes.width || 3) * 2);
-        glow.setAttribute('opacity', 0.3);
+        glow.setAttribute('stroke-width', (attributes.width || GRAPHICS.LASER_DEFAULT_WIDTH) * GRAPHICS.LASER_GLOW_MULTIPLIER);
+        glow.setAttribute('opacity', GRAPHICS.LASER_GLOW_OPACITY);
         glow.setAttribute('stroke-linecap', 'round');
         
         // Inner core
@@ -798,7 +798,7 @@ export class GraphicsEngine {
         core.setAttribute('y2', endY);
         core.setAttribute('stroke', '#ffffff');
         core.setAttribute('stroke-width', 1);
-        core.setAttribute('opacity', 0.8);
+        core.setAttribute('opacity', GRAPHICS.LASER_CORE_OPACITY);
         core.setAttribute('stroke-linecap', 'round');
         
         laser.appendChild(glow);
@@ -817,7 +817,7 @@ export class GraphicsEngine {
         // Auto-remove after animation
         setTimeout(() => {
             this.remove(laser);
-        }, parseFloat(attributes.duration || '0.3') * 1000 + 100);
+        }, parseFloat(attributes.duration || GRAPHICS.LASER_DEFAULT_DURATION) * GRAPHICS.SECONDS_TO_MS + GRAPHICS.LASER_CLEANUP_DELAY);
         
         return laser;
     }
@@ -829,13 +829,13 @@ export class GraphicsEngine {
         });
         
         // Central flash
-        const flash = this.createCircle(0, 0, attributes.size || 8, {
+        const flash = this.createCircle(0, 0, attributes.size || GRAPHICS.IMPACT_DEFAULT_SIZE, {
             fill: attributes.color || '#ffff00',
             opacity: GRAPHICS.RATIO_OPACITY_HIGH
         });
         
         // Outer ring
-        const ring = this.createCircle(0, 0, (attributes.size || 8) * 1.5, {
+        const ring = this.createCircle(0, 0, (attributes.size || GRAPHICS.IMPACT_DEFAULT_SIZE) * GRAPHICS.IMPACT_RING_MULTIPLIER, {
             fill: 'none',
             stroke: attributes.ringColor || '#ff8800',
             'stroke-width': 2,
@@ -843,9 +843,9 @@ export class GraphicsEngine {
         });
         
         // Spark particles
-        for (let i = 0; i < 6; i++) {
+        for (let i = 0; i < GRAPHICS.IMPACT_SPARKS; i++) {
             const angle = (i * GRAPHICS.ANGLE_60) * Math.PI / GRAPHICS.ANGLE_180;
-            const sparkDistance = (attributes.size || 8) * 2;
+            const sparkDistance = (attributes.size || GRAPHICS.IMPACT_DEFAULT_SIZE) * GRAPHICS.IMPACT_SPARK_DISTANCE;
             const sparkX = Math.cos(angle) * sparkDistance;
             const sparkY = Math.sin(angle) * sparkDistance;
             
@@ -856,7 +856,7 @@ export class GraphicsEngine {
             spark.setAttribute('y2', sparkY);
             spark.setAttribute('stroke', '#ffffff');
             spark.setAttribute('stroke-width', 1);
-            spark.setAttribute('opacity', 0.8);
+            spark.setAttribute('opacity', GRAPHICS.IMPACT_SPARK_OPACITY);
             spark.setAttribute('stroke-linecap', 'round');
             
             impact.appendChild(spark);
@@ -886,7 +886,7 @@ export class GraphicsEngine {
         // Auto-remove after animation
         setTimeout(() => {
             this.remove(impact);
-        }, parseFloat(attributes.duration || '0.4') * 1000 + 100);
+        }, parseFloat(attributes.duration || GRAPHICS.IMPACT_DEFAULT_DURATION) * GRAPHICS.SECONDS_TO_MS + GRAPHICS.IMPACT_CLEANUP_DELAY);
         
         return impact;
     }
@@ -899,21 +899,21 @@ export class GraphicsEngine {
         });
         
         if (type === 'plasma') {
-            const core = this.createCircle(0, 0, 3, {
+            const core = this.createCircle(0, 0, GRAPHICS.PROJECTILE_PLASMA_CORE, {
                 fill: '#00ffff',
                 opacity: GRAPHICS.RATIO_OPACITY_HIGH
             });
             
-            const glow = this.createCircle(0, 0, 6, {
+            const glow = this.createCircle(0, 0, GRAPHICS.PROJECTILE_PLASMA_GLOW, {
                 fill: '#00aaff',
-                opacity: 0.4
+                opacity: GRAPHICS.PROJECTILE_PLASMA_GLOW_OPACITY
             });
             
-            const trail = this.createCircle(0, 0, 8, {
+            const trail = this.createCircle(0, 0, GRAPHICS.PROJECTILE_PLASMA_TRAIL, {
                 fill: 'none',
                 stroke: '#0088ff',
-                'stroke-width': 1,
-                opacity: 0.2
+                'stroke-width': GRAPHICS.PROJECTILE_PLASMA_TRAIL_WIDTH,
+                opacity: GRAPHICS.PROJECTILE_PLASMA_TRAIL_OPACITY
             });
             
             projectile.appendChild(trail);
@@ -926,20 +926,20 @@ export class GraphicsEngine {
                 {
                     fill: '#666666',
                     stroke: '#aaaaaa',
-                    'stroke-width': 1
+                    'stroke-width': GRAPHICS.PROJECTILE_MISSILE_STROKE_WIDTH
                 }
             );
             
-            const warhead = this.createCircle(8, 0, 2, {
+            const warhead = this.createCircle(GRAPHICS.PROJECTILE_MISSILE_WIDTH, 0, GRAPHICS.PROJECTILE_MISSILE_WARHEAD, {
                 fill: '#ff4444',
-                opacity: 0.8
+                opacity: GRAPHICS.PROJECTILE_MISSILE_WARHEAD_OPACITY
             });
             
             const exhaust = this.createPath(
                 'M -8 0 L -15 -1 L -12 0 L -15 1 Z',
                 {
                     fill: '#ff8800',
-                    opacity: 0.7
+                    opacity: GRAPHICS.PROJECTILE_MISSILE_EXHAUST_OPACITY
                 }
             );
             
@@ -948,16 +948,16 @@ export class GraphicsEngine {
             projectile.appendChild(warhead);
             
         } else if (type === 'railgun') {
-            const slug = this.createRect(-4, -1, 8, 2, {
+            const slug = this.createRect(-GRAPHICS.PROJECTILE_RAILGUN_WIDTH/2, -GRAPHICS.PROJECTILE_RAILGUN_HEIGHT/2, GRAPHICS.PROJECTILE_RAILGUN_WIDTH, GRAPHICS.PROJECTILE_RAILGUN_HEIGHT, {
                 fill: '#ffff00',
                 opacity: GRAPHICS.RATIO_OPACITY_HIGH
             });
             
-            const field = this.createRect(-6, -2, 12, 4, {
+            const field = this.createRect(-GRAPHICS.PROJECTILE_RAILGUN_FIELD_WIDTH/2, -GRAPHICS.PROJECTILE_RAILGUN_FIELD_HEIGHT/2, GRAPHICS.PROJECTILE_RAILGUN_FIELD_WIDTH, GRAPHICS.PROJECTILE_RAILGUN_FIELD_HEIGHT, {
                 fill: 'none',
                 stroke: '#ffff88',
-                'stroke-width': 1,
-                opacity: 0.5
+                'stroke-width': GRAPHICS.PROJECTILE_RAILGUN_FIELD_WIDTH_STROKE,
+                opacity: GRAPHICS.PROJECTILE_RAILGUN_FIELD_OPACITY
             });
             
             projectile.appendChild(field);
@@ -967,42 +967,42 @@ export class GraphicsEngine {
         return projectile;
     }
     
-    createExplosion(x, y, size = 20, attributes = {}) {
+    createExplosion(x, y, size = GRAPHICS.EXPLOSION_DEFAULT_SIZE, attributes = {}) {
         const explosion = this.createGroup({
             id: this.generateId('explosion'),
             transform: `translate(${x}, ${y})`
         });
         
         const colors = attributes.colors || ['#ff4444', '#ff8800', '#ffff00', '#ffffff'];
-        const rings = 4;
+        const rings = GRAPHICS.EXPLOSION_RINGS;
         
         for (let i = 0; i < rings; i++) {
-            const ring = this.createCircle(0, 0, size * (0.3 + i * 0.3), {
+            const ring = this.createCircle(0, 0, size * (GRAPHICS.EXPLOSION_RING_BASE + i * GRAPHICS.EXPLOSION_RING_INCREMENT), {
                 fill: 'none',
                 stroke: colors[i] || colors[colors.length - 1],
-                'stroke-width': size * 0.1,
-                opacity: GRAPHICS.RATIO_OPACITY_HIGH - i * 0.2
+                'stroke-width': size * GRAPHICS.EXPLOSION_STROKE_WIDTH,
+                opacity: GRAPHICS.EXPLOSION_RING_OPACITY_BASE - i * GRAPHICS.EXPLOSION_RING_OPACITY_DECREMENT
             });
             
             explosion.appendChild(ring);
         }
         
         // Central flash
-        const flash = this.createCircle(0, 0, size * 0.8, {
+        const flash = this.createCircle(0, 0, size * GRAPHICS.EXPLOSION_FLASH_RATIO, {
             fill: '#ffffff',
-            opacity: 0.8
+            opacity: GRAPHICS.EXPLOSION_FLASH_OPACITY
         });
         
         // Debris particles
-        for (let i = 0; i < 12; i++) {
+        for (let i = 0; i < GRAPHICS.EXPLOSION_PARTICLES; i++) {
             const angle = (i * GRAPHICS.ANGLE_30) * Math.PI / GRAPHICS.ANGLE_180;
-            const distance = size * 1.2;
+            const distance = size * GRAPHICS.EXPLOSION_PARTICLE_DISTANCE;
             const particleX = Math.cos(angle) * distance;
             const particleY = Math.sin(angle) * distance;
             
-            const particle = this.createCircle(particleX, particleY, 2, {
+            const particle = this.createCircle(particleX, particleY, GRAPHICS.EXPLOSION_PARTICLE_SIZE, {
                 fill: '#ffaa00',
-                opacity: 0.7
+                opacity: GRAPHICS.EXPLOSION_PARTICLE_OPACITY
             });
             
             explosion.appendChild(particle);
@@ -1015,14 +1015,14 @@ export class GraphicsEngine {
         scaleAnimation.setAttribute('attributeName', 'transform');
         scaleAnimation.setAttribute('type', 'scale');
         scaleAnimation.setAttribute('values', '0 0;2 2;1 1');
-        scaleAnimation.setAttribute('dur', attributes.duration || '0.8s');
+        scaleAnimation.setAttribute('dur', attributes.duration || GRAPHICS.EXPLOSION_DEFAULT_DURATION);
         scaleAnimation.setAttribute('fill', 'freeze');
         scaleAnimation.setAttribute('additive', 'sum');
         
         const opacityAnimation = this.createElement('animate');
         opacityAnimation.setAttribute('attributeName', 'opacity');
         opacityAnimation.setAttribute('values', '0;1;0');
-        opacityAnimation.setAttribute('dur', attributes.duration || '0.8s');
+        opacityAnimation.setAttribute('dur', attributes.duration || GRAPHICS.EXPLOSION_DEFAULT_DURATION);
         opacityAnimation.setAttribute('fill', 'freeze');
         
         explosion.appendChild(scaleAnimation);
@@ -1031,12 +1031,12 @@ export class GraphicsEngine {
         // Auto-remove after animation
         setTimeout(() => {
             this.remove(explosion);
-        }, parseFloat(attributes.duration || '0.8') * 1000 + 100);
+        }, parseFloat(attributes.duration || GRAPHICS.EXPLOSION_DEFAULT_DURATION) * GRAPHICS.SECONDS_TO_MS + GRAPHICS.EXPLOSION_CLEANUP_DELAY);
         
         return explosion;
     }
     
-    createShieldEffect(x, y, radius = 30, attributes = {}) {
+    createShieldEffect(x, y, radius = GRAPHICS.SHIELD_DEFAULT_RADIUS, attributes = {}) {
         const shield = this.createGroup({
             id: this.generateId('shield'),
             transform: `translate(${x}, ${y})`
@@ -1046,27 +1046,27 @@ export class GraphicsEngine {
         
         // Hexagonal shield pattern
         const hexPath = this.createPath(
-            `M ${radius} 0 L ${radius * 0.5} ${radius * 0.866} L ${-radius * 0.5} ${radius * 0.866} 
-             L ${-radius} 0 L ${-radius * 0.5} ${-radius * 0.866} L ${radius * 0.5} ${-radius * 0.866} Z`,
+            `M ${radius} 0 L ${radius * GRAPHICS.SHIELD_HEX_RATIO} ${radius * GRAPHICS.SHIELD_HEX_RATIO_LONG} L ${-radius * GRAPHICS.SHIELD_HEX_RATIO} ${radius * GRAPHICS.SHIELD_HEX_RATIO_LONG} 
+             L ${-radius} 0 L ${-radius * GRAPHICS.SHIELD_HEX_RATIO} ${-radius * GRAPHICS.SHIELD_HEX_RATIO_LONG} L ${radius * GRAPHICS.SHIELD_HEX_RATIO} ${-radius * GRAPHICS.SHIELD_HEX_RATIO_LONG} Z`,
             {
                 fill: 'none',
                 stroke: color,
-                'stroke-width': 2,
-                opacity: 0.6
+                'stroke-width': GRAPHICS.SHIELD_STROKE_WIDTH,
+                opacity: GRAPHICS.SHIELD_HEX_OPACITY
             }
         );
         
         // Shield energy field
-        const field = this.createCircle(0, 0, radius * 0.9, {
+        const field = this.createCircle(0, 0, radius * GRAPHICS.SHIELD_FIELD_RATIO, {
             fill: color,
-            opacity: 0.1
+            opacity: GRAPHICS.SHIELD_FIELD_OPACITY
         });
         
         // Inner energy pattern
-        for (let i = 0; i < 6; i++) {
+        for (let i = 0; i < GRAPHICS.SHIELD_LINES; i++) {
             const angle = (i * GRAPHICS.ANGLE_60) * Math.PI / GRAPHICS.ANGLE_180;
-            const lineX = Math.cos(angle) * radius * 0.7;
-            const lineY = Math.sin(angle) * radius * 0.7;
+            const lineX = Math.cos(angle) * radius * GRAPHICS.SHIELD_LINE_LENGTH;
+            const lineY = Math.sin(angle) * radius * GRAPHICS.SHIELD_LINE_LENGTH;
             
             const line = this.createElement('line');
             line.setAttribute('x1', 0);
@@ -1074,8 +1074,8 @@ export class GraphicsEngine {
             line.setAttribute('x2', lineX);
             line.setAttribute('y2', lineY);
             line.setAttribute('stroke', color);
-            line.setAttribute('stroke-width', 1);
-            line.setAttribute('opacity', 0.3);
+            line.setAttribute('stroke-width', GRAPHICS.SHIELD_LINE_WIDTH);
+            line.setAttribute('opacity', GRAPHICS.SHIELD_LINE_OPACITY);
             
             shield.appendChild(line);
         }
@@ -1086,8 +1086,8 @@ export class GraphicsEngine {
         // Pulse animation
         const pulseAnimation = this.createElement('animate');
         pulseAnimation.setAttribute('attributeName', 'opacity');
-        pulseAnimation.setAttribute('values', '0.3;0.8;0.3');
-        pulseAnimation.setAttribute('dur', '1.5s');
+        pulseAnimation.setAttribute('values', `${GRAPHICS.SHIELD_PULSE_MIN};${GRAPHICS.SHIELD_PULSE_MAX};${GRAPHICS.SHIELD_PULSE_MIN}`);
+        pulseAnimation.setAttribute('dur', GRAPHICS.SHIELD_PULSE_DURATION);
         pulseAnimation.setAttribute('repeatCount', 'indefinite');
         
         shield.appendChild(pulseAnimation);
@@ -1095,7 +1095,7 @@ export class GraphicsEngine {
         return shield;
     }
     
-    animate(element, attributes, duration = 1000, _easing = 'ease-in-out') {
+    animate(element, attributes, duration = GRAPHICS.CLEANUP_DELAY_MS, _easing = 'ease-in-out') {
         const animation = this.createElement('animateTransform');
         animation.setAttribute('attributeName', 'transform');
         animation.setAttribute('dur', `${duration}ms`);

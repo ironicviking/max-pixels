@@ -356,6 +356,9 @@ export const GRAPHICS = {
     FULL_ROTATION: 180, // degrees
     GLOW_INTENSITY: 1.15,
     
+    // Time conversions
+    SECONDS_TO_MS: 1000,
+    
     // Default canvas bounds
     DEFAULT_CANVAS_WIDTH: 1920,
     DEFAULT_CANVAS_HEIGHT: 1080
