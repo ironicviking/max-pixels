@@ -206,7 +206,7 @@ export class GraphicsEngine {
         const animate = this.createElement('animate');
         animate.setAttribute('attributeName', 'opacity');
         animate.setAttribute('values', `${star.getAttribute('opacity')};${parseFloat(star.getAttribute('opacity')) * (1 - GRAPHICS.STAR_TWINKLE_INTENSITY)};${star.getAttribute('opacity')}`);
-        animate.setAttribute('dur', `${2 + Math.random() * 3}s`);
+        animate.setAttribute('dur', `${GRAPHICS.STAR_TWINKLE_MIN_DURATION + Math.random() * GRAPHICS.STAR_TWINKLE_MAX_DURATION}s`);
         animate.setAttribute('repeatCount', 'indefinite');
         
         star.appendChild(animate);
@@ -515,7 +515,7 @@ export class GraphicsEngine {
             cy: '50%'
         });
         
-        const atmosphere = this.createCircle(0, 0, radius * 1.15, {
+        const atmosphere = this.createCircle(0, 0, radius * GRAPHICS.GLOW_INTENSITY, {
             fill: `url(#${atmosphereGradient})`,
             opacity: 0.6
         });
@@ -527,9 +527,9 @@ export class GraphicsEngine {
         // Simple color darkening (works for hex colors)
         if (color.startsWith('#')) {
             const hex = color.slice(1);
-            const r = Math.floor(parseInt(hex.slice(0, 2), 16) * (1 - factor));
-            const g = Math.floor(parseInt(hex.slice(2, GRAPHICS.HUE_SHIFT), 16) * (1 - factor));
-            const b = Math.floor(parseInt(hex.slice(4, GRAPHICS.HUE_RANGE), 16) * (1 - factor));
+            const r = Math.floor(parseInt(hex.slice(GRAPHICS.HEX_RED_START, GRAPHICS.HEX_RED_END), 16) * (1 - factor));
+            const g = Math.floor(parseInt(hex.slice(GRAPHICS.HEX_GREEN_START, GRAPHICS.HEX_GREEN_END), 16) * (1 - factor));
+            const b = Math.floor(parseInt(hex.slice(GRAPHICS.HEX_BLUE_START, GRAPHICS.HEX_BLUE_END), 16) * (1 - factor));
             return `rgb(${r}, ${g}, ${b})`;
         }
         return color;
@@ -539,51 +539,51 @@ export class GraphicsEngine {
         // Simple color lightening (works for hex colors)
         if (color.startsWith('#')) {
             const hex = color.slice(1);
-            const r = Math.min(GRAPHICS.COLOR_MAX, Math.floor(parseInt(hex.slice(0, 2), 16) * (1 + factor)));
-            const g = Math.min(GRAPHICS.COLOR_MAX, Math.floor(parseInt(hex.slice(2, GRAPHICS.HUE_SHIFT), 16) * (1 + factor)));
-            const b = Math.min(GRAPHICS.COLOR_MAX, Math.floor(parseInt(hex.slice(4, GRAPHICS.HUE_RANGE), 16) * (1 + factor)));
+            const r = Math.min(GRAPHICS.COLOR_MAX, Math.floor(parseInt(hex.slice(GRAPHICS.HEX_RED_START, GRAPHICS.HEX_RED_END), 16) * (1 + factor)));
+            const g = Math.min(GRAPHICS.COLOR_MAX, Math.floor(parseInt(hex.slice(GRAPHICS.HEX_GREEN_START, GRAPHICS.HEX_GREEN_END), 16) * (1 + factor)));
+            const b = Math.min(GRAPHICS.COLOR_MAX, Math.floor(parseInt(hex.slice(GRAPHICS.HEX_BLUE_START, GRAPHICS.HEX_BLUE_END), 16) * (1 + factor)));
             return `rgb(${r}, ${g}, ${b})`;
         }
         return color;
     }
     
-    createSpaceStation(x, y, size = 30, attributes = {}) {
+    createSpaceStation(x, y, size = GRAPHICS.STATION_DEFAULT_SIZE, attributes = {}) {
         const station = this.createGroup({
             transform: `translate(${x}, ${y})`,
             ...attributes
         });
         
         // Central hub
-        const hub = this.createCircle(0, 0, size * 0.4, {
+        const hub = this.createCircle(0, 0, size * GRAPHICS.STATION_HUB_RATIO, {
             fill: '#666666',
             stroke: '#aaaaaa',
             'stroke-width': 2
         });
         
         // Rotating ring
-        const ring = this.createCircle(0, 0, size * 0.8, {
+        const ring = this.createCircle(0, 0, size * GRAPHICS.STATION_RING_RATIO, {
             fill: 'none',
             stroke: '#888888',
-            'stroke-width': size * 0.15,
-            opacity: 0.8
+            'stroke-width': size * GRAPHICS.STATION_RING_WIDTH,
+            opacity: GRAPHICS.STATION_RING_OPACITY
         });
         
         // Docking ports (4 directions)
-        for (let i = 0; i < 4; i++) {
+        for (let i = 0; i < GRAPHICS.STATION_DOCKING_PORTS; i++) {
             const angle = (i * GRAPHICS.ANGLE_90) * Math.PI / GRAPHICS.ANGLE_180;
             const portX = Math.cos(angle) * size;
             const portY = Math.sin(angle) * size;
             
             const port = this.createRect(
-                portX - size * 0.1, 
-                portY - size * 0.05, 
-                size * 0.2, 
-                size * 0.1, 
+                portX - size * GRAPHICS.STATION_PORT_WIDTH, 
+                portY - size * GRAPHICS.STATION_PORT_HEIGHT, 
+                size * GRAPHICS.STATION_PORT_LENGTH, 
+                size * GRAPHICS.STATION_PORT_WIDTH, 
                 {
                     fill: '#4a90e2',
                     stroke: '#ffffff',
                     'stroke-width': 1,
-                    transform: `rotate(${i * 90}, ${portX}, ${portY})`
+                    transform: `rotate(${i * GRAPHICS.ANGLE_90}, ${portX}, ${portY})`
                 }
             );
             
@@ -591,22 +591,22 @@ export class GraphicsEngine {
         }
         
         // Solar panels
-        for (let i = 0; i < 6; i++) {
+        for (let i = 0; i < GRAPHICS.STATION_SOLAR_PANELS; i++) {
             const angle = (i * GRAPHICS.ANGLE_60) * Math.PI / GRAPHICS.ANGLE_180;
-            const panelX = Math.cos(angle) * size * 1.2;
-            const panelY = Math.sin(angle) * size * 1.2;
+            const panelX = Math.cos(angle) * size * GRAPHICS.STATION_PANEL_DISTANCE;
+            const panelY = Math.sin(angle) * size * GRAPHICS.STATION_PANEL_DISTANCE;
             
             const panel = this.createRect(
-                panelX - size * 0.15, 
-                panelY - size * 0.05, 
-                size * 0.3, 
-                size * 0.1, 
+                panelX - size * GRAPHICS.STATION_PANEL_WIDTH, 
+                panelY - size * GRAPHICS.STATION_PANEL_HEIGHT, 
+                size * GRAPHICS.STATION_PANEL_LENGTH, 
+                size * GRAPHICS.STATION_PANEL_WIDTH, 
                 {
                     fill: '#1a1a3a',
                     stroke: '#4444ff',
                     'stroke-width': 1,
-                    opacity: GRAPHICS.RATIO_OPACITY_HIGH,
-                    transform: `rotate(${i * 60}, ${panelX}, ${panelY})`
+                    opacity: GRAPHICS.STATION_PANEL_OPACITY,
+                    transform: `rotate(${i * GRAPHICS.ANGLE_60}, ${panelX}, ${panelY})`
                 }
             );
             
@@ -614,7 +614,7 @@ export class GraphicsEngine {
         }
         
         // Communications array
-        const commArray = this.createRect(-size * 0.05, -size * 1.4, size * 0.1, size * 0.8, {
+        const commArray = this.createRect(-size * GRAPHICS.STATION_COMM_WIDTH, -size * GRAPHICS.STATION_COMM_HEIGHT, size * GRAPHICS.STATION_COMM_LENGTH, size * GRAPHICS.STATION_COMM_WIDTH_RATIO, {
             fill: '#cccccc',
             stroke: '#ffffff',
             'stroke-width': 1

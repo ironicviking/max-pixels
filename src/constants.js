@@ -97,6 +97,8 @@ export const GRAPHICS = {
     // Star effects
     STAR_TWINKLE_CHANCE: 0.3,
     STAR_TWINKLE_INTENSITY: 0.4,
+    STAR_TWINKLE_MIN_DURATION: 2,
+    STAR_TWINKLE_MAX_DURATION: 3,
     STAR_BINARY_CHANCE: 0.05,
     STAR_BINARY_SEPARATION: 8,
     STAR_COMPANION_SIZE_RATIO: 0.7,
@@ -304,8 +306,12 @@ export const GRAPHICS = {
     
     // Colors (RGB values)
     COLOR_MAX: 255,
-    HUE_SHIFT: 4,
-    HUE_RANGE: 6,
+    HEX_RED_START: 0,
+    HEX_RED_END: 2,
+    HEX_GREEN_START: 2,
+    HEX_GREEN_END: 4,
+    HEX_BLUE_START: 4,
+    HEX_BLUE_END: 6,
     COLOR_LIGHTEN_STEP: 4,
     
     // General geometry
