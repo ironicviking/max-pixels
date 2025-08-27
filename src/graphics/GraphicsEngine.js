@@ -625,13 +625,13 @@ export class GraphicsEngine {
         station.appendChild(commArray);
         
         // Navigation lights
-        const navLight1 = this.createCircle(-size * 0.7, 0, size * 0.08, {
+        const navLight1 = this.createCircle(-size * GRAPHICS.STATION_NAV_LIGHT_RATIO, 0, size * GRAPHICS.STATION_NAV_LIGHT_SIZE, {
             fill: '#ff4444',
-            opacity: 0.8
+            opacity: GRAPHICS.STATION_NAV_LIGHT_OPACITY
         });
-        const navLight2 = this.createCircle(size * 0.7, 0, size * 0.08, {
+        const navLight2 = this.createCircle(size * GRAPHICS.STATION_NAV_LIGHT_RATIO, 0, size * GRAPHICS.STATION_NAV_LIGHT_SIZE, {
             fill: '#44ff44',
-            opacity: 0.8
+            opacity: GRAPHICS.STATION_NAV_LIGHT_OPACITY
         });
         
         station.appendChild(navLight1);
@@ -640,7 +640,7 @@ export class GraphicsEngine {
         return station;
     }
     
-    createJumpGate(x, y, size = 40, attributes = {}) {
+    createJumpGate(x, y, size = GRAPHICS.GATE_DEFAULT_SIZE, attributes = {}) {
         const gate = this.createGroup({
             transform: `translate(${x}, ${y})`,
             ...attributes
@@ -650,33 +650,33 @@ export class GraphicsEngine {
         const outerRing = this.createCircle(0, 0, size, {
             fill: 'none',
             stroke: '#00ffff',
-            'stroke-width': size * 0.08,
-            opacity: 0.7,
-            'stroke-dasharray': `${size * 0.3} ${size * 0.1}`
+            'stroke-width': size * GRAPHICS.GATE_OUTER_STROKE_RATIO,
+            opacity: GRAPHICS.GATE_OUTER_OPACITY,
+            'stroke-dasharray': `${size * GRAPHICS.GATE_DASH_ARRAY_LONG} ${size * GRAPHICS.GATE_DASH_ARRAY_SHORT}`
         });
         
         // Inner ring - stable structure
-        const innerRing = this.createCircle(0, 0, size * 0.7, {
+        const innerRing = this.createCircle(0, 0, size * GRAPHICS.GATE_INNER_RATIO, {
             fill: 'none',
             stroke: '#ffffff',
-            'stroke-width': size * 0.04,
-            opacity: GRAPHICS.RATIO_OPACITY_HIGH
+            'stroke-width': size * GRAPHICS.GATE_INNER_STROKE_RATIO,
+            opacity: GRAPHICS.GATE_INNER_OPACITY
         });
         
         // Core energy field
-        const core = this.createCircle(0, 0, size * 0.5, {
+        const core = this.createCircle(0, 0, size * GRAPHICS.GATE_CORE_RATIO, {
             fill: '#00ffff',
-            opacity: 0.2,
+            opacity: GRAPHICS.GATE_CORE_OPACITY,
             'fill-rule': 'evenodd'
         });
         
         // Support struts (4 directions)
-        for (let i = 0; i < 4; i++) {
+        for (let i = 0; i < GRAPHICS.GATE_STRUT_COUNT; i++) {
             const angle = (i * GRAPHICS.ANGLE_90) * Math.PI / GRAPHICS.ANGLE_180;
-            const strutStartX = Math.cos(angle) * size * 0.7;
-            const strutStartY = Math.sin(angle) * size * 0.7;
-            const strutEndX = Math.cos(angle) * size * 1.1;
-            const strutEndY = Math.sin(angle) * size * 1.1;
+            const strutStartX = Math.cos(angle) * size * GRAPHICS.GATE_STRUT_INNER_RATIO;
+            const strutStartY = Math.sin(angle) * size * GRAPHICS.GATE_STRUT_INNER_RATIO;
+            const strutEndX = Math.cos(angle) * size * GRAPHICS.GATE_STRUT_OUTER_RATIO;
+            const strutEndY = Math.sin(angle) * size * GRAPHICS.GATE_STRUT_OUTER_RATIO;
             
             const strut = this.createElement('line');
             strut.setAttribute('x1', strutStartX);
@@ -684,7 +684,7 @@ export class GraphicsEngine {
             strut.setAttribute('x2', strutEndX);
             strut.setAttribute('y2', strutEndY);
             strut.setAttribute('stroke', '#aaaaaa');
-            strut.setAttribute('stroke-width', size * 0.06);
+            strut.setAttribute('stroke-width', size * GRAPHICS.GATE_STRUT_WIDTH);
             
             gate.appendChild(strut);
         }
@@ -694,14 +694,14 @@ export class GraphicsEngine {
             id: `particles_${this.generateId('gate')}`
         });
         
-        for (let i = 0; i < 8; i++) {
+        for (let i = 0; i < GRAPHICS.GATE_PARTICLES; i++) {
             const angle = (i * GRAPHICS.ANGLE_45) * Math.PI / GRAPHICS.ANGLE_180;
-            const particleX = Math.cos(angle) * size * 0.85;
-            const particleY = Math.sin(angle) * size * 0.85;
+            const particleX = Math.cos(angle) * size * GRAPHICS.GATE_PARTICLE_DISTANCE;
+            const particleY = Math.sin(angle) * size * GRAPHICS.GATE_PARTICLE_DISTANCE;
             
-            const particle = this.createCircle(particleX, particleY, size * 0.05, {
+            const particle = this.createCircle(particleX, particleY, size * GRAPHICS.GATE_PARTICLE_SIZE, {
                 fill: '#00ffff',
-                opacity: 0.8
+                opacity: GRAPHICS.GATE_PARTICLE_OPACITY
             });
             
             particleGroup.appendChild(particle);
@@ -712,7 +712,7 @@ export class GraphicsEngine {
         rotateParticles.setAttribute('attributeName', 'transform');
         rotateParticles.setAttribute('type', 'rotate');
         rotateParticles.setAttribute('values', '0 0 0;360 0 0');
-        rotateParticles.setAttribute('dur', '4s');
+        rotateParticles.setAttribute('dur', GRAPHICS.GATE_ANIMATION_DURATION_ROTATE);
         rotateParticles.setAttribute('repeatCount', 'indefinite');
         
         particleGroup.appendChild(rotateParticles);
@@ -725,8 +725,8 @@ export class GraphicsEngine {
         // Add pulsing animation to outer ring
         const animateOpacity = this.createElement('animate');
         animateOpacity.setAttribute('attributeName', 'opacity');
-        animateOpacity.setAttribute('values', '0.4;0.9;0.4');
-        animateOpacity.setAttribute('dur', '2s');
+        animateOpacity.setAttribute('values', `${GRAPHICS.GATE_PULSE_MIN};${GRAPHICS.GATE_PULSE_MAX};${GRAPHICS.GATE_PULSE_MIN}`);
+        animateOpacity.setAttribute('dur', GRAPHICS.GATE_ANIMATION_DURATION_PULSE);
         animateOpacity.setAttribute('repeatCount', 'indefinite');
         
         outerRing.appendChild(animateOpacity);
@@ -734,8 +734,8 @@ export class GraphicsEngine {
         // Add pulsing animation to core energy field
         const coreAnimation = this.createElement('animate');
         coreAnimation.setAttribute('attributeName', 'opacity');
-        coreAnimation.setAttribute('values', '0.1;0.3;0.1');
-        coreAnimation.setAttribute('dur', '3s');
+        coreAnimation.setAttribute('values', `${GRAPHICS.GATE_CORE_PULSE_MIN};${GRAPHICS.GATE_CORE_PULSE_MAX};${GRAPHICS.GATE_CORE_PULSE_MIN}`);
+        coreAnimation.setAttribute('dur', GRAPHICS.GATE_ANIMATION_DURATION_CORE);
         coreAnimation.setAttribute('repeatCount', 'indefinite');
         
         core.appendChild(coreAnimation);

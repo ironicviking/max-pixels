@@ -10,6 +10,7 @@ import { InputManager } from '../src/input/InputManager.js';
 import { SpaceNavigation } from '../src/navigation/SpaceNavigation.js';
 import { TradingSystem } from '../src/trading/TradingSystem.js';
 import { AuthService } from '../src/auth/AuthService.js';
+import { AudioManager } from '../src/audio/AudioManager.js';
 
 /**
  * Graphics Engine Tests
@@ -305,6 +306,138 @@ describe('Authentication Service', function() {
         auth.logout();
         assert(!auth.isLoggedIn(), 'Should be logged out');
         assertEqual(auth.getCurrentUser(), null, 'Should have no current user');
+    });
+});
+
+/**
+ * Audio Manager Tests
+ */
+describe('Audio Manager', function() {
+    test('should initialize audio context', function() {
+        const audio = new AudioManager();
+        
+        // Audio context should be created (or disabled if not supported)
+        assert(audio.audioContext !== null || !audio.isEnabled, 'Should have audio context or be disabled');
+        assert(typeof audio.isEnabled === 'boolean', 'isEnabled should be boolean');
+        assert(typeof audio.masterVolume === 'number', 'masterVolume should be number');
+    });
+    
+    test('should have default volume settings', function() {
+        const audio = new AudioManager();
+        
+        assertApproxEqual(audio.masterVolume, 0.7, 0.01, 'Should have default master volume');
+        assert(audio.masterVolume >= 0 && audio.masterVolume <= 1, 'Master volume should be in valid range');
+    });
+    
+    test('should generate sound buffers', function() {
+        const audio = new AudioManager();
+        
+        if (audio.isEnabled) {
+            assert(audio.sounds.has('thruster'), 'Should have thruster sound');
+            assert(audio.sounds.has('collision'), 'Should have collision sound');
+            assert(audio.sounds.has('ambient'), 'Should have ambient sound');
+            assert(audio.sounds.has('laser'), 'Should have laser sound');
+            
+            // Check that buffers are actual AudioBuffer objects
+            const thrusterBuffer = audio.sounds.get('thruster');
+            if (thrusterBuffer) {
+                assert(thrusterBuffer instanceof AudioBuffer, 'Thruster should be AudioBuffer');
+                assert(thrusterBuffer.length > 0, 'Buffer should have samples');
+            }
+        }
+    });
+    
+    test('should control master volume', function() {
+        const audio = new AudioManager();
+        
+        audio.setMasterVolume(0.5);
+        assertApproxEqual(audio.masterVolume, 0.5, 0.01, 'Should set master volume');
+        
+        // Test boundary conditions
+        audio.setMasterVolume(1.5);
+        assertApproxEqual(audio.masterVolume, 1.0, 0.01, 'Should clamp volume to maximum');
+        
+        audio.setMasterVolume(-0.5);
+        assertApproxEqual(audio.masterVolume, 0.0, 0.01, 'Should clamp volume to minimum');
+    });
+    
+    test('should enable and disable audio', function() {
+        const audio = new AudioManager();
+        const initialState = audio.isEnabled;
+        
+        audio.disable();
+        assert(!audio.isEnabled, 'Should be disabled');
+        
+        audio.enable();
+        assert(audio.isEnabled, 'Should be enabled');
+        
+        // Reset to initial state
+        if (!initialState) {
+            audio.disable();
+        }
+    });
+    
+    test('should create noise buffer with wave function', function() {
+        const audio = new AudioManager();
+        
+        if (audio.isEnabled && audio.audioContext) {
+            const testBuffer = audio.createNoiseBuffer(0.1, (freq, time) => {
+                return Math.sin(freq * 440 * time) * 0.5; // Simple sine wave
+            });
+            
+            assert(testBuffer instanceof AudioBuffer, 'Should create AudioBuffer');
+            assert(testBuffer.length > 0, 'Buffer should have samples');
+            assertEqual(testBuffer.numberOfChannels, 1, 'Should be mono audio');
+            
+            // Check that the buffer contains actual data
+            const data = testBuffer.getChannelData(0);
+            assert(data.length > 0, 'Should have audio data');
+        }
+    });
+    
+    test('should handle play method safely when disabled', function() {
+        const audio = new AudioManager();
+        audio.disable();
+        
+        const result = audio.play('thruster');
+        assertEqual(result, null, 'Should return null when audio is disabled');
+    });
+    
+    test('should handle play method with unknown sound', function() {
+        const audio = new AudioManager();
+        
+        const result = audio.play('unknown-sound');
+        assertEqual(result, null, 'Should return null for unknown sound');
+    });
+    
+    test('should provide convenience methods for game sounds', function() {
+        const audio = new AudioManager();
+        
+        // These should not throw errors even if audio is disabled
+        const thruster = audio.playThruster(0.5);
+        const collision = audio.playCollision(0.8);
+        const ambient = audio.playAmbient();
+        const laser = audio.playLaser(0.7);
+        
+        // If audio is enabled, these should return sound objects or null
+        if (audio.isEnabled) {
+            if (thruster) {
+                assert(typeof thruster.stop === 'function', 'Thruster should have stop method');
+                assert(typeof thruster.setVolume === 'function', 'Thruster should have setVolume method');
+                assert(typeof thruster.fadeOut === 'function', 'Thruster should have fadeOut method');
+            }
+        }
+    });
+    
+    test('should handle audio context resume', function() {
+        const audio = new AudioManager();
+        
+        // Should not throw error
+        audio.resumeAudioContext().then(() => {
+            // This should complete without error
+        }).catch(() => {
+            // Catch is fine, some environments may not support it
+        });
     });
 });
 

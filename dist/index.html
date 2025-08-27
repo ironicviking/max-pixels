@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Max-Pixels - Space Exploration Trading Game</title>
+    <meta name="description" content="Web-based multiplayer space exploration and trading game">
+    <meta name="robots" content="index, follow">
+    <meta property="og:title" content="Max-Pixels - Space Trading Game">
+    <meta property="og:description" content="Explore space, trade resources, and build your empire in this multiplayer web game">
+    <meta property="og:type" content="game">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Courier New', monospace;
+            background: #000011;
+            color: #ffffff;
+            overflow: hidden;
+        }
+
+        #gameContainer {
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+        }
+
+        #gameCanvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        #ui {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        #ui > * {
+            pointer-events: auto;
+        }
+
+        .loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+        }
+        
+        .hud {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(0, 50, 100, 0.8);
+            border: 1px solid #4488ff;
+            border-radius: 8px;
+            padding: 15px;
+            font-size: 14px;
+            min-width: 200px;
+            backdrop-filter: blur(5px);
+        }
+        
+        .hud-section {
+            margin-bottom: 15px;
+        }
+        
+        .hud-section:last-child {
+            margin-bottom: 0;
+        }
+        
+        .hud-section h3 {
+            color: #88ccff;
+            margin-bottom: 5px;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .hud-section div {
+            color: #ffffff;
+            margin-bottom: 3px;
+        }
+        
+        .hud-section span {
+            color: #88ff88;
+            font-weight: bold;
+        }
+        
+        /* Station Interaction Styles */
+        .hud-section.interaction {
+            background: rgba(255, 165, 0, 0.1);
+            border-color: #ffaa00;
+            animation: pulse-orange 2s infinite;
+        }
+        
+        @keyframes pulse-orange {
+            0%, 100% {
+                box-shadow: 0 0 5px rgba(255, 165, 0, 0.3);
+            }
+            50% {
+                box-shadow: 0 0 15px rgba(255, 165, 0, 0.6);
+            }
+        }
+        
+        .hud-section.interaction h3 {
+            color: #ffcc88;
+        }
+        
+        #interaction-text {
+            color: #ffaa00 !important;
+            font-weight: bold;
+            animation: blink 1.5s infinite;
+        }
+        
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+        
+        #station-name {
+            color: #ffffff !important;
+            font-style: italic;
+        }
+        
+        /* Authentication UI Styles */
+        .auth-section {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+        }
+        
+        .auth-button {
+            background: linear-gradient(135deg, #4a90e2, #357abd);
+            border: 1px solid #4488ff;
+            color: #ffffff;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+        
+        .auth-button:hover {
+            background: linear-gradient(135deg, #5ba0f2, #4580cd);
+            box-shadow: 0 0 10px rgba(68, 136, 255, 0.5);
+        }
+        
+        .auth-button.logout {
+            background: linear-gradient(135deg, #e24a4a, #bd3535);
+            border-color: #ff4444;
+        }
+        
+        .auth-button.logout:hover {
+            background: linear-gradient(135deg, #f25a5a, #cd4545);
+        }
+        
+        .auth-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .modal-backdrop {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(5px);
+        }
+        
+        .modal-content {
+            position: relative;
+            background: linear-gradient(135deg, #0a1929, #1a2332);
+            border: 2px solid #4488ff;
+            border-radius: 12px;
+            padding: 30px;
+            max-width: 400px;
+            width: 90%;
+            box-shadow: 0 10px 30px rgba(68, 136, 255, 0.3);
+        }
+        
+        .modal-close {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            background: none;
+            border: none;
+            color: #ffffff;
+            font-size: 24px;
+            cursor: pointer;
+            transition: color 0.3s ease;
+        }
+        
+        .modal-close:hover {
+            color: #ff4444;
+        }
+        
+        .auth-form h2 {
+            color: #88ccff;
+            margin-bottom: 25px;
+            text-align: center;
+            font-size: 24px;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            color: #88ccff;
+            margin-bottom: 5px;
+            font-size: 14px;
+        }
+        
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid #4488ff;
+            border-radius: 6px;
+            color: #ffffff;
+            font-family: inherit;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+        }
+        
+        .form-group input:focus {
+            outline: none;
+            border-color: #88ccff;
+            box-shadow: 0 0 8px rgba(68, 136, 255, 0.3);
+        }
+        
+        .form-group small {
+            display: block;
+            color: #888888;
+            font-size: 12px;
+            margin-top: 3px;
+        }
+        
+        .auth-submit {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #4a90e2, #357abd);
+            border: 1px solid #4488ff;
+            border-radius: 6px;
+            color: #ffffff;
+            font-family: inherit;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .auth-submit:hover {
+            background: linear-gradient(135deg, #5ba0f2, #4580cd);
+            box-shadow: 0 0 12px rgba(68, 136, 255, 0.5);
+        }
+        
+        .auth-error {
+            color: #ff4444;
+            font-size: 14px;
+            margin-top: 10px;
+            text-align: center;
+            min-height: 20px;
+        }
+        
+        .auth-switch {
+            text-align: center;
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 1px solid #333333;
+        }
+        
+        .auth-switch p {
+            color: #888888;
+            font-size: 14px;
+        }
+        
+        .auth-switch a {
+            color: #4488ff;
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+        
+        .auth-switch a:hover {
+            color: #88ccff;
+            text-decoration: underline;
+        }
+        
+        .profile-info {
+            margin: 20px 0;
+        }
+        
+        .profile-stat {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid #333333;
+        }
+        
+        .profile-stat:last-child {
+            border-bottom: none;
+        }
+        
+        .profile-stat label {
+            color: #88ccff;
+            font-weight: bold;
+        }
+        
+        .profile-stat span {
+            color: #88ff88;
+            font-weight: bold;
+        }
+        
+        .profile-actions {
+            margin-top: 20px;
+            text-align: center;
+        }
+        
+        .game-message {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            padding: 12px 20px;
+            border-radius: 6px;
+            color: #ffffff;
+            font-weight: bold;
+            z-index: 1001;
+            transition: opacity 0.3s ease;
+        }
+        
+        .message-success {
+            background: rgba(34, 197, 94, 0.9);
+            border: 1px solid #22c55e;
+        }
+        
+        .message-info {
+            background: rgba(59, 130, 246, 0.9);
+            border: 1px solid #3b82f6;
+        }
+        
+        .message-error {
+            background: rgba(239, 68, 68, 0.9);
+            border: 1px solid #ef4444;
+        }
+        
+        .game-message.fade-out {
+            opacity: 0;
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <svg id="gameCanvas" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080">
+            <defs>
+                <radialGradient id="spaceBackground" cx="50%" cy="50%" r="100%">
+                    <stop offset="0%" style="stop-color:#000033;stop-opacity:1" />
+                    <stop offset="100%" style="stop-color:#000011;stop-opacity:1" />
+                </radialGradient>
+            </defs>
+            <rect width="100%" height="100%" fill="url(#spaceBackground)" />
+        </svg>
+        
+        <div id="ui">
+            <div class="loading">
+                <h1>MAX-PIXELS</h1>
+                <p>Initializing space exploration systems...</p>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="src/index.js"></script>
+</body>
+</html>
