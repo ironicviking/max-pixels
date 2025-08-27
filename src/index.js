@@ -6,6 +6,7 @@
 import { GraphicsEngine } from './graphics/GraphicsEngine.js';
 import { InputManager } from './input/InputManager.js';
 import { Camera } from './graphics/Camera.js';
+import { AudioManager } from './audio/AudioManager.js';
 
 class MaxPixelsGame {
     constructor() {
@@ -14,6 +15,7 @@ class MaxPixelsGame {
         this.graphics = new GraphicsEngine(this.gameCanvas);
         this.input = new InputManager();
         this.camera = new Camera(this.gameCanvas);
+        this.audio = new AudioManager();
         this.isInitialized = false;
         
         this.player = {
@@ -26,6 +28,9 @@ class MaxPixelsGame {
         
         this.asteroids = [];
         
+        this.activeThrusterSound = null;
+        this.ambientSound = null;
+        
         console.log('Max-Pixels initializing...');
         this.init();
     }
@@ -34,6 +39,7 @@ class MaxPixelsGame {
         try {
             await this.initializeGraphics();
             await this.initializeUI();
+            this.initializeAudio();
             this.startGameLoop();
             
             this.isInitialized = true;
@@ -87,6 +93,15 @@ class MaxPixelsGame {
         this.createHUD();
     }
     
+    initializeAudio() {
+        console.log('Initializing audio system...');
+        this.ambientSound = this.audio.playAmbient();
+        
+        document.addEventListener('click', () => {
+            this.audio.resumeAudioContext();
+        }, { once: true });
+    }
+    
     
     
     startGameLoop() {
@@ -136,6 +151,9 @@ class MaxPixelsGame {
     }
     
     handleCollision(asteroid, index) {
+        // Play collision sound
+        this.audio.playCollision(0.8);
+        
         // Reset player position to center
         this.player.x = 960;
         this.player.y = 540;
@@ -200,8 +218,25 @@ class MaxPixelsGame {
     updateThrusterEffects() {
         const movement = this.input.getMovementVector();
         const boost = this.input.isPressed('boost');
+        const isMoving = movement.x !== 0 || movement.y !== 0;
         
+        // Update visual thruster effects
         this.graphics.updateSpaceshipThrusters(this.playerShip, movement, boost);
+        
+        // Manage thruster audio
+        if (isMoving) {
+            const intensity = boost ? 1.0 : 0.6;
+            if (!this.activeThrusterSound) {
+                this.activeThrusterSound = this.audio.playThruster(intensity);
+            } else {
+                this.activeThrusterSound.setVolume(intensity * 0.6);
+            }
+        } else {
+            if (this.activeThrusterSound) {
+                this.activeThrusterSound.fadeOut(0.3);
+                this.activeThrusterSound = null;
+            }
+        }
     }
     
     updateCamera() {
