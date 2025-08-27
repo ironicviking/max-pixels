@@ -35,7 +35,8 @@ class MaxPixelsGame {
             y: 540,
             velocity: { x: 0, y: 0 },
             speed: 200,
-            radius: 25
+            radius: 25,
+            rotation: 0
         };
         
         this.asteroids = [];
@@ -246,7 +247,7 @@ class MaxPixelsGame {
         
         // Update player ship visual position
         this.playerShip.setAttribute('transform', 
-            `translate(${this.player.x}, ${this.player.y})`);
+            `translate(${this.player.x}, ${this.player.y}) rotate(${this.player.rotation})`);
             
         // Visual feedback - briefly flash red
         this.playerShip.querySelector('path').setAttribute('fill', '#ff4444');
@@ -374,7 +375,7 @@ class MaxPixelsGame {
         // Re-add player ship to game layer
         this.graphics.addToLayer('game', this.playerShip);
         this.playerShip.setAttribute('transform', 
-            `translate(${this.player.x}, ${this.player.y})`);
+            `translate(${this.player.x}, ${this.player.y}) rotate(${this.player.rotation})`);
         
         // Update camera
         this.camera.centerOn(this.player.x, this.player.y);
@@ -445,6 +446,25 @@ class MaxPixelsGame {
     updatePlayer() {
         const deltaTime = 1/60;
         
+        // Update rotation based on movement direction
+        if (this.player.velocity.x !== 0 || this.player.velocity.y !== 0) {
+            const targetRotation = Math.atan2(this.player.velocity.x, -this.player.velocity.y) * 180 / Math.PI;
+            
+            // Smooth rotation interpolation
+            let angleDiff = targetRotation - this.player.rotation;
+            
+            // Handle angle wrapping (-180 to 180)
+            if (angleDiff > 180) angleDiff -= 360;
+            if (angleDiff < -180) angleDiff += 360;
+            
+            // Apply rotation smoothing
+            this.player.rotation += angleDiff * 0.15;
+            
+            // Keep rotation within -180 to 180 range
+            if (this.player.rotation > 180) this.player.rotation -= 360;
+            if (this.player.rotation < -180) this.player.rotation += 360;
+        }
+        
         this.player.x += this.player.velocity.x * this.player.speed * deltaTime;
         this.player.y += this.player.velocity.y * this.player.speed * deltaTime;
         
@@ -454,7 +474,7 @@ class MaxPixelsGame {
         this.player.y = Math.max(25, Math.min(bounds.height - 25, this.player.y));
         
         this.playerShip.setAttribute('transform', 
-            `translate(${this.player.x}, ${this.player.y})`);
+            `translate(${this.player.x}, ${this.player.y}) rotate(${this.player.rotation})`);
     }
     
     updatePlayerBounds() {
@@ -588,10 +608,8 @@ class MaxPixelsGame {
         // Check for laser hits on asteroids
         this.checkLaserHits(laserStartX, laserStartY, laserEndX, laserEndY);
         
-        // Play laser sound if audio system is available
-        if (this.audio && this.audio.playLaser) {
-            this.audio.playLaser(0.4);
-        }
+        // Play laser sound
+        this.audio.playLaser(0.4);
         
         console.log('Laser fired!');
     }
