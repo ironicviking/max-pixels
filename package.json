@@ -1,0 +1,21 @@
+{
+  "name": "max-pixels",
+  "version": "0.1.0",
+  "description": "Web-based multiplayer space exploration and trading game",
+  "main": "src/index.js",
+  "scripts": {
+    "dev": "http-server . -p 3000 -o",
+    "build": "echo 'Build script placeholder'",
+    "test": "echo 'Test script placeholder'",
+    "lint": "echo 'Lint script placeholder'"
+  },
+  "keywords": ["game", "space", "trading", "multiplayer", "svg", "web"],
+  "author": "Max-Pixels Dev Team",
+  "license": "MIT",
+  "devDependencies": {
+    "http-server": "^14.1.1"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}
