@@ -9,6 +9,8 @@ import { Camera } from './graphics/Camera.js';
 import { AudioManager } from './audio/AudioManager.js';
 import { AuthService } from './auth/AuthService.js';
 import { AuthUI } from './ui/AuthUI.js';
+import { TradingSystem } from './trading/TradingSystem.js';
+import { TradingUI } from './ui/TradingUI.js';
 
 class MaxPixelsGame {
     constructor() {
@@ -20,6 +22,9 @@ class MaxPixelsGame {
         this.audio = new AudioManager();
         this.auth = new AuthService();
         this.authUI = null;
+        this.trading = new TradingSystem();
+        this.tradingUI = new TradingUI(this.trading, this.auth);
+        this.initializePlayerInventory();
         this.isInitialized = false;
         
         this.player = {
@@ -225,9 +230,7 @@ class MaxPixelsGame {
     
     openTradingInterface(station) {
         console.log(`Opening trading interface for ${station.name}`);
-        
-        const message = `Welcome to ${station.name}!\n\nTrading system coming soon...\n\nCredits: ${this.auth.currentUser?.credits || 1000}`;
-        alert(message);
+        this.tradingUI.openTradingInterface(station);
     }
     
     updateInteractionPrompt() {
@@ -363,6 +366,12 @@ class MaxPixelsGame {
         document.getElementById('player-speed').textContent = Math.round(speed);
         
         document.getElementById('camera-zoom').textContent = this.camera.zoom.toFixed(1);
+    }
+    
+    initializePlayerInventory() {
+        // Give the player some starting items for testing
+        this.trading.addPlayerItem('ore-iron', 10);
+        this.trading.addPlayerItem('food-rations', 5);
     }
     
     hideLoadingScreen() {
