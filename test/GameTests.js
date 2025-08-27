@@ -5,6 +5,7 @@
 
 import { TestRunner, describe, test, assert, assertEqual, assertApproxEqual, waitFor } from './TestFramework.js';
 import { GraphicsEngine } from '../src/graphics/GraphicsEngine.js';
+import { ParticleSystem } from '../src/graphics/ParticleSystem.js';
 import { Camera } from '../src/graphics/Camera.js';
 import { InputManager } from '../src/input/InputManager.js';
 import { SpaceNavigation } from '../src/navigation/SpaceNavigation.js';
@@ -65,6 +66,295 @@ describe('Graphics Engine', function() {
         const transform = asteroid.getAttribute('transform');
         assert(transform.includes('translate(50, 75)'), 'Asteroid should be positioned correctly');
         
+        TestRunner.cleanupTestDOM();
+    });
+});
+
+/**
+ * Particle System Tests
+ */
+describe('Particle System', function() {
+    test('should initialize with empty particle collections', function() {
+        const testContainer = TestRunner.setupTestDOM();
+        const canvas = testContainer.querySelector('#gameCanvas');
+        const graphics = new GraphicsEngine(canvas);
+        const particles = new ParticleSystem(graphics);
+        
+        assertEqual(particles.particles.size, 0, 'Should start with no particles');
+        assertEqual(particles.activeEmitters.size, 0, 'Should start with no emitters');
+        assertEqual(particles.idCounter, 0, 'Should start with zero ID counter');
+        
+        particles.stopUpdateLoop();
+        TestRunner.cleanupTestDOM();
+    });
+    
+    test('should create particle emitters', function() {
+        const testContainer = TestRunner.setupTestDOM();
+        const canvas = testContainer.querySelector('#gameCanvas');
+        const graphics = new GraphicsEngine(canvas);
+        const particles = new ParticleSystem(graphics);
+        
+        const emitterId = particles.createEmitter(100, 200, {
+            particleCount: 10,
+            particleLife: 1000,
+            color: '#ff0000'
+        });
+        
+        assert(emitterId !== null, 'Should return emitter ID');
+        assert(emitterId.startsWith('emitter_'), 'Should have correct ID format');
+        assertEqual(particles.activeEmitters.size, 1, 'Should have one active emitter');
+        
+        const emitter = particles.activeEmitters.get(emitterId);
+        assertEqual(emitter.x, 100, 'Should have correct X position');
+        assertEqual(emitter.y, 200, 'Should have correct Y position');
+        assertEqual(emitter.config.color, '#ff0000', 'Should have correct color');
+        
+        particles.stopUpdateLoop();
+        TestRunner.cleanupTestDOM();
+    });
+    
+    test('should create explosion effects', function() {
+        const testContainer = TestRunner.setupTestDOM();
+        const canvas = testContainer.querySelector('#gameCanvas');
+        const graphics = new GraphicsEngine(canvas);
+        const particles = new ParticleSystem(graphics);
+        
+        const emitterId = particles.createExplosionEffect(150, 250, {
+            particleCount: 20,
+            color: '#ff6600'
+        });
+        
+        assert(emitterId !== null, 'Should return emitter ID');
+        
+        const emitter = particles.activeEmitters.get(emitterId);
+        assertEqual(emitter.config.burst, true, 'Explosion should be burst type');
+        assertEqual(emitter.config.color, '#ff6600', 'Should have explosion color');
+        assert(emitter.config.particleCount >= 20, 'Should have correct particle count');
+        
+        particles.stopUpdateLoop();
+        TestRunner.cleanupTestDOM();
+    });
+    
+    test('should create thruster trails', function() {
+        const testContainer = TestRunner.setupTestDOM();
+        const canvas = testContainer.querySelector('#gameCanvas');
+        const graphics = new GraphicsEngine(canvas);
+        const particles = new ParticleSystem(graphics);
+        
+        const angle = Math.PI / 2; // 90 degrees
+        const intensity = 0.8;
+        const emitterId = particles.createThrusterTrail(300, 400, angle, intensity);
+        
+        assert(emitterId !== null, 'Should return emitter ID');
+        
+        const emitter = particles.activeEmitters.get(emitterId);
+        assertEqual(emitter.config.burst, false, 'Thruster should be continuous');
+        assert(emitter.config.direction !== undefined, 'Should have direction set');
+        assert(emitter.config.particleCount > 0, 'Should have particles based on intensity');
+        
+        particles.stopUpdateLoop();
+        TestRunner.cleanupTestDOM();
+    });
+    
+    test('should create debris fields', function() {
+        const testContainer = TestRunner.setupTestDOM();
+        const canvas = testContainer.querySelector('#gameCanvas');
+        const graphics = new GraphicsEngine(canvas);
+        const particles = new ParticleSystem(graphics);
+        
+        const asteroidSize = 30;
+        const emitterId = particles.createDebrisField(500, 600, asteroidSize);
+        
+        assert(emitterId !== null, 'Should return emitter ID');
+        
+        const emitter = particles.activeEmitters.get(emitterId);
+        assertEqual(emitter.config.burst, true, 'Debris should be burst type');
+        assertEqual(emitter.config.color, '#8b7355', 'Should have debris color');
+        assert(emitter.config.particleCount > 0, 'Should scale particle count with asteroid size');
+        
+        particles.stopUpdateLoop();
+        TestRunner.cleanupTestDOM();
+    });
+    
+    test('should create sparks effects', function() {
+        const testContainer = TestRunner.setupTestDOM();
+        const canvas = testContainer.querySelector('#gameCanvas');
+        const graphics = new GraphicsEngine(canvas);
+        const particles = new ParticleSystem(graphics);
+        
+        const direction = Math.PI;
+        const emitterId = particles.createSparksEffect(700, 800, direction);
+        
+        assert(emitterId !== null, 'Should return emitter ID');
+        
+        const emitter = particles.activeEmitters.get(emitterId);
+        assertEqual(emitter.config.burst, true, 'Sparks should be burst type');
+        assertEqual(emitter.config.color, '#ffff00', 'Should have sparks color');
+        assertEqual(emitter.config.direction, direction, 'Should have correct direction');
+        
+        particles.stopUpdateLoop();
+        TestRunner.cleanupTestDOM();
+    });
+    
+    test('should create and manage particles', function() {
+        const testContainer = TestRunner.setupTestDOM();
+        const canvas = testContainer.querySelector('#gameCanvas');
+        const graphics = new GraphicsEngine(canvas);
+        const particles = new ParticleSystem(graphics);
+        
+        const emitterId = particles.createEmitter(100, 200, {
+            particleCount: 5,
+            burst: true
+        });
+        
+        const emitter = particles.activeEmitters.get(emitterId);
+        assert(emitter.particles.length > 0, 'Should have created particles');
+        assert(particles.particles.size > 0, 'Should have particles in main collection');
+        
+        // Check particle properties
+        const particle = emitter.particles[0];
+        assert(particle.id !== undefined, 'Particle should have ID');
+        assert(typeof particle.x === 'number', 'Particle should have X position');
+        assert(typeof particle.y === 'number', 'Particle should have Y position');
+        assert(typeof particle.velX === 'number', 'Particle should have X velocity');
+        assert(typeof particle.velY === 'number', 'Particle should have Y velocity');
+        assert(particle.element !== undefined, 'Particle should have visual element');
+        
+        particles.stopUpdateLoop();
+        TestRunner.cleanupTestDOM();
+    });
+    
+    test('should remove particles correctly', function() {
+        const testContainer = TestRunner.setupTestDOM();
+        const canvas = testContainer.querySelector('#gameCanvas');
+        const graphics = new GraphicsEngine(canvas);
+        const particles = new ParticleSystem(graphics);
+        
+        const emitterId = particles.createEmitter(100, 200, {
+            particleCount: 3,
+            burst: true
+        });
+        
+        const emitter = particles.activeEmitters.get(emitterId);
+        const initialCount = emitter.particles.length;
+        const particleToRemove = emitter.particles[0];
+        const particleId = particleToRemove.id;
+        
+        particles.removeParticle(particleId);
+        
+        assertEqual(emitter.particles.length, initialCount - 1, 'Should remove particle from emitter');
+        assert(!particles.particles.has(particleId), 'Should remove particle from main collection');
+        
+        particles.stopUpdateLoop();
+        TestRunner.cleanupTestDOM();
+    });
+    
+    test('should remove emitters and their particles', function() {
+        const testContainer = TestRunner.setupTestDOM();
+        const canvas = testContainer.querySelector('#gameCanvas');
+        const graphics = new GraphicsEngine(canvas);
+        const particles = new ParticleSystem(graphics);
+        
+        const emitterId = particles.createEmitter(100, 200, {
+            particleCount: 5,
+            burst: true
+        });
+        
+        assert(particles.activeEmitters.has(emitterId), 'Should have emitter');
+        assert(particles.particles.size > 0, 'Should have particles');
+        
+        particles.removeEmitter(emitterId);
+        
+        assert(!particles.activeEmitters.has(emitterId), 'Should remove emitter');
+        assertEqual(particles.particles.size, 0, 'Should remove all particles from emitter');
+        
+        particles.stopUpdateLoop();
+        TestRunner.cleanupTestDOM();
+    });
+    
+    test('should clear all particles and emitters', function() {
+        const testContainer = TestRunner.setupTestDOM();
+        const canvas = testContainer.querySelector('#gameCanvas');
+        const graphics = new GraphicsEngine(canvas);
+        const particles = new ParticleSystem(graphics);
+        
+        // Create multiple emitters
+        particles.createEmitter(100, 200, { particleCount: 3, burst: true });
+        particles.createEmitter(300, 400, { particleCount: 2, burst: true });
+        
+        assert(particles.activeEmitters.size > 0, 'Should have emitters');
+        assert(particles.particles.size > 0, 'Should have particles');
+        
+        particles.clear();
+        
+        assertEqual(particles.activeEmitters.size, 0, 'Should clear all emitters');
+        assertEqual(particles.particles.size, 0, 'Should clear all particles');
+        assertEqual(particles.idCounter, 0, 'Should reset ID counter');
+        
+        particles.stopUpdateLoop();
+        TestRunner.cleanupTestDOM();
+    });
+    
+    test('should provide debug information', function() {
+        const testContainer = TestRunner.setupTestDOM();
+        const canvas = testContainer.querySelector('#gameCanvas');
+        const graphics = new GraphicsEngine(canvas);
+        const particles = new ParticleSystem(graphics);
+        
+        particles.createEmitter(100, 200, { particleCount: 3, burst: true });
+        particles.createEmitter(300, 400, { particleCount: 2, burst: true });
+        
+        const debugInfo = particles.getDebugInfo();
+        
+        assertEqual(typeof debugInfo.activeEmitters, 'number', 'Should return active emitter count');
+        assertEqual(typeof debugInfo.activeParticles, 'number', 'Should return active particle count');
+        assertEqual(typeof debugInfo.totalCreatedParticles, 'number', 'Should return total created particles');
+        
+        assert(debugInfo.activeEmitters > 0, 'Should have active emitters');
+        assert(debugInfo.activeParticles > 0, 'Should have active particles');
+        assert(debugInfo.totalCreatedParticles > 0, 'Should have created particles');
+        
+        particles.stopUpdateLoop();
+        TestRunner.cleanupTestDOM();
+    });
+    
+    test('should handle update loop control', function() {
+        const testContainer = TestRunner.setupTestDOM();
+        const canvas = testContainer.querySelector('#gameCanvas');
+        const graphics = new GraphicsEngine(canvas);
+        const particles = new ParticleSystem(graphics);
+        
+        assert(particles.updateInterval !== null, 'Should start with update loop running');
+        
+        particles.stopUpdateLoop();
+        assertEqual(particles.updateInterval, null, 'Should stop update loop');
+        
+        particles.startUpdateLoop();
+        assert(particles.updateInterval !== null, 'Should restart update loop');
+        
+        particles.stopUpdateLoop();
+        TestRunner.cleanupTestDOM();
+    });
+    
+    test('should find particle emitter correctly', function() {
+        const testContainer = TestRunner.setupTestDOM();
+        const canvas = testContainer.querySelector('#gameCanvas');
+        const graphics = new GraphicsEngine(canvas);
+        const particles = new ParticleSystem(graphics);
+        
+        const emitterId = particles.createEmitter(100, 200, {
+            particleCount: 2,
+            burst: true
+        });
+        
+        const emitter = particles.activeEmitters.get(emitterId);
+        const particle = emitter.particles[0];
+        
+        const foundEmitter = particles.getParticleEmitter(particle);
+        
+        assertEqual(foundEmitter.id, emitterId, 'Should find correct emitter for particle');
+        
+        particles.stopUpdateLoop();
         TestRunner.cleanupTestDOM();
     });
 });
