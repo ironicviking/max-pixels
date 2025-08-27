@@ -47,6 +47,10 @@ class MaxPixelsGame {
         this.activeThrusterSound = null;
         this.ambientSound = null;
         
+        // Weapon system
+        this.lastFireTime = 0;
+        this.fireRate = 300; // milliseconds between shots
+        
         console.log('Max-Pixels initializing...');
         this.init();
     }
@@ -427,6 +431,11 @@ class MaxPixelsGame {
                 this.jumpThroughGate(this.nearbyJumpGate);
             }
         }
+        
+        // Weapon firing
+        if (this.input.isPressed('action')) {
+            this.fireLaser();
+        }
     }
     
     updatePlayer() {
@@ -500,6 +509,7 @@ class MaxPixelsGame {
                     <h3>Controls</h3>
                     <div>WASD / Arrow Keys: Move</div>
                     <div>Shift: Boost</div>
+                    <div>Space: Fire Laser</div>
                     <div>Q: Zoom Out | E: Zoom In</div>
                 </div>
                 <div class="hud-section camera">
@@ -527,6 +537,117 @@ class MaxPixelsGame {
         document.getElementById('player-speed').textContent = Math.round(speed);
         
         document.getElementById('camera-zoom').textContent = this.camera.zoom.toFixed(1);
+    }
+    
+    fireLaser() {
+        const currentTime = Date.now();
+        if (currentTime - this.lastFireTime < this.fireRate) {
+            return;
+        }
+        
+        this.lastFireTime = currentTime;
+        
+        // Calculate laser start position (tip of ship)
+        const laserStartX = this.player.x;
+        const laserStartY = this.player.y - this.player.radius;
+        
+        // Calculate laser end position (500 pixels ahead of ship)
+        const laserEndX = this.player.x;
+        const laserEndY = this.player.y - 500;
+        
+        // Create laser beam using graphics engine
+        const laser = this.graphics.createLaserBeam(
+            laserStartX, laserStartY,
+            laserEndX, laserEndY,
+            {
+                color: '#ff0000',
+                glowColor: '#ffaaaa',
+                width: 3,
+                duration: '0.2s'
+            }
+        );
+        
+        // Add laser to game layer
+        this.graphics.addToLayer('game', laser);
+        
+        // Check for laser hits on asteroids
+        this.checkLaserHits(laserStartX, laserStartY, laserEndX, laserEndY);
+        
+        // Play laser sound if audio system is available
+        if (this.audio && this.audio.playLaser) {
+            this.audio.playLaser(0.4);
+        }
+        
+        console.log('Laser fired!');
+    }
+    
+    checkLaserHits(startX, startY, endX, endY) {
+        // Simple line-circle intersection for asteroids
+        for (let i = this.asteroids.length - 1; i >= 0; i--) {
+            const asteroid = this.asteroids[i];
+            
+            // Distance from asteroid center to laser line
+            const distance = this.distanceFromPointToLine(
+                asteroid.x, asteroid.y,
+                startX, startY,
+                endX, endY
+            );
+            
+            if (distance < asteroid.size) {
+                // Hit! Create impact effect
+                this.graphics.createLaserImpact(asteroid.x, asteroid.y, {
+                    size: 12,
+                    color: '#ffff00',
+                    ringColor: '#ff8800',
+                    duration: '0.5s'
+                });
+                
+                // Add impact to game layer
+                const impact = this.graphics.createLaserImpact(asteroid.x, asteroid.y, {
+                    size: 12,
+                    color: '#ffff00',
+                    ringColor: '#ff8800',
+                    duration: '0.5s'
+                });
+                this.graphics.addToLayer('game', impact);
+                
+                // Remove asteroid (simple destruction)
+                this.destroyAsteroid(i);
+                
+                console.log('Asteroid destroyed!');
+                break; // Only hit first asteroid in line
+            }
+        }
+    }
+    
+    distanceFromPointToLine(px, py, x1, y1, x2, y2) {
+        // Calculate distance from point (px, py) to line segment (x1, y1) to (x2, y2)
+        const lineLength = Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
+        
+        if (lineLength === 0) {
+            return Math.sqrt(Math.pow(px - x1, 2) + Math.pow(py - y1, 2));
+        }
+        
+        const t = Math.max(0, Math.min(1, ((px - x1) * (x2 - x1) + (py - y1) * (y2 - y1)) / (lineLength * lineLength)));
+        const projectionX = x1 + t * (x2 - x1);
+        const projectionY = y1 + t * (y2 - y1);
+        
+        return Math.sqrt(Math.pow(px - projectionX, 2) + Math.pow(py - projectionY, 2));
+    }
+    
+    destroyAsteroid(index) {
+        // Remove from data array
+        this.asteroids.splice(index, 1);
+        
+        // Find and remove visual element
+        const gameLayer = this.graphics.getLayer('background');
+        if (gameLayer) {
+            const asteroidElements = gameLayer.querySelectorAll('g');
+            // This is a simple approach - in a real game you'd want better asteroid tracking
+            if (asteroidElements[index]) {
+                this.graphics.remove(asteroidElements[index]);
+            }
+        }
     }
     
     initializePlayerInventory() {

@@ -593,19 +593,22 @@ export class GraphicsEngine {
             const strutEndX = Math.cos(angle) * size * 1.1;
             const strutEndY = Math.sin(angle) * size * 1.1;
             
-            const strut = this.createElement('line', {
-                x1: strutStartX,
-                y1: strutStartY,
-                x2: strutEndX,
-                y2: strutEndY,
-                stroke: '#aaaaaa',
-                'stroke-width': size * 0.06
-            });
+            const strut = this.createElement('line');
+            strut.setAttribute('x1', strutStartX);
+            strut.setAttribute('y1', strutStartY);
+            strut.setAttribute('x2', strutEndX);
+            strut.setAttribute('y2', strutEndY);
+            strut.setAttribute('stroke', '#aaaaaa');
+            strut.setAttribute('stroke-width', size * 0.06);
             
             gate.appendChild(strut);
         }
         
-        // Energy particles (small circles that appear to rotate)
+        // Energy particles (small circles that rotate around the gate)
+        const particleGroup = this.createGroup({
+            id: `particles_${this.generateId('gate')}`
+        });
+        
         for (let i = 0; i < 8; i++) {
             const angle = (i * 45) * Math.PI / 180;
             const particleX = Math.cos(angle) * size * 0.85;
@@ -616,22 +619,41 @@ export class GraphicsEngine {
                 opacity: 0.8
             });
             
-            gate.appendChild(particle);
+            particleGroup.appendChild(particle);
         }
+        
+        // Add rotation animation to particles
+        const rotateParticles = this.createElement('animateTransform');
+        rotateParticles.setAttribute('attributeName', 'transform');
+        rotateParticles.setAttribute('type', 'rotate');
+        rotateParticles.setAttribute('values', '0 0 0;360 0 0');
+        rotateParticles.setAttribute('dur', '4s');
+        rotateParticles.setAttribute('repeatCount', 'indefinite');
+        
+        particleGroup.appendChild(rotateParticles);
+        gate.appendChild(particleGroup);
         
         gate.appendChild(core);
         gate.appendChild(innerRing);
         gate.appendChild(outerRing);
         
         // Add pulsing animation to outer ring
-        const animateOpacity = this.createElement('animate', {
-            attributeName: 'opacity',
-            values: '0.4;0.9;0.4',
-            dur: '2s',
-            repeatCount: 'indefinite'
-        });
+        const animateOpacity = this.createElement('animate');
+        animateOpacity.setAttribute('attributeName', 'opacity');
+        animateOpacity.setAttribute('values', '0.4;0.9;0.4');
+        animateOpacity.setAttribute('dur', '2s');
+        animateOpacity.setAttribute('repeatCount', 'indefinite');
         
         outerRing.appendChild(animateOpacity);
+        
+        // Add pulsing animation to core energy field
+        const coreAnimation = this.createElement('animate');
+        coreAnimation.setAttribute('attributeName', 'opacity');
+        coreAnimation.setAttribute('values', '0.1;0.3;0.1');
+        coreAnimation.setAttribute('dur', '3s');
+        coreAnimation.setAttribute('repeatCount', 'indefinite');
+        
+        core.appendChild(coreAnimation);
         
         return gate;
     }
@@ -653,6 +675,135 @@ export class GraphicsEngine {
         if (element.parentNode) {
             element.parentNode.removeChild(element);
         }
+    }
+    
+    createLaserBeam(startX, startY, endX, endY, attributes = {}) {
+        const laser = this.createGroup({
+            id: this.generateId('laser'),
+            ...attributes
+        });
+        
+        // Main laser beam
+        const beam = this.createElement('line');
+        beam.setAttribute('x1', startX);
+        beam.setAttribute('y1', startY);
+        beam.setAttribute('x2', endX);
+        beam.setAttribute('y2', endY);
+        beam.setAttribute('stroke', attributes.color || '#ff0000');
+        beam.setAttribute('stroke-width', attributes.width || 3);
+        beam.setAttribute('opacity', 0.9);
+        beam.setAttribute('stroke-linecap', 'round');
+        
+        // Outer glow effect
+        const glow = this.createElement('line');
+        glow.setAttribute('x1', startX);
+        glow.setAttribute('y1', startY);
+        glow.setAttribute('x2', endX);
+        glow.setAttribute('y2', endY);
+        glow.setAttribute('stroke', attributes.glowColor || '#ffaaaa');
+        glow.setAttribute('stroke-width', (attributes.width || 3) * 2);
+        glow.setAttribute('opacity', 0.3);
+        glow.setAttribute('stroke-linecap', 'round');
+        
+        // Inner core
+        const core = this.createElement('line');
+        core.setAttribute('x1', startX);
+        core.setAttribute('y1', startY);
+        core.setAttribute('x2', endX);
+        core.setAttribute('y2', endY);
+        core.setAttribute('stroke', '#ffffff');
+        core.setAttribute('stroke-width', 1);
+        core.setAttribute('opacity', 0.8);
+        core.setAttribute('stroke-linecap', 'round');
+        
+        laser.appendChild(glow);
+        laser.appendChild(beam);
+        laser.appendChild(core);
+        
+        // Animate the laser - fade in quickly, then fade out
+        const fadeAnimation = this.createElement('animate');
+        fadeAnimation.setAttribute('attributeName', 'opacity');
+        fadeAnimation.setAttribute('values', '0;1;1;0');
+        fadeAnimation.setAttribute('dur', attributes.duration || '0.3s');
+        fadeAnimation.setAttribute('fill', 'freeze');
+        
+        laser.appendChild(fadeAnimation);
+        
+        // Auto-remove after animation
+        setTimeout(() => {
+            this.remove(laser);
+        }, parseFloat(attributes.duration || '0.3') * 1000 + 100);
+        
+        return laser;
+    }
+    
+    createLaserImpact(x, y, attributes = {}) {
+        const impact = this.createGroup({
+            id: this.generateId('impact'),
+            transform: `translate(${x}, ${y})`
+        });
+        
+        // Central flash
+        const flash = this.createCircle(0, 0, attributes.size || 8, {
+            fill: attributes.color || '#ffff00',
+            opacity: 0.9
+        });
+        
+        // Outer ring
+        const ring = this.createCircle(0, 0, (attributes.size || 8) * 1.5, {
+            fill: 'none',
+            stroke: attributes.ringColor || '#ff8800',
+            'stroke-width': 2,
+            opacity: 0.7
+        });
+        
+        // Spark particles
+        for (let i = 0; i < 6; i++) {
+            const angle = (i * 60) * Math.PI / 180;
+            const sparkDistance = (attributes.size || 8) * 2;
+            const sparkX = Math.cos(angle) * sparkDistance;
+            const sparkY = Math.sin(angle) * sparkDistance;
+            
+            const spark = this.createElement('line');
+            spark.setAttribute('x1', 0);
+            spark.setAttribute('y1', 0);
+            spark.setAttribute('x2', sparkX);
+            spark.setAttribute('y2', sparkY);
+            spark.setAttribute('stroke', '#ffffff');
+            spark.setAttribute('stroke-width', 1);
+            spark.setAttribute('opacity', 0.8);
+            spark.setAttribute('stroke-linecap', 'round');
+            
+            impact.appendChild(spark);
+        }
+        
+        impact.appendChild(ring);
+        impact.appendChild(flash);
+        
+        // Animate the impact - quick flash and expansion
+        const scaleAnimation = this.createElement('animateTransform');
+        scaleAnimation.setAttribute('attributeName', 'transform');
+        scaleAnimation.setAttribute('type', 'scale');
+        scaleAnimation.setAttribute('values', '0 0;1.5 1.5;0.5 0.5');
+        scaleAnimation.setAttribute('dur', attributes.duration || '0.4s');
+        scaleAnimation.setAttribute('fill', 'freeze');
+        scaleAnimation.setAttribute('additive', 'sum');
+        
+        const opacityAnimation = this.createElement('animate');
+        opacityAnimation.setAttribute('attributeName', 'opacity');
+        opacityAnimation.setAttribute('values', '0;1;0');
+        opacityAnimation.setAttribute('dur', attributes.duration || '0.4s');
+        opacityAnimation.setAttribute('fill', 'freeze');
+        
+        impact.appendChild(scaleAnimation);
+        impact.appendChild(opacityAnimation);
+        
+        // Auto-remove after animation
+        setTimeout(() => {
+            this.remove(impact);
+        }, parseFloat(attributes.duration || '0.4') * 1000 + 100);
+        
+        return impact;
     }
     
     animate(element, attributes, duration = 1000, _easing = 'ease-in-out') {
