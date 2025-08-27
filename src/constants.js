@@ -99,6 +99,8 @@ export const GRAPHICS = {
     STAR_TWINKLE_INTENSITY: 0.4,
     STAR_BINARY_CHANCE: 0.05,
     STAR_BINARY_SEPARATION: 8,
+    STAR_COMPANION_SIZE_RATIO: 0.7,
+    STAR_CUMULATIVE_RARITY: 100,
     
     // Asteroid generation
     ASTEROID_SIZE_MIN: 10,
@@ -304,6 +306,42 @@ export const GRAPHICS = {
     COLOR_MAX: 255,
     HUE_SHIFT: 4,
     HUE_RANGE: 6,
+    COLOR_LIGHTEN_STEP: 4,
+    
+    // General geometry
+    PI_TIMES_2: 2.5,
+    ANGLE_180: 180,
+    ANGLE_90: 90,
+    ANGLE_60: 60,
+    ANGLE_45: 45,
+    ANGLE_30: 30,
+    FULL_CIRCLE: 2,
+    
+    // Common ratios and values
+    RATIO_BINARY_SEPARATION: 1.8,
+    RATIO_OPACITY_HIGH: 0.9,
+    RATIO_OPACITY_MID: 0.7,
+    RATIO_OPACITY_LOW: 0.4,
+    RATIO_SIZE_SMALL: 0.2,
+    RATIO_SIZE_MID: 0.5,
+    RATIO_SIZE_LARGE: 0.8,
+    
+    // Timing and cleanup
+    ANIMATION_DELAY_MS: 100,
+    CLEANUP_DELAY_MS: 1000,
+    
+    // Math constants
+    MATH_PI_MULTIPLIER: 2.5,
+    MATH_SQRT_3_HALF: 0.866,
+    
+    // Generic numeric constants
+    COUNT_MINIMUM: 3,
+    COUNT_MEDIUM: 6,
+    COUNT_LARGE: 8,
+    COUNT_MAXIMUM: 12,
+    SIZE_DEFAULT: 20,
+    SIZE_MEDIUM: 30,
+    SIZE_LARGE: 40,
     
     // Animation
     THRUSTER_OPACITY: 0.8,

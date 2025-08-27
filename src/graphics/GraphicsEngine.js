@@ -138,9 +138,9 @@ export class GraphicsEngine {
             if (Math.random() < GRAPHICS.STAR_BINARY_CHANCE) {
                 const companionType = this.selectStarType();
                 const companionData = GRAPHICS.STAR_TYPES[companionType];
-                const companionSize = baseSize * 0.7 * companionData.sizeMultiplier;
+                const companionSize = baseSize * GRAPHICS.STAR_COMPANION_SIZE_RATIO * companionData.sizeMultiplier;
                 
-                const angle = Math.random() * Math.PI * 2;
+                const angle = Math.random() * Math.PI * GRAPHICS.FULL_CIRCLE;
                 const companionX = x + Math.cos(angle) * GRAPHICS.STAR_BINARY_SEPARATION;
                 const companionY = y + Math.sin(angle) * GRAPHICS.STAR_BINARY_SEPARATION;
                 
@@ -154,7 +154,7 @@ export class GraphicsEngine {
     
     selectStarType() {
         // Use weighted random selection based on stellar rarity distribution
-        const rand = Math.random() * 100;
+        const rand = Math.random() * GRAPHICS.STAR_CUMULATIVE_RARITY;
         let cumulative = 0;
         
         for (const [type, data] of Object.entries(GRAPHICS.STAR_TYPES)) {
@@ -183,10 +183,10 @@ export class GraphicsEngine {
         });
         
         // Add subtle glow effect for larger/brighter stars
-        if (size > 2.5 || type === 'O' || type === 'B') {
-            const glow = this.createCircle(0, 0, size * 1.8, {
+        if (size > GRAPHICS.MATH_PI_MULTIPLIER || type === 'O' || type === 'B') {
+            const glow = this.createCircle(0, 0, size * GRAPHICS.RATIO_BINARY_SEPARATION, {
                 fill: color,
-                opacity: opacity * 0.2,
+                opacity: opacity * GRAPHICS.RATIO_SIZE_SMALL,
                 filter: 'blur(1px)'
             });
             starGroup.appendChild(glow);
@@ -426,7 +426,7 @@ export class GraphicsEngine {
             fill: `url(#${gradientId})`,
             stroke: atmosphereColor,
             'stroke-width': 2,
-            opacity: 0.9
+            opacity: GRAPHICS.RATIO_OPACITY_HIGH
         });
         
         planet.appendChild(body);
@@ -440,25 +440,25 @@ export class GraphicsEngine {
     }
     
     addPlanetCraters(planet, radius, surfaceColor) {
-        const craterCount = 3 + Math.floor(Math.random() * 4);
+        const craterCount = GRAPHICS.PLANET_CRATER_MIN + Math.floor(Math.random() * GRAPHICS.PLANET_CRATER_MAX);
         
         for (let i = 0; i < craterCount; i++) {
-            const angle = Math.random() * Math.PI * 2;
-            const distance = Math.random() * radius * 0.7;
+            const angle = Math.random() * Math.PI * GRAPHICS.FULL_CIRCLE;
+            const distance = Math.random() * radius * GRAPHICS.PLANET_CRATER_DISTANCE_MAX;
             const craterX = Math.cos(angle) * distance;
             const craterY = Math.sin(angle) * distance;
-            const craterRadius = Math.random() * radius * 0.15 + radius * 0.05;
+            const craterRadius = Math.random() * radius * GRAPHICS.PLANET_CRATER_SIZE_MAX + radius * GRAPHICS.PLANET_CRATER_SIZE_MIN;
             
             // Darker crater base
             const craterBase = this.createCircle(craterX, craterY, craterRadius, {
-                fill: this.darkenColor(surfaceColor, 0.4),
+                fill: this.darkenColor(surfaceColor, GRAPHICS.PLANET_DARKEN_FACTOR),
                 opacity: 0.8
             });
             
             // Crater rim highlight
-            const craterRim = this.createCircle(craterX, craterY, craterRadius * 0.9, {
+            const craterRim = this.createCircle(craterX, craterY, craterRadius * GRAPHICS.PLANET_CRATER_RIM_RATIO, {
                 fill: 'none',
-                stroke: this.lightenColor(surfaceColor, 0.2),
+                stroke: this.lightenColor(surfaceColor, GRAPHICS.PLANET_LIGHTEN_FACTOR),
                 'stroke-width': 1,
                 opacity: 0.6
             });
@@ -469,21 +469,21 @@ export class GraphicsEngine {
     }
     
     addPlanetContinents(planet, radius, surfaceColor) {
-        const continentCount = 2 + Math.floor(Math.random() * 3);
+        const continentCount = GRAPHICS.PLANET_CONTINENT_MIN + Math.floor(Math.random() * GRAPHICS.PLANET_CONTINENT_MAX);
         
         for (let i = 0; i < continentCount; i++) {
-            const angle = Math.random() * Math.PI * 2;
-            const distance = Math.random() * radius * 0.4;
+            const angle = Math.random() * Math.PI * GRAPHICS.FULL_CIRCLE;
+            const distance = Math.random() * radius * GRAPHICS.PLANET_CONTINENT_DISTANCE_MAX;
             const continentX = Math.cos(angle) * distance;
             const continentY = Math.sin(angle) * distance;
             
             // Create irregular continent shape
-            const points = 5 + Math.floor(Math.random() * 3);
+            const points = GRAPHICS.PLANET_CONTINENT_POINTS_MIN + Math.floor(Math.random() * GRAPHICS.PLANET_CONTINENT_POINTS_MAX);
             let pathData = '';
             
             for (let j = 0; j < points; j++) {
                 const pointAngle = (j / points) * 2 * Math.PI;
-                const pointRadius = radius * (0.2 + Math.random() * 0.3);
+                const pointRadius = radius * (GRAPHICS.PLANET_CONTINENT_RADIUS_MIN + Math.random() * GRAPHICS.PLANET_CONTINENT_RADIUS_MAX);
                 const px = continentX + Math.cos(pointAngle) * pointRadius;
                 const py = continentY + Math.sin(pointAngle) * pointRadius;
                 
@@ -496,8 +496,8 @@ export class GraphicsEngine {
             pathData += ' Z';
             
             const continent = this.createPath(pathData, {
-                fill: this.lightenColor(surfaceColor, 0.3),
-                opacity: 0.4,
+                fill: this.lightenColor(surfaceColor, GRAPHICS.PLANET_LIGHTEN_FACTOR),
+                opacity: GRAPHICS.PLANET_CONTINENT_OPACITY,
                 'clip-path': `circle(${radius}px at 0px 0px)`
             });
             
@@ -528,8 +528,8 @@ export class GraphicsEngine {
         if (color.startsWith('#')) {
             const hex = color.slice(1);
             const r = Math.floor(parseInt(hex.slice(0, 2), 16) * (1 - factor));
-            const g = Math.floor(parseInt(hex.slice(2, 4), 16) * (1 - factor));
-            const b = Math.floor(parseInt(hex.slice(4, 6), 16) * (1 - factor));
+            const g = Math.floor(parseInt(hex.slice(2, GRAPHICS.HUE_SHIFT), 16) * (1 - factor));
+            const b = Math.floor(parseInt(hex.slice(4, GRAPHICS.HUE_RANGE), 16) * (1 - factor));
             return `rgb(${r}, ${g}, ${b})`;
         }
         return color;
@@ -539,9 +539,9 @@ export class GraphicsEngine {
         // Simple color lightening (works for hex colors)
         if (color.startsWith('#')) {
             const hex = color.slice(1);
-            const r = Math.min(255, Math.floor(parseInt(hex.slice(0, 2), 16) * (1 + factor)));
-            const g = Math.min(255, Math.floor(parseInt(hex.slice(2, 4), 16) * (1 + factor)));
-            const b = Math.min(255, Math.floor(parseInt(hex.slice(4, 6), 16) * (1 + factor)));
+            const r = Math.min(GRAPHICS.COLOR_MAX, Math.floor(parseInt(hex.slice(0, 2), 16) * (1 + factor)));
+            const g = Math.min(GRAPHICS.COLOR_MAX, Math.floor(parseInt(hex.slice(2, GRAPHICS.HUE_SHIFT), 16) * (1 + factor)));
+            const b = Math.min(GRAPHICS.COLOR_MAX, Math.floor(parseInt(hex.slice(4, GRAPHICS.HUE_RANGE), 16) * (1 + factor)));
             return `rgb(${r}, ${g}, ${b})`;
         }
         return color;
@@ -570,7 +570,7 @@ export class GraphicsEngine {
         
         // Docking ports (4 directions)
         for (let i = 0; i < 4; i++) {
-            const angle = (i * 90) * Math.PI / 180;
+            const angle = (i * GRAPHICS.ANGLE_90) * Math.PI / GRAPHICS.ANGLE_180;
             const portX = Math.cos(angle) * size;
             const portY = Math.sin(angle) * size;
             
@@ -592,7 +592,7 @@ export class GraphicsEngine {
         
         // Solar panels
         for (let i = 0; i < 6; i++) {
-            const angle = (i * 60) * Math.PI / 180;
+            const angle = (i * GRAPHICS.ANGLE_60) * Math.PI / GRAPHICS.ANGLE_180;
             const panelX = Math.cos(angle) * size * 1.2;
             const panelY = Math.sin(angle) * size * 1.2;
             
@@ -605,7 +605,7 @@ export class GraphicsEngine {
                     fill: '#1a1a3a',
                     stroke: '#4444ff',
                     'stroke-width': 1,
-                    opacity: 0.9,
+                    opacity: GRAPHICS.RATIO_OPACITY_HIGH,
                     transform: `rotate(${i * 60}, ${panelX}, ${panelY})`
                 }
             );
@@ -660,7 +660,7 @@ export class GraphicsEngine {
             fill: 'none',
             stroke: '#ffffff',
             'stroke-width': size * 0.04,
-            opacity: 0.9
+            opacity: GRAPHICS.RATIO_OPACITY_HIGH
         });
         
         // Core energy field
@@ -672,7 +672,7 @@ export class GraphicsEngine {
         
         // Support struts (4 directions)
         for (let i = 0; i < 4; i++) {
-            const angle = (i * 90) * Math.PI / 180;
+            const angle = (i * GRAPHICS.ANGLE_90) * Math.PI / GRAPHICS.ANGLE_180;
             const strutStartX = Math.cos(angle) * size * 0.7;
             const strutStartY = Math.sin(angle) * size * 0.7;
             const strutEndX = Math.cos(angle) * size * 1.1;
@@ -695,7 +695,7 @@ export class GraphicsEngine {
         });
         
         for (let i = 0; i < 8; i++) {
-            const angle = (i * 45) * Math.PI / 180;
+            const angle = (i * GRAPHICS.ANGLE_45) * Math.PI / GRAPHICS.ANGLE_180;
             const particleX = Math.cos(angle) * size * 0.85;
             const particleY = Math.sin(angle) * size * 0.85;
             
@@ -831,7 +831,7 @@ export class GraphicsEngine {
         // Central flash
         const flash = this.createCircle(0, 0, attributes.size || 8, {
             fill: attributes.color || '#ffff00',
-            opacity: 0.9
+            opacity: GRAPHICS.RATIO_OPACITY_HIGH
         });
         
         // Outer ring
@@ -844,7 +844,7 @@ export class GraphicsEngine {
         
         // Spark particles
         for (let i = 0; i < 6; i++) {
-            const angle = (i * 60) * Math.PI / 180;
+            const angle = (i * GRAPHICS.ANGLE_60) * Math.PI / GRAPHICS.ANGLE_180;
             const sparkDistance = (attributes.size || 8) * 2;
             const sparkX = Math.cos(angle) * sparkDistance;
             const sparkY = Math.sin(angle) * sparkDistance;
@@ -901,7 +901,7 @@ export class GraphicsEngine {
         if (type === 'plasma') {
             const core = this.createCircle(0, 0, 3, {
                 fill: '#00ffff',
-                opacity: 0.9
+                opacity: GRAPHICS.RATIO_OPACITY_HIGH
             });
             
             const glow = this.createCircle(0, 0, 6, {
@@ -950,7 +950,7 @@ export class GraphicsEngine {
         } else if (type === 'railgun') {
             const slug = this.createRect(-4, -1, 8, 2, {
                 fill: '#ffff00',
-                opacity: 0.9
+                opacity: GRAPHICS.RATIO_OPACITY_HIGH
             });
             
             const field = this.createRect(-6, -2, 12, 4, {
@@ -981,7 +981,7 @@ export class GraphicsEngine {
                 fill: 'none',
                 stroke: colors[i] || colors[colors.length - 1],
                 'stroke-width': size * 0.1,
-                opacity: 0.9 - i * 0.2
+                opacity: GRAPHICS.RATIO_OPACITY_HIGH - i * 0.2
             });
             
             explosion.appendChild(ring);
@@ -995,7 +995,7 @@ export class GraphicsEngine {
         
         // Debris particles
         for (let i = 0; i < 12; i++) {
-            const angle = (i * 30) * Math.PI / 180;
+            const angle = (i * GRAPHICS.ANGLE_30) * Math.PI / GRAPHICS.ANGLE_180;
             const distance = size * 1.2;
             const particleX = Math.cos(angle) * distance;
             const particleY = Math.sin(angle) * distance;
@@ -1064,7 +1064,7 @@ export class GraphicsEngine {
         
         // Inner energy pattern
         for (let i = 0; i < 6; i++) {
-            const angle = (i * 60) * Math.PI / 180;
+            const angle = (i * GRAPHICS.ANGLE_60) * Math.PI / GRAPHICS.ANGLE_180;
             const lineX = Math.cos(angle) * radius * 0.7;
             const lineY = Math.sin(angle) * radius * 0.7;
             
