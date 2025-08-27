@@ -3,6 +3,8 @@
  * Manages multiple star systems/sectors and travel between them
  */
 
+import { NAVIGATION } from '../constants.js';
+
 export class SpaceNavigation {
     constructor() {
         this.currentSector = 'alpha-sector';
@@ -184,7 +186,7 @@ export class SpaceNavigation {
         return !this.isJumping && (now - this.lastJumpTime) >= this.jumpCooldown;
     }
     
-    checkJumpGateProximity(playerX, playerY, interactionRange = 80) {
+    checkJumpGateProximity(playerX, playerY, interactionRange = NAVIGATION.PROXIMITY_CHECK_RANGE) {
         const currentSector = this.getCurrentSector();
         if (!currentSector) return null;
         
@@ -223,7 +225,7 @@ export class SpaceNavigation {
         }
         
         // Simulate jump animation delay
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        await new Promise(resolve => setTimeout(resolve, NAVIGATION.JUMP_COOLDOWN));
         
         this.currentSector = destinationSectorId;
         this.isJumping = false;
@@ -237,7 +239,7 @@ export class SpaceNavigation {
     
     getPlayerSpawnPosition(sectorId) {
         const sector = this.sectors.get(sectorId);
-        if (!sector) return { x: 100, y: 100 };
+        if (!sector) return { x: NAVIGATION.SPAWN_OFFSET, y: NAVIGATION.SPAWN_OFFSET };
         
         // Find the jump gate that leads back to previous sector
         // and spawn player near it
@@ -247,15 +249,15 @@ export class SpaceNavigation {
         
         if (jumpGate) {
             return {
-                x: jumpGate.x + 100, // Offset from gate
+                x: jumpGate.x + NAVIGATION.SPAWN_OFFSET,
                 y: jumpGate.y
             };
         }
         
         // Default spawn in safe area
         return {
-            x: Math.min(200, sector.bounds.width * 0.1),
-            y: Math.min(200, sector.bounds.height * 0.1)
+            x: Math.min(NAVIGATION.GATE_SPAWN_X, sector.bounds.width * NAVIGATION.GATE_SPAWN_MARGIN),
+            y: Math.min(NAVIGATION.GATE_SPAWN_Y, sector.bounds.height * NAVIGATION.GATE_SPAWN_MARGIN)
         };
     }
     
