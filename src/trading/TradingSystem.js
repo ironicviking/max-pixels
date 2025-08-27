@@ -134,7 +134,7 @@ export class TradingSystem {
         return { success: true, cost: totalCost };
     }
     
-    canSellToStation(stationId, itemId, quantity, playerCredits) {
+    canSellToStation(stationId, itemId, quantity, _playerCredits) {
         const stationData = this.stationInventories.get(stationId);
         if (!stationData) return { success: false, error: 'Station not found' };
         

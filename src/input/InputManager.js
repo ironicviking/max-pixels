@@ -176,6 +176,7 @@ export class InputManager {
     }
     
     update() {
+        // eslint-disable-next-line no-unused-vars
         for (const [keyCode, state] of this.keys) {
             if (state.justPressed) {
                 state.justPressed = false;
@@ -187,6 +188,7 @@ export class InputManager {
     }
     
     clearAllKeys() {
+        // eslint-disable-next-line no-unused-vars
         for (const [keyCode, state] of this.keys) {
             state.isPressed = false;
             state.justPressed = false;

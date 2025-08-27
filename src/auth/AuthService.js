@@ -126,18 +126,18 @@ export class AuthService {
             this.currentUser = user;
             return true;
             
-        } catch (error) {
+        } catch {
             this.logout();
             return false;
         }
     }
     
     getCurrentUser() {
-        return this.currentUser ? this.sanitizeUser(this.currentUser) : null;
+        return Boolean(this.currentUser) ? this.sanitizeUser(this.currentUser) : null;
     }
     
     isAuthenticated() {
-        return !!this.currentUser;
+        return Boolean(this.currentUser);
     }
     
     // Validation helpers
@@ -203,6 +203,7 @@ export class AuthService {
     }
     
     sanitizeUser(user) {
+        // eslint-disable-next-line no-unused-vars
         const { passwordHash, ...safeUser } = user;
         return safeUser;
     }

@@ -30,6 +30,7 @@ export class GraphicsEngine {
     createLayer(name, zIndex = 0) {
         const layer = this.createElement('g');
         layer.setAttribute('id', `layer_${name}`);
+        layer.setAttribute('data-layer', name);
         layer.style.zIndex = zIndex;
         this.layers.set(name, layer);
         this.svg.appendChild(layer);
@@ -37,7 +38,10 @@ export class GraphicsEngine {
     }
     
     getLayer(name) {
-        return this.layers.get(name) || this.createLayer(name);
+        if (this.layers.has(name)) {
+            return this.layers.get(name);
+        }
+        return this.createLayer(name);
     }
     
     createCircle(cx, cy, r, attributes = {}) {
@@ -111,7 +115,7 @@ export class GraphicsEngine {
         return gradientId;
     }
     
-    createStarField(count, bounds = { width: 1920, height: 1080 }) {
+    createStarField(count, bounds = { width: GRAPHICS.DEFAULT_CANVAS_WIDTH, height: GRAPHICS.DEFAULT_CANVAS_HEIGHT }) {
         const starField = this.createGroup({ id: 'starField' });
         
         for (let i = 0; i < count; i++) {
@@ -130,13 +134,13 @@ export class GraphicsEngine {
         return starField;
     }
     
-    createAsteroidField(count, bounds = { width: 1920, height: 1080 }) {
+    createAsteroidField(count, bounds = { width: GRAPHICS.DEFAULT_CANVAS_WIDTH, height: GRAPHICS.DEFAULT_CANVAS_HEIGHT }) {
         const asteroidField = this.createGroup({ id: 'asteroidField' });
         
         for (let i = 0; i < count; i++) {
             const x = Math.random() * bounds.width;
             const y = Math.random() * bounds.height;
-            const size = Math.random() * 30 + 10;
+            const size = Math.random() * GRAPHICS.ASTEROID_SIZE_RANGE + GRAPHICS.ASTEROID_SIZE_MIN;
             
             const asteroid = this.createAsteroid(x, y, size);
             asteroidField.appendChild(asteroid);
@@ -151,12 +155,12 @@ export class GraphicsEngine {
             ...attributes
         });
         
-        const points = 6 + Math.floor(Math.random() * 4);
+        const points = GRAPHICS.ASTEROID_VERTICES + Math.floor(Math.random() * GRAPHICS.ASTEROID_VERTEX_VARIANCE);
         let pathData = '';
         
         for (let i = 0; i < points; i++) {
             const angle = (i / points) * 2 * Math.PI;
-            const radius = size * (0.7 + Math.random() * 0.3);
+            const radius = size * (GRAPHICS.ASTEROID_RADIUS_MIN + Math.random() * GRAPHICS.ASTEROID_RADIUS_MAX);
             const px = Math.cos(angle) * radius;
             const py = Math.sin(angle) * radius;
             
@@ -171,16 +175,16 @@ export class GraphicsEngine {
         const body = this.createPath(pathData, {
             fill: '#8b7355',
             stroke: '#654321',
-            'stroke-width': 1,
-            opacity: 0.9
+            'stroke-width': GRAPHICS.ASTEROID_STROKE_WIDTH,
+            opacity: GRAPHICS.ASTEROID_OPACITY
         });
         
         const highlight = this.createPath(pathData, {
             fill: 'none',
             stroke: '#a0926b',
-            'stroke-width': 0.5,
-            opacity: 0.6,
-            transform: `translate(-${size * 0.1}, -${size * 0.1})`
+            'stroke-width': GRAPHICS.ASTEROID_HIGHLIGHT_WIDTH,
+            opacity: GRAPHICS.ASTEROID_HIGHLIGHT_OPACITY,
+            transform: `translate(-${size * GRAPHICS.ASTEROID_HIGHLIGHT_OFFSET}, -${size * GRAPHICS.ASTEROID_HIGHLIGHT_OFFSET})`
         });
         
         asteroid.appendChild(body);
@@ -189,22 +193,22 @@ export class GraphicsEngine {
         return asteroid;
     }
     
-    createSpaceship(x, y, size = 20, attributes = {}) {
+    createSpaceship(x, y, size = GRAPHICS.SPACESHIP_DEFAULT_SIZE, attributes = {}) {
         const ship = this.createGroup({
             transform: `translate(${x}, ${y})`,
             ...attributes
         });
         
         const hull = this.createPath(
-            `M 0 -${size} L ${size * 0.3} ${size} L 0 ${size * 0.7} L -${size * 0.3} ${size} Z`,
+            `M 0 -${size} L ${size * GRAPHICS.SPACESHIP_HULL_WING_RATIO} ${size} L 0 ${size * GRAPHICS.SPACESHIP_HULL_BODY_RATIO} L -${size * GRAPHICS.SPACESHIP_HULL_WING_RATIO} ${size} Z`,
             {
                 fill: '#4a90e2',
                 stroke: '#ffffff',
-                'stroke-width': 1
+                'stroke-width': GRAPHICS.SPACESHIP_STROKE_WIDTH
             }
         );
         
-        const engine = this.createCircle(0, size * 0.5, size * 0.2, {
+        const engine = this.createCircle(0, size * GRAPHICS.SPACESHIP_ENGINE_RATIO, size * GRAPHICS.SPACESHIP_ENGINE_SIZE_RATIO, {
             fill: '#ff4444',
             opacity: 0.8
         });
@@ -807,6 +811,210 @@ export class GraphicsEngine {
         }, parseFloat(attributes.duration || '0.4') * 1000 + 100);
         
         return impact;
+    }
+    
+    createProjectile(x, y, type = 'plasma', attributes = {}) {
+        const projectile = this.createGroup({
+            id: this.generateId('projectile'),
+            transform: `translate(${x}, ${y})`,
+            ...attributes
+        });
+        
+        if (type === 'plasma') {
+            const core = this.createCircle(0, 0, 3, {
+                fill: '#00ffff',
+                opacity: 0.9
+            });
+            
+            const glow = this.createCircle(0, 0, 6, {
+                fill: '#00aaff',
+                opacity: 0.4
+            });
+            
+            const trail = this.createCircle(0, 0, 8, {
+                fill: 'none',
+                stroke: '#0088ff',
+                'stroke-width': 1,
+                opacity: 0.2
+            });
+            
+            projectile.appendChild(trail);
+            projectile.appendChild(glow);
+            projectile.appendChild(core);
+            
+        } else if (type === 'missile') {
+            const body = this.createPath(
+                'M -8 0 L 8 -2 L 10 0 L 8 2 Z',
+                {
+                    fill: '#666666',
+                    stroke: '#aaaaaa',
+                    'stroke-width': 1
+                }
+            );
+            
+            const warhead = this.createCircle(8, 0, 2, {
+                fill: '#ff4444',
+                opacity: 0.8
+            });
+            
+            const exhaust = this.createPath(
+                'M -8 0 L -15 -1 L -12 0 L -15 1 Z',
+                {
+                    fill: '#ff8800',
+                    opacity: 0.7
+                }
+            );
+            
+            projectile.appendChild(exhaust);
+            projectile.appendChild(body);
+            projectile.appendChild(warhead);
+            
+        } else if (type === 'railgun') {
+            const slug = this.createRect(-4, -1, 8, 2, {
+                fill: '#ffff00',
+                opacity: 0.9
+            });
+            
+            const field = this.createRect(-6, -2, 12, 4, {
+                fill: 'none',
+                stroke: '#ffff88',
+                'stroke-width': 1,
+                opacity: 0.5
+            });
+            
+            projectile.appendChild(field);
+            projectile.appendChild(slug);
+        }
+        
+        return projectile;
+    }
+    
+    createExplosion(x, y, size = 20, attributes = {}) {
+        const explosion = this.createGroup({
+            id: this.generateId('explosion'),
+            transform: `translate(${x}, ${y})`
+        });
+        
+        const colors = attributes.colors || ['#ff4444', '#ff8800', '#ffff00', '#ffffff'];
+        const rings = 4;
+        
+        for (let i = 0; i < rings; i++) {
+            const ring = this.createCircle(0, 0, size * (0.3 + i * 0.3), {
+                fill: 'none',
+                stroke: colors[i] || colors[colors.length - 1],
+                'stroke-width': size * 0.1,
+                opacity: 0.9 - i * 0.2
+            });
+            
+            explosion.appendChild(ring);
+        }
+        
+        // Central flash
+        const flash = this.createCircle(0, 0, size * 0.8, {
+            fill: '#ffffff',
+            opacity: 0.8
+        });
+        
+        // Debris particles
+        for (let i = 0; i < 12; i++) {
+            const angle = (i * 30) * Math.PI / 180;
+            const distance = size * 1.2;
+            const particleX = Math.cos(angle) * distance;
+            const particleY = Math.sin(angle) * distance;
+            
+            const particle = this.createCircle(particleX, particleY, 2, {
+                fill: '#ffaa00',
+                opacity: 0.7
+            });
+            
+            explosion.appendChild(particle);
+        }
+        
+        explosion.appendChild(flash);
+        
+        // Animate explosion
+        const scaleAnimation = this.createElement('animateTransform');
+        scaleAnimation.setAttribute('attributeName', 'transform');
+        scaleAnimation.setAttribute('type', 'scale');
+        scaleAnimation.setAttribute('values', '0 0;2 2;1 1');
+        scaleAnimation.setAttribute('dur', attributes.duration || '0.8s');
+        scaleAnimation.setAttribute('fill', 'freeze');
+        scaleAnimation.setAttribute('additive', 'sum');
+        
+        const opacityAnimation = this.createElement('animate');
+        opacityAnimation.setAttribute('attributeName', 'opacity');
+        opacityAnimation.setAttribute('values', '0;1;0');
+        opacityAnimation.setAttribute('dur', attributes.duration || '0.8s');
+        opacityAnimation.setAttribute('fill', 'freeze');
+        
+        explosion.appendChild(scaleAnimation);
+        explosion.appendChild(opacityAnimation);
+        
+        // Auto-remove after animation
+        setTimeout(() => {
+            this.remove(explosion);
+        }, parseFloat(attributes.duration || '0.8') * 1000 + 100);
+        
+        return explosion;
+    }
+    
+    createShieldEffect(x, y, radius = 30, attributes = {}) {
+        const shield = this.createGroup({
+            id: this.generateId('shield'),
+            transform: `translate(${x}, ${y})`
+        });
+        
+        const color = attributes.color || '#00aaff';
+        
+        // Hexagonal shield pattern
+        const hexPath = this.createPath(
+            `M ${radius} 0 L ${radius * 0.5} ${radius * 0.866} L ${-radius * 0.5} ${radius * 0.866} 
+             L ${-radius} 0 L ${-radius * 0.5} ${-radius * 0.866} L ${radius * 0.5} ${-radius * 0.866} Z`,
+            {
+                fill: 'none',
+                stroke: color,
+                'stroke-width': 2,
+                opacity: 0.6
+            }
+        );
+        
+        // Shield energy field
+        const field = this.createCircle(0, 0, radius * 0.9, {
+            fill: color,
+            opacity: 0.1
+        });
+        
+        // Inner energy pattern
+        for (let i = 0; i < 6; i++) {
+            const angle = (i * 60) * Math.PI / 180;
+            const lineX = Math.cos(angle) * radius * 0.7;
+            const lineY = Math.sin(angle) * radius * 0.7;
+            
+            const line = this.createElement('line');
+            line.setAttribute('x1', 0);
+            line.setAttribute('y1', 0);
+            line.setAttribute('x2', lineX);
+            line.setAttribute('y2', lineY);
+            line.setAttribute('stroke', color);
+            line.setAttribute('stroke-width', 1);
+            line.setAttribute('opacity', 0.3);
+            
+            shield.appendChild(line);
+        }
+        
+        shield.appendChild(field);
+        shield.appendChild(hexPath);
+        
+        // Pulse animation
+        const pulseAnimation = this.createElement('animate');
+        pulseAnimation.setAttribute('attributeName', 'opacity');
+        pulseAnimation.setAttribute('values', '0.3;0.8;0.3');
+        pulseAnimation.setAttribute('dur', '1.5s');
+        pulseAnimation.setAttribute('repeatCount', 'indefinite');
+        
+        shield.appendChild(pulseAnimation);
+        
+        return shield;
     }
     
     animate(element, attributes, duration = 1000, _easing = 'ease-in-out') {

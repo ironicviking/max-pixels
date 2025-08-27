@@ -9,12 +9,16 @@ services:
     environment:
       - NODE_ENV=development
       - DEBUG=max-pixels:*
-    # Mount additional development files
+      - DEV_MODE=true
+    # Mount additional development files for hot reloading
     volumes:
       - ./src:/app/src
       - ./index.html:/app/index.html
       - ./package.json:/app/package.json
+      - ./package-lock.json:/app/package-lock.json
       - ./CLAUDE.md:/app/CLAUDE.md
+      - ./eslint.config.js:/app/eslint.config.js
+      - ./scripts:/app/scripts
 
   # For development, we can expose database ports for direct access
   postgres:
@@ -24,7 +28,17 @@ services:
       - POSTGRES_DB=maxpixels_dev
       - POSTGRES_USER=maxpixels_dev
       - POSTGRES_PASSWORD=dev_password_123
+    # Add logging for development debugging
+    command: [
+      "postgres",
+      "-c", "log_statement=all",
+      "-c", "log_destination=stderr",
+      "-c", "logging_collector=on",
+      "-c", "log_min_duration_statement=0"
+    ]
 
   redis:
     ports:
       - "6379:6379"
+    # Enable more verbose logging in development
+    command: redis-server --appendonly yes --loglevel verbose

@@ -32,11 +32,25 @@ Max-Pixels is a web-based multiplayer space exploration and trading game built e
 
 ## Development Commands
 
-Since this is a new project, common development commands will be established as the codebase grows. Future instances should document:
-- Build commands
-- Test commands
-- Linting/formatting commands
-- Development server commands
+The project now has proper development tooling configured:
+
+### Daily Development
+- `npm run dev` - Start development server on port 3000 with auto-reload
+- `npm run lint` - Check code quality with ESLint
+- `npm run lint:fix` - Auto-fix linting issues where possible
+
+### Production Build
+- `npm run build` - Build production-ready assets in `dist/` folder
+- `npm run serve:prod` - Build and serve production version on port 8080
+- `npm run clean` - Remove build artifacts
+
+### Code Quality
+- ESLint configured for ES2022 modules with game development best practices
+- Build process includes JavaScript minification (50%+ size reduction)
+- Production HTML optimized with meta tags and SEO enhancements
+
+### Testing
+- `npm run test` - Placeholder for future browser-based game testing framework
 
 ## Code Structure
 

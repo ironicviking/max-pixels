@@ -42,6 +42,7 @@ export class AudioManager {
         this.generateThrusterSound();
         this.generateCollisionSound();
         this.generateAmbientHum();
+        this.generateLaserSound();
     }
     
     generateThrusterSound() {
@@ -75,6 +76,17 @@ export class AudioManager {
         });
         
         this.sounds.set('ambient', ambientBuffer);
+    }
+    
+    generateLaserSound() {
+        const laserBuffer = this.createNoiseBuffer(AUDIO.VOLUME_HIGH, (freq, time) => {
+            const beam = Math.sin(freq * AUDIO.FREQUENCY_HIGH * AUDIO.LASER_FREQUENCY_MULT * time) * Math.exp(-time * AUDIO.LASER_BEAM_DECAY);
+            const zap = Math.sin(freq * AUDIO.FREQUENCY_HIGH * AUDIO.LASER_ZAP_FREQUENCY_MULT * time) * Math.exp(-time * AUDIO.LASER_ZAP_DECAY);
+            const energy = (Math.random() - AUDIO.FADE_DURATION) * AUDIO.VOLUME_LOW * Math.exp(-time * AUDIO.LASER_ENERGY_DECAY);
+            return (beam * AUDIO.SOUND_MIX + zap * AUDIO.VOLUME_HIGH + energy) * AUDIO.LASER_VOLUME;
+        });
+        
+        this.sounds.set('laser', laserBuffer);
     }
     
     createNoiseBuffer(duration, waveFunction) {
@@ -164,6 +176,13 @@ export class AudioManager {
         return this.play('ambient', {
             volume: AUDIO.AMBIENT_VOLUME,
             loop: true
+        });
+    }
+    
+    playLaser(intensity = 1.0) {
+        return this.play('laser', {
+            volume: intensity * AUDIO.LASER_VOLUME,
+            playbackRate: AUDIO.PLAYBACK_BASE + Math.random() * AUDIO.VOLUME_LOW
         });
     }
     
