@@ -128,6 +128,64 @@ export class GraphicsEngine {
         return starField;
     }
     
+    createAsteroidField(count, bounds = { width: 1920, height: 1080 }) {
+        const asteroidField = this.createGroup({ id: 'asteroidField' });
+        
+        for (let i = 0; i < count; i++) {
+            const x = Math.random() * bounds.width;
+            const y = Math.random() * bounds.height;
+            const size = Math.random() * 30 + 10;
+            
+            const asteroid = this.createAsteroid(x, y, size);
+            asteroidField.appendChild(asteroid);
+        }
+        
+        return asteroidField;
+    }
+    
+    createAsteroid(x, y, size) {
+        const asteroid = this.createGroup({
+            transform: `translate(${x}, ${y})`
+        });
+        
+        const points = 6 + Math.floor(Math.random() * 4);
+        let pathData = '';
+        
+        for (let i = 0; i < points; i++) {
+            const angle = (i / points) * 2 * Math.PI;
+            const radius = size * (0.7 + Math.random() * 0.3);
+            const px = Math.cos(angle) * radius;
+            const py = Math.sin(angle) * radius;
+            
+            if (i === 0) {
+                pathData += `M ${px} ${py}`;
+            } else {
+                pathData += ` L ${px} ${py}`;
+            }
+        }
+        pathData += ' Z';
+        
+        const body = this.createPath(pathData, {
+            fill: '#8b7355',
+            stroke: '#654321',
+            'stroke-width': 1,
+            opacity: 0.9
+        });
+        
+        const highlight = this.createPath(pathData, {
+            fill: 'none',
+            stroke: '#a0926b',
+            'stroke-width': 0.5,
+            opacity: 0.6,
+            transform: `translate(-${size * 0.1}, -${size * 0.1})`
+        });
+        
+        asteroid.appendChild(body);
+        asteroid.appendChild(highlight);
+        
+        return asteroid;
+    }
+    
     createSpaceship(x, y, size = 20, attributes = {}) {
         const ship = this.createGroup({
             transform: `translate(${x}, ${y})`,

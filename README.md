@@ -57,6 +57,7 @@ Max-Pixels is an ambitious browser-based game that combines space exploration, t
 - SVG graphics rendering system
 - Basic space navigation
 - Initial multiplayer networking
+- docker-compose dev environment
 
 ### Phase 2: Core Gameplay
 - Trading system implementation

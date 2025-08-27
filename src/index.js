@@ -4,12 +4,14 @@
  */
 
 import { GraphicsEngine } from './graphics/GraphicsEngine.js';
+import { InputManager } from './input/InputManager.js';
 
 class MaxPixelsGame {
     constructor() {
         this.gameCanvas = document.getElementById('gameCanvas');
         this.uiContainer = document.getElementById('ui');
         this.graphics = new GraphicsEngine(this.gameCanvas);
+        this.input = new InputManager();
         this.isInitialized = false;
         
         this.player = {
@@ -21,7 +23,6 @@ class MaxPixelsGame {
         };
         
         this.asteroids = [];
-        this.keys = {};
         
         console.log('Max-Pixels initializing...');
         this.init();
@@ -31,7 +32,6 @@ class MaxPixelsGame {
         try {
             await this.initializeGraphics();
             await this.initializeUI();
-            this.initializeInput();
             this.startGameLoop();
             
             this.isInitialized = true;
@@ -78,19 +78,6 @@ class MaxPixelsGame {
         this.createHUD();
     }
     
-    initializeInput() {
-        console.log('Initializing input system...');
-        
-        document.addEventListener('keydown', (e) => {
-            this.keys[e.code] = true;
-            e.preventDefault();
-        });
-        
-        document.addEventListener('keyup', (e) => {
-            this.keys[e.code] = false;
-            e.preventDefault();
-        });
-    }
     
     
     startGameLoop() {
@@ -163,31 +150,17 @@ class MaxPixelsGame {
         this.handleInput();
         this.updatePlayer();
         this.checkCollisions();
+        this.input.update();
     }
     
     handleInput() {
-        this.player.velocity.x = 0;
-        this.player.velocity.y = 0;
+        const movement = this.input.getMovementVector();
+        this.player.velocity.x = movement.x;
+        this.player.velocity.y = movement.y;
         
-        if (this.keys['KeyW'] || this.keys['ArrowUp']) {
-            this.player.velocity.y = -1;
-        }
-        if (this.keys['KeyS'] || this.keys['ArrowDown']) {
-            this.player.velocity.y = 1;
-        }
-        if (this.keys['KeyA'] || this.keys['ArrowLeft']) {
-            this.player.velocity.x = -1;
-        }
-        if (this.keys['KeyD'] || this.keys['ArrowRight']) {
-            this.player.velocity.x = 1;
-        }
-        
-        const magnitude = Math.sqrt(
-            this.player.velocity.x ** 2 + this.player.velocity.y ** 2
-        );
-        if (magnitude > 0) {
-            this.player.velocity.x /= magnitude;
-            this.player.velocity.y /= magnitude;
+        if (this.input.isPressed('boost')) {
+            this.player.velocity.x *= 2;
+            this.player.velocity.y *= 2;
         }
     }
     
@@ -223,6 +196,7 @@ class MaxPixelsGame {
                 <div class="hud-section controls">
                     <h3>Controls</h3>
                     <div>WASD / Arrow Keys: Move</div>
+                    <div>Shift: Boost</div>
                 </div>
             </div>
         `;
