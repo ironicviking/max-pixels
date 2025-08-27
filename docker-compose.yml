@@ -1,0 +1,54 @@
+version: '3.8'
+
+services:
+  # Main web application
+  web:
+    build: .
+    ports:
+      - "3000:3000"
+    volumes:
+      # Mount source code for development hot-reloading
+      - ./src:/app/src
+      - ./index.html:/app/index.html
+      # Exclude node_modules from volume mounting
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development
+    restart: unless-stopped
+    networks:
+      - maxpixels-network
+
+  # Redis for session storage and real-time features (future use)
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    networks:
+      - maxpixels-network
+    command: redis-server --appendonly yes
+
+  # PostgreSQL for game data persistence (future use)
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: maxpixels
+      POSTGRES_USER: maxpixels
+      POSTGRES_PASSWORD: dev_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    networks:
+      - maxpixels-network
+
+networks:
+  maxpixels-network:
+    driver: bridge
+
+volumes:
+  redis_data:
+  postgres_data:

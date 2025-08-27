@@ -5,6 +5,7 @@
 
 import { GraphicsEngine } from './graphics/GraphicsEngine.js';
 import { InputManager } from './input/InputManager.js';
+import { Camera } from './graphics/Camera.js';
 
 class MaxPixelsGame {
     constructor() {
@@ -12,6 +13,7 @@ class MaxPixelsGame {
         this.uiContainer = document.getElementById('ui');
         this.graphics = new GraphicsEngine(this.gameCanvas);
         this.input = new InputManager();
+        this.camera = new Camera(this.gameCanvas);
         this.isInitialized = false;
         
         this.player = {
@@ -71,6 +73,8 @@ class MaxPixelsGame {
             atmosphereColor: '#4488ff'
         });
         this.graphics.addToLayer('game', testPlanet);
+        
+        this.camera.centerOn(this.player.x, this.player.y);
     }
     
     async initializeUI() {
@@ -142,6 +146,8 @@ class MaxPixelsGame {
         setTimeout(() => {
             this.playerShip.querySelector('path').setAttribute('fill', '#4a90e2');
         }, 200);
+        
+        this.camera.shake(15, 500);
             
         console.log('Collision detected! Player reset to center.');
     }
@@ -149,6 +155,7 @@ class MaxPixelsGame {
     update(timestamp) {
         this.handleInput();
         this.updatePlayer();
+        this.updateCamera();
         this.checkCollisions();
         this.input.update();
     }
@@ -161,6 +168,13 @@ class MaxPixelsGame {
         if (this.input.isPressed('boost')) {
             this.player.velocity.x *= 2;
             this.player.velocity.y *= 2;
+        }
+        
+        if (this.input.justPressed('KeyQ')) {
+            this.camera.zoomOut();
+        }
+        if (this.input.justPressed('KeyE')) {
+            this.camera.zoomIn();
         }
     }
     
@@ -175,6 +189,11 @@ class MaxPixelsGame {
         
         this.playerShip.setAttribute('transform', 
             `translate(${this.player.x}, ${this.player.y})`);
+    }
+    
+    updateCamera() {
+        this.camera.follow(this.player.x, this.player.y);
+        this.camera.update();
     }
     
     render(timestamp) {
@@ -197,6 +216,11 @@ class MaxPixelsGame {
                     <h3>Controls</h3>
                     <div>WASD / Arrow Keys: Move</div>
                     <div>Shift: Boost</div>
+                    <div>Q: Zoom Out | E: Zoom In</div>
+                </div>
+                <div class="hud-section camera">
+                    <h3>Camera</h3>
+                    <div>Zoom: <span id="camera-zoom">1.0</span>x</div>
                 </div>
             </div>
         `;
@@ -212,6 +236,8 @@ class MaxPixelsGame {
             this.player.velocity.x ** 2 + this.player.velocity.y ** 2
         ) * this.player.speed;
         document.getElementById('player-speed').textContent = Math.round(speed);
+        
+        document.getElementById('camera-zoom').textContent = this.camera.zoom.toFixed(1);
     }
     
     hideLoadingScreen() {

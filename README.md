@@ -73,7 +73,54 @@ Max-Pixels is an ambitious browser-based game that combines space exploration, t
 
 ## 🔧 Getting Started
 
-*Development commands and setup instructions will be added as the project progresses.*
+### Development Setup
+
+#### Option 1: Docker (Recommended)
+```bash
+# Clone the repository
+git clone <repository-url>
+cd max-pixels
+
+# Start the development environment
+docker-compose up -d
+
+# Access the game at http://localhost:3000
+```
+
+The Docker setup includes:
+- Web application server on port 3000
+- PostgreSQL database on port 5432 (for future multiplayer features)
+- Redis cache on port 6379 (for session management)
+
+#### Option 2: Local Development
+```bash
+# Install dependencies
+npm install
+
+# Start development server
+npm run dev
+```
+
+### Available Commands
+- `npm run dev` - Start development server with hot reloading
+- `npm run build` - Build for production (placeholder)
+- `npm run test` - Run tests (placeholder)
+- `npm run lint` - Run linting (placeholder)
+
+### Docker Commands
+```bash
+# Start all services
+docker-compose up -d
+
+# View logs
+docker-compose logs -f web
+
+# Stop all services
+docker-compose down
+
+# Rebuild after code changes
+docker-compose build web
+```
 
 ## 📝 Contributing
 

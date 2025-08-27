@@ -1,0 +1,30 @@
+# Development-specific overrides for docker-compose.yml
+# This file is automatically used by Docker Compose in development
+version: '3.8'
+
+services:
+  web:
+    # Enable development mode with live reloading
+    command: npm run dev
+    environment:
+      - NODE_ENV=development
+      - DEBUG=max-pixels:*
+    # Mount additional development files
+    volumes:
+      - ./src:/app/src
+      - ./index.html:/app/index.html
+      - ./package.json:/app/package.json
+      - ./CLAUDE.md:/app/CLAUDE.md
+
+  # For development, we can expose database ports for direct access
+  postgres:
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_DB=maxpixels_dev
+      - POSTGRES_USER=maxpixels_dev
+      - POSTGRES_PASSWORD=dev_password_123
+
+  redis:
+    ports:
+      - "6379:6379"
