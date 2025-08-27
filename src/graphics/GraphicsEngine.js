@@ -298,26 +298,26 @@ export class GraphicsEngine {
         });
         
         const thrusterFlame1 = this.createPath(
-            `M -${size * 0.1} ${size * 0.8} L 0 ${size * 1.5} L ${size * 0.1} ${size * 0.8} Z`,
+            `M -${size * GRAPHICS.SPACESHIP_THRUSTER_MAIN_WIDTH} ${size * GRAPHICS.SPACESHIP_THRUSTER_OPACITY} L 0 ${size * GRAPHICS.SPACESHIP_THRUSTER_MAIN_HEIGHT} L ${size * GRAPHICS.SPACESHIP_THRUSTER_MAIN_WIDTH} ${size * GRAPHICS.SPACESHIP_THRUSTER_OPACITY} Z`,
             {
                 fill: '#ff6600',
-                opacity: 0.9
+                opacity: GRAPHICS.SPACESHIP_THRUSTER_FLAME_OPACITY
             }
         );
         
         const thrusterFlame2 = this.createPath(
-            `M -${size * 0.06} ${size * 0.9} L 0 ${size * 1.3} L ${size * 0.06} ${size * 0.9} Z`,
+            `M -${size * GRAPHICS.SPACESHIP_THRUSTER_CORE_WIDTH} ${size * GRAPHICS.SPACESHIP_THRUSTER_INNER_OPACITY} L 0 ${size * GRAPHICS.SPACESHIP_THRUSTER_CORE_HEIGHT} L ${size * GRAPHICS.SPACESHIP_THRUSTER_CORE_WIDTH} ${size * GRAPHICS.SPACESHIP_THRUSTER_INNER_OPACITY} Z`,
             {
                 fill: '#ffaa00',
-                opacity: 0.8
+                opacity: GRAPHICS.SPACESHIP_THRUSTER_INNER_OPACITY
             }
         );
         
         const thrusterCore = this.createPath(
-            `M -${Number(size) * 0.03} ${Number(size) * 1.0} L 0 ${Number(size) * 1.15} L ${Number(size) * 0.03} ${Number(size) * 1.0} Z`,
+            `M -${Number(size) * GRAPHICS.SPACESHIP_THRUSTER_INNER_WIDTH} ${Number(size) * GRAPHICS.SPACESHIP_THRUSTER_CORE_HEIGHT_OFFSET} L 0 ${Number(size) * GRAPHICS.SPACESHIP_THRUSTER_INNER_HEIGHT} L ${Number(size) * GRAPHICS.SPACESHIP_THRUSTER_INNER_WIDTH} ${Number(size) * GRAPHICS.SPACESHIP_THRUSTER_CORE_HEIGHT_OFFSET} Z`,
             {
                 fill: '#ffffff',
-                opacity: 0.9
+                opacity: GRAPHICS.SPACESHIP_THRUSTER_FLAME_OPACITY
             }
         );
         
@@ -332,10 +332,10 @@ export class GraphicsEngine {
         });
         
         const leftThrusterFlame = this.createPath(
-            `M -${size * 0.4} -${size * 0.1} L -${size * 0.8} 0 L -${size * 0.4} ${size * 0.1} Z`,
+            `M -${size * GRAPHICS.SPACESHIP_THRUSTER_SIDE_WIDTH} -${size * GRAPHICS.SPACESHIP_THRUSTER_SIDE_HEIGHT} L -${size * GRAPHICS.SPACESHIP_THRUSTER_SIDE_LENGTH} 0 L -${size * GRAPHICS.SPACESHIP_THRUSTER_SIDE_WIDTH} ${size * GRAPHICS.SPACESHIP_THRUSTER_SIDE_HEIGHT} Z`,
             {
                 fill: '#0088ff',
-                opacity: 0.8
+                opacity: GRAPHICS.SPACESHIP_THRUSTER_SIDE_OPACITY
             }
         );
         
@@ -347,10 +347,10 @@ export class GraphicsEngine {
         });
         
         const rightThrusterFlame = this.createPath(
-            `M ${size * 0.4} -${size * 0.1} L ${size * 0.8} 0 L ${size * 0.4} ${size * 0.1} Z`,
+            `M ${size * GRAPHICS.SPACESHIP_THRUSTER_SIDE_WIDTH} -${size * GRAPHICS.SPACESHIP_THRUSTER_SIDE_HEIGHT} L ${size * GRAPHICS.SPACESHIP_THRUSTER_SIDE_LENGTH} 0 L ${size * GRAPHICS.SPACESHIP_THRUSTER_SIDE_WIDTH} ${size * GRAPHICS.SPACESHIP_THRUSTER_SIDE_HEIGHT} Z`,
             {
                 fill: '#0088ff',
-                opacity: 0.8
+                opacity: GRAPHICS.SPACESHIP_THRUSTER_SIDE_OPACITY
             }
         );
         
@@ -372,8 +372,8 @@ export class GraphicsEngine {
         
         if (!mainThruster || !leftThruster || !rightThruster) return;
         
-        const baseOpacity = boost ? 1.0 : 0.7;
-        const fadeSpeed = 0.1;
+        const baseOpacity = boost ? GRAPHICS.SPACESHIP_THRUSTER_BOOST_OPACITY : GRAPHICS.SPACESHIP_THRUSTER_BASE_OPACITY;
+        const fadeSpeed = GRAPHICS.SPACESHIP_THRUSTER_FADE_SPEED;
         
         // Main thruster (forward/backward movement)
         if (movement.y > 0) {
@@ -386,7 +386,7 @@ export class GraphicsEngine {
         
         // Left thruster (moving right)
         if (movement.x > 0) {
-            leftThruster.setAttribute('opacity', baseOpacity * 0.8);
+            leftThruster.setAttribute('opacity', baseOpacity * GRAPHICS.SPACESHIP_THRUSTER_SIDE_OPACITY);
         } else {
             const currentOpacity = parseFloat(leftThruster.getAttribute('opacity')) || 0;
             const newOpacity = Math.max(0, currentOpacity - fadeSpeed);
@@ -395,7 +395,7 @@ export class GraphicsEngine {
         
         // Right thruster (moving left)
         if (movement.x < 0) {
-            rightThruster.setAttribute('opacity', baseOpacity * 0.8);
+            rightThruster.setAttribute('opacity', baseOpacity * GRAPHICS.SPACESHIP_THRUSTER_SIDE_OPACITY);
         } else {
             const currentOpacity = parseFloat(rightThruster.getAttribute('opacity')) || 0;
             const newOpacity = Math.max(0, currentOpacity - fadeSpeed);
