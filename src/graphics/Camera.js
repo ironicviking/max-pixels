@@ -3,6 +3,8 @@
  * Provides smooth following, zoom, and viewport management for space navigation
  */
 
+import { CAMERA } from '../constants.js';
+
 export class Camera {
     constructor(svgElement, viewBox = { width: 1920, height: 1080 }) {
         this.svg = svgElement;
@@ -12,10 +14,10 @@ export class Camera {
         this.zoom = 1;
         this.targetZoom = 1;
         
-        this.smoothing = 0.08;
-        this.zoomSmoothness = 0.1;
-        this.minZoom = 0.5;
-        this.maxZoom = 3.0;
+        this.smoothing = CAMERA.FOLLOW_LERP;
+        this.zoomSmoothness = CAMERA.ZOOM_SMOOTHNESS;
+        this.minZoom = CAMERA.MIN_ZOOM;
+        this.maxZoom = CAMERA.MAX_ZOOM;
         
         this.bounds = {
             minX: -1000,
@@ -36,11 +38,11 @@ export class Camera {
         this.targetZoom = Math.max(this.minZoom, Math.min(this.maxZoom, zoom));
     }
     
-    zoomIn(factor = 1.2) {
+    zoomIn(factor = CAMERA.ZOOM_FACTOR) {
         this.setZoom(this.targetZoom * factor);
     }
     
-    zoomOut(factor = 1.2) {
+    zoomOut(factor = CAMERA.ZOOM_FACTOR) {
         this.setZoom(this.targetZoom / factor);
     }
     
@@ -120,11 +122,11 @@ export class Camera {
         this.bounds = { minX, maxX, minY, maxY };
     }
     
-    setSmoothness(smoothing = 0.08) {
-        this.smoothing = Math.max(0.01, Math.min(1, smoothing));
+    setSmoothness(smoothing = CAMERA.FOLLOW_LERP) {
+        this.smoothing = Math.max(CAMERA.FOLLOW_THRESHOLD, Math.min(1, smoothing));
     }
     
-    setZoomLimits(minZoom = 0.5, maxZoom = 3.0) {
+    setZoomLimits(minZoom = CAMERA.MIN_ZOOM, maxZoom = CAMERA.MAX_ZOOM) {
         this.minZoom = minZoom;
         this.maxZoom = maxZoom;
         this.targetZoom = Math.max(minZoom, Math.min(maxZoom, this.targetZoom));
@@ -138,7 +140,7 @@ export class Camera {
         this.updateViewBox();
     }
     
-    shake(intensity = 10, duration = 300) {
+    shake(intensity = CAMERA.SHAKE_INTENSITY, duration = CAMERA.SHAKE_DURATION) {
         const originalSmoothness = this.smoothing;
         this.smoothing = 1;
         
@@ -147,8 +149,8 @@ export class Camera {
             const elapsed = Date.now() - startTime;
             if (elapsed < duration) {
                 const shakeAmount = intensity * (1 - elapsed / duration);
-                this.position.x += (Math.random() - 0.5) * shakeAmount;
-                this.position.y += (Math.random() - 0.5) * shakeAmount;
+                this.position.x += (Math.random() - CAMERA.VIEWPORT_CENTER) * shakeAmount;
+                this.position.y += (Math.random() - CAMERA.VIEWPORT_CENTER) * shakeAmount;
                 requestAnimationFrame(shakeLoop);
             } else {
                 this.smoothing = originalSmoothness;
