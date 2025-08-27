@@ -160,6 +160,7 @@ class MaxPixelsGame {
     update(timestamp) {
         this.handleInput();
         this.updatePlayer();
+        this.updateThrusterEffects();
         this.updateCamera();
         this.checkCollisions();
         this.input.update();
@@ -194,6 +195,13 @@ class MaxPixelsGame {
         
         this.playerShip.setAttribute('transform', 
             `translate(${this.player.x}, ${this.player.y})`);
+    }
+    
+    updateThrusterEffects() {
+        const movement = this.input.getMovementVector();
+        const boost = this.input.isPressed('boost');
+        
+        this.graphics.updateSpaceshipThrusters(this.playerShip, movement, boost);
     }
     
     updateCamera() {

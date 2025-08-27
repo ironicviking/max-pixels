@@ -206,10 +206,116 @@ export class GraphicsEngine {
             opacity: 0.8
         });
         
+        // Main thruster flames
+        const mainThruster = this.createGroup({
+            id: 'mainThruster',
+            opacity: 0
+        });
+        
+        const thrusterFlame1 = this.createPath(
+            `M -${size * 0.1} ${size * 0.8} L 0 ${size * 1.5} L ${size * 0.1} ${size * 0.8} Z`,
+            {
+                fill: '#ff6600',
+                opacity: 0.9
+            }
+        );
+        
+        const thrusterFlame2 = this.createPath(
+            `M -${size * 0.06} ${size * 0.9} L 0 ${size * 1.3} L ${size * 0.06} ${size * 0.9} Z`,
+            {
+                fill: '#ffaa00',
+                opacity: 0.8
+            }
+        );
+        
+        const thrusterCore = this.createPath(
+            `M -${size * 0.03} ${size * 1.0} L 0 ${size * 1.15} L ${size * 0.03} ${size * 1.0} Z`,
+            {
+                fill: '#ffffff',
+                opacity: 0.9
+            }
+        );
+        
+        mainThruster.appendChild(thrusterFlame1);
+        mainThruster.appendChild(thrusterFlame2);
+        mainThruster.appendChild(thrusterCore);
+        
+        // Side thrusters for lateral movement
+        const leftThruster = this.createGroup({
+            id: 'leftThruster',
+            opacity: 0
+        });
+        
+        const leftThrusterFlame = this.createPath(
+            `M -${size * 0.4} -${size * 0.1} L -${size * 0.8} 0 L -${size * 0.4} ${size * 0.1} Z`,
+            {
+                fill: '#0088ff',
+                opacity: 0.8
+            }
+        );
+        
+        leftThruster.appendChild(leftThrusterFlame);
+        
+        const rightThruster = this.createGroup({
+            id: 'rightThruster',
+            opacity: 0
+        });
+        
+        const rightThrusterFlame = this.createPath(
+            `M ${size * 0.4} -${size * 0.1} L ${size * 0.8} 0 L ${size * 0.4} ${size * 0.1} Z`,
+            {
+                fill: '#0088ff',
+                opacity: 0.8
+            }
+        );
+        
+        rightThruster.appendChild(rightThrusterFlame);
+        
         ship.appendChild(hull);
         ship.appendChild(engine);
+        ship.appendChild(mainThruster);
+        ship.appendChild(leftThruster);
+        ship.appendChild(rightThruster);
         
         return ship;
+    }
+    
+    updateSpaceshipThrusters(shipElement, movement, boost = false) {
+        const mainThruster = shipElement.querySelector('#mainThruster');
+        const leftThruster = shipElement.querySelector('#leftThruster');
+        const rightThruster = shipElement.querySelector('#rightThruster');
+        
+        if (!mainThruster || !leftThruster || !rightThruster) return;
+        
+        const baseOpacity = boost ? 1.0 : 0.7;
+        const fadeSpeed = 0.1;
+        
+        // Main thruster (forward/backward movement)
+        if (movement.y > 0) {
+            mainThruster.setAttribute('opacity', baseOpacity);
+        } else {
+            const currentOpacity = parseFloat(mainThruster.getAttribute('opacity')) || 0;
+            const newOpacity = Math.max(0, currentOpacity - fadeSpeed);
+            mainThruster.setAttribute('opacity', newOpacity);
+        }
+        
+        // Left thruster (moving right)
+        if (movement.x > 0) {
+            leftThruster.setAttribute('opacity', baseOpacity * 0.8);
+        } else {
+            const currentOpacity = parseFloat(leftThruster.getAttribute('opacity')) || 0;
+            const newOpacity = Math.max(0, currentOpacity - fadeSpeed);
+            leftThruster.setAttribute('opacity', newOpacity);
+        }
+        
+        // Right thruster (moving left)
+        if (movement.x < 0) {
+            rightThruster.setAttribute('opacity', baseOpacity * 0.8);
+        } else {
+            const currentOpacity = parseFloat(rightThruster.getAttribute('opacity')) || 0;
+            const newOpacity = Math.max(0, currentOpacity - fadeSpeed);
+            rightThruster.setAttribute('opacity', newOpacity);
+        }
     }
     
     createPlanet(x, y, radius, attributes = {}) {
