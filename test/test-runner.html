@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Max-Pixels Test Runner</title>
+    <style>
+        body {
+            font-family: 'Consolas', 'Monaco', monospace;
+            background: #1a1a2e;
+            color: #eee;
+            margin: 0;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #16213e;
+            border-radius: 10px;
+            border: 2px solid #0f4c75;
+        }
+        
+        .header h1 {
+            color: #4a90e2;
+            margin: 0;
+            font-size: 2.5em;
+        }
+        
+        .header p {
+            margin: 10px 0 0 0;
+            color: #aaa;
+        }
+        
+        .controls {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #16213e;
+            border-radius: 8px;
+            border: 1px solid #0f4c75;
+        }
+        
+        .controls button {
+            background: #4a90e2;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin-right: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-family: inherit;
+            transition: background 0.3s;
+        }
+        
+        .controls button:hover {
+            background: #357abd;
+        }
+        
+        .controls button:disabled {
+            background: #555;
+            cursor: not-allowed;
+        }
+        
+        .status {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #16213e;
+            border-radius: 8px;
+            border: 1px solid #0f4c75;
+            display: none;
+        }
+        
+        .status.running {
+            border-color: #f39c12;
+            background: #2d1b0e;
+        }
+        
+        .status.success {
+            border-color: #27ae60;
+            background: #0e2d1b;
+        }
+        
+        .status.failure {
+            border-color: #e74c3c;
+            background: #2d0e1b;
+        }
+        
+        #output {
+            background: #0d1421;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #1e3a8a;
+            white-space: pre-wrap;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 14px;
+            max-height: 500px;
+            overflow-y: auto;
+            margin-bottom: 20px;
+        }
+        
+        .results-summary {
+            background: #16213e;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #0f4c75;
+            display: none;
+        }
+        
+        .results-summary h3 {
+            margin-top: 0;
+            color: #4a90e2;
+        }
+        
+        .result-item {
+            margin: 5px 0;
+            padding: 5px 10px;
+            border-radius: 3px;
+        }
+        
+        .result-pass {
+            background: rgba(39, 174, 96, 0.1);
+            color: #27ae60;
+        }
+        
+        .result-fail {
+            background: rgba(231, 76, 60, 0.1);
+            color: #e74c3c;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background: #0d1421;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4a90e2, #357abd);
+            width: 0%;
+            transition: width 0.3s;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🚀 Max-Pixels Test Runner</h1>
+        <p>Browser-based testing framework for space exploration game</p>
+    </div>
+    
+    <div class="controls">
+        <button id="run-tests">Run All Tests</button>
+        <button id="clear-output">Clear Output</button>
+        <button id="toggle-details">Show Details</button>
+        <span id="test-count">0 tests loaded</span>
+    </div>
+    
+    <div class="status" id="status">
+        <div id="status-text">Ready to run tests</div>
+        <div class="progress-bar">
+            <div class="progress-fill" id="progress-fill"></div>
+        </div>
+    </div>
+    
+    <div id="output">Click "Run All Tests" to begin testing...\n</div>
+    
+    <div class="results-summary" id="results-summary">
+        <h3>Test Results Summary</h3>
+        <div id="results-list"></div>
+    </div>
+
+    <script type="module">
+        import { TestRunner } from './index.js';
+        
+        let testResults = null;
+        let showDetails = true;
+        
+        // DOM elements
+        const runButton = document.getElementById('run-tests');
+        const clearButton = document.getElementById('clear-output');
+        const toggleButton = document.getElementById('toggle-details');
+        const testCountSpan = document.getElementById('test-count');
+        const statusDiv = document.getElementById('status');
+        const statusText = document.getElementById('status-text');
+        const progressFill = document.getElementById('progress-fill');
+        const outputDiv = document.getElementById('output');
+        const summaryDiv = document.getElementById('results-summary');
+        const resultsList = document.getElementById('results-list');
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            updateTestCount();
+            setupEventListeners();
+        });
+        
+        function setupEventListeners() {
+            runButton.addEventListener('click', runTests);
+            clearButton.addEventListener('click', clearOutput);
+            toggleButton.addEventListener('click', toggleDetails);
+        }
+        
+        function updateTestCount() {
+            const count = TestRunner.tests.length;
+            testCountSpan.textContent = `${count} test suites loaded`;
+        }
+        
+        async function runTests() {
+            runButton.disabled = true;
+            clearOutput();
+            showStatus('running', 'Running tests...');
+            
+            // Capture console output
+            const originalLog = console.log;
+            const outputs = [];
+            
+            console.log = function(...args) {
+                const message = args.map(arg => 
+                    typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
+                ).join(' ');
+                outputs.push(message);
+                outputDiv.textContent += message + '\n';
+                outputDiv.scrollTop = outputDiv.scrollHeight;
+                originalLog.apply(console, args);
+            };
+            
+            try {
+                // Run tests
+                testResults = await TestRunner.runTests();
+                
+                // Show results
+                if (testResults.failed === 0) {
+                    showStatus('success', `All ${testResults.total} tests passed! 🎉`);
+                } else {
+                    showStatus('failure', `${testResults.failed} of ${testResults.total} tests failed`);
+                }
+                
+                updateProgress(100);
+                showResultsSummary();
+                
+            } catch (error) {
+                showStatus('failure', `Test execution failed: ${error.message}`);
+                outputDiv.textContent += `\nERROR: ${error.message}\n`;
+                
+            } finally {
+                // Restore console
+                console.log = originalLog;
+                runButton.disabled = false;
+            }
+        }
+        
+        function showStatus(type, message) {
+            statusDiv.className = `status ${type}`;
+            statusDiv.style.display = 'block';
+            statusText.textContent = message;
+        }
+        
+        function updateProgress(percent) {
+            progressFill.style.width = `${percent}%`;
+        }
+        
+        function clearOutput() {
+            outputDiv.textContent = '';
+            summaryDiv.style.display = 'none';
+            statusDiv.style.display = 'none';
+            updateProgress(0);
+        }
+        
+        function toggleDetails() {
+            showDetails = !showDetails;
+            toggleButton.textContent = showDetails ? 'Hide Details' : 'Show Details';
+            
+            if (showDetails) {
+                outputDiv.style.display = 'block';
+            } else {
+                outputDiv.style.display = 'none';
+            }
+        }
+        
+        function showResultsSummary() {
+            if (!testResults) return;
+            
+            summaryDiv.style.display = 'block';
+            resultsList.innerHTML = '';
+            
+            // Create summary stats
+            const stats = document.createElement('div');
+            stats.style.marginBottom = '20px';
+            stats.innerHTML = `
+                <strong>Total Tests:</strong> ${testResults.total}<br>
+                <strong>Passed:</strong> <span class="result-pass">${testResults.passed}</span><br>
+                <strong>Failed:</strong> <span class="result-fail">${testResults.failed}</span><br>
+                <strong>Success Rate:</strong> ${((testResults.passed / testResults.total) * 100).toFixed(1)}%
+            `;
+            resultsList.appendChild(stats);
+            
+            // Show individual results
+            TestRunner.output.forEach(result => {
+                const item = document.createElement('div');
+                item.className = 'result-item';
+                
+                if (result.startsWith('PASS:')) {
+                    item.className += ' result-pass';
+                    item.textContent = '✅ ' + result.substring(5).trim();
+                } else if (result.startsWith('FAIL:')) {
+                    item.className += ' result-fail';
+                    item.textContent = '❌ ' + result.substring(5).trim();
+                }
+                
+                resultsList.appendChild(item);
+            });
+        }
+        
+        // Add keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.ctrlKey || e.metaKey) {
+                switch (e.key) {
+                    case 'Enter':
+                        e.preventDefault();
+                        runTests();
+                        break;
+                    case 'l':
+                        e.preventDefault();
+                        clearOutput();
+                        break;
+                    case 'd':
+                        e.preventDefault();
+                        toggleDetails();
+                        break;
+                }
+            }
+        });
+    </script>
+</body>
+</html>
