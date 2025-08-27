@@ -119,19 +119,97 @@ export class GraphicsEngine {
         const starField = this.createGroup({ id: 'starField' });
         
         for (let i = 0; i < count; i++) {
-            const star = this.createCircle(
-                Math.random() * bounds.width,
-                Math.random() * bounds.height,
-                Math.random() * (GRAPHICS.STAR_SIZE_MAX - GRAPHICS.STAR_SIZE_MIN) + GRAPHICS.STAR_SIZE_MIN,
-                {
-                    fill: '#ffffff',
-                    opacity: Math.random() * (GRAPHICS.STAR_OPACITY_MAX - GRAPHICS.STAR_OPACITY_MIN) + GRAPHICS.STAR_OPACITY_MIN
-                }
-            );
+            const x = Math.random() * bounds.width;
+            const y = Math.random() * bounds.height;
+            
+            // Select star type based on realistic stellar distribution
+            const starType = this.selectStarType();
+            const starData = GRAPHICS.STAR_TYPES[starType];
+            
+            // Calculate star size based on type and random variation
+            const baseSize = Math.random() * (GRAPHICS.STAR_SIZE_MAX - GRAPHICS.STAR_SIZE_MIN) + GRAPHICS.STAR_SIZE_MIN;
+            const starSize = baseSize * starData.sizeMultiplier;
+            
+            // Create main star
+            const star = this.createStar(x, y, starSize, starData.color, starType);
             starField.appendChild(star);
+            
+            // Small chance to create binary star system
+            if (Math.random() < GRAPHICS.STAR_BINARY_CHANCE) {
+                const companionType = this.selectStarType();
+                const companionData = GRAPHICS.STAR_TYPES[companionType];
+                const companionSize = baseSize * 0.7 * companionData.sizeMultiplier;
+                
+                const angle = Math.random() * Math.PI * 2;
+                const companionX = x + Math.cos(angle) * GRAPHICS.STAR_BINARY_SEPARATION;
+                const companionY = y + Math.sin(angle) * GRAPHICS.STAR_BINARY_SEPARATION;
+                
+                const companionStar = this.createStar(companionX, companionY, companionSize, companionData.color, companionType);
+                starField.appendChild(companionStar);
+            }
         }
         
         return starField;
+    }
+    
+    selectStarType() {
+        // Use weighted random selection based on stellar rarity distribution
+        const rand = Math.random() * 100;
+        let cumulative = 0;
+        
+        for (const [type, data] of Object.entries(GRAPHICS.STAR_TYPES)) {
+            cumulative += data.rarity;
+            if (rand <= cumulative) {
+                return type;
+            }
+        }
+        
+        return 'M'; // Fallback to most common type
+    }
+    
+    createStar(x, y, size, color, type) {
+        const opacity = Math.random() * (GRAPHICS.STAR_OPACITY_MAX - GRAPHICS.STAR_OPACITY_MIN) + GRAPHICS.STAR_OPACITY_MIN;
+        
+        // Create star group for effects
+        const starGroup = this.createGroup({
+            transform: `translate(${x}, ${y})`
+        });
+        
+        // Main star circle
+        const star = this.createCircle(0, 0, size, {
+            fill: color,
+            opacity: opacity,
+            'data-star-type': type
+        });
+        
+        // Add subtle glow effect for larger/brighter stars
+        if (size > 2.5 || type === 'O' || type === 'B') {
+            const glow = this.createCircle(0, 0, size * 1.8, {
+                fill: color,
+                opacity: opacity * 0.2,
+                filter: 'blur(1px)'
+            });
+            starGroup.appendChild(glow);
+        }
+        
+        starGroup.appendChild(star);
+        
+        // Add twinkling animation to some stars
+        if (Math.random() < GRAPHICS.STAR_TWINKLE_CHANCE) {
+            this.addTwinkleAnimation(star);
+        }
+        
+        return starGroup;
+    }
+    
+    addTwinkleAnimation(star) {
+        const animate = this.createElement('animate');
+        animate.setAttribute('attributeName', 'opacity');
+        animate.setAttribute('values', `${star.getAttribute('opacity')};${parseFloat(star.getAttribute('opacity')) * (1 - GRAPHICS.STAR_TWINKLE_INTENSITY)};${star.getAttribute('opacity')}`);
+        animate.setAttribute('dur', `${2 + Math.random() * 3}s`);
+        animate.setAttribute('repeatCount', 'indefinite');
+        
+        star.appendChild(animate);
     }
     
     createAsteroidField(count, bounds = { width: GRAPHICS.DEFAULT_CANVAS_WIDTH, height: GRAPHICS.DEFAULT_CANVAS_HEIGHT }) {

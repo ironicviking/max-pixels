@@ -83,6 +83,23 @@ export const GRAPHICS = {
     STAR_OPACITY_MIN: 0.3,
     STAR_OPACITY_MAX: 0.9,
     
+    // Star classification system (based on real stellar types)
+    STAR_TYPES: {
+        O: { color: '#9bb0ff', temperature: 30000, rarity: 0.00003, sizeMultiplier: 2.5 },
+        B: { color: '#aabfff', temperature: 10000, rarity: 0.13, sizeMultiplier: 2.0 },
+        A: { color: '#cad7ff', temperature: 7500, rarity: 0.6, sizeMultiplier: 1.5 },
+        F: { color: '#f8f7ff', temperature: 6000, rarity: 3, sizeMultiplier: 1.3 },
+        G: { color: '#fff4ea', temperature: 5200, rarity: 7.6, sizeMultiplier: 1.0 },
+        K: { color: '#ffd2a1', temperature: 3700, rarity: 12.1, sizeMultiplier: 0.8 },
+        M: { color: '#ffad51', temperature: 2400, rarity: 76.45, sizeMultiplier: 0.5 }
+    },
+    
+    // Star effects
+    STAR_TWINKLE_CHANCE: 0.3,
+    STAR_TWINKLE_INTENSITY: 0.4,
+    STAR_BINARY_CHANCE: 0.05,
+    STAR_BINARY_SEPARATION: 8,
+    
     // Asteroid generation
     ASTEROID_SIZE_MIN: 10,
     ASTEROID_SIZE_MAX: 40,
