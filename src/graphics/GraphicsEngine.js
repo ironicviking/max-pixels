@@ -3,6 +3,8 @@
  * Core utilities for creating and manipulating SVG graphics
  */
 
+import { GRAPHICS } from '../constants.js';
+
 export class GraphicsEngine {
     constructor(svgContainer) {
         this.svg = svgContainer;
@@ -116,10 +118,10 @@ export class GraphicsEngine {
             const star = this.createCircle(
                 Math.random() * bounds.width,
                 Math.random() * bounds.height,
-                Math.random() * 1.5 + 0.5,
+                Math.random() * (GRAPHICS.STAR_SIZE_MAX - GRAPHICS.STAR_SIZE_MIN) + GRAPHICS.STAR_SIZE_MIN,
                 {
                     fill: '#ffffff',
-                    opacity: Math.random() * 0.8 + 0.2
+                    opacity: Math.random() * (GRAPHICS.STAR_OPACITY_MAX - GRAPHICS.STAR_OPACITY_MIN) + GRAPHICS.STAR_OPACITY_MIN
                 }
             );
             starField.appendChild(star);
@@ -143,9 +145,10 @@ export class GraphicsEngine {
         return asteroidField;
     }
     
-    createAsteroid(x, y, size) {
+    createAsteroid(x, y, size, attributes = {}) {
         const asteroid = this.createGroup({
-            transform: `translate(${x}, ${y})`
+            transform: `translate(${x}, ${y})`,
+            ...attributes
         });
         
         const points = 6 + Math.floor(Math.random() * 4);
