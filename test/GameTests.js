@@ -458,7 +458,7 @@ describe('Space Navigation', function() {
         const navigation = new SpaceNavigation();
         
         assert(navigation.getCurrentSector() !== null, 'Should have a current sector');
-        assertEqual(navigation.currentSectorId, 'sector-1', 'Should start in sector-1');
+        assertEqual(navigation.currentSector, 'alpha-sector', 'Should start in alpha-sector');
     });
     
     test('should get sector bounds', function() {
