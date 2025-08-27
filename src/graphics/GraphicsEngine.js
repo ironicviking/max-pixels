@@ -239,6 +239,99 @@ export class GraphicsEngine {
         return planet;
     }
     
+    createSpaceStation(x, y, size = 30, attributes = {}) {
+        const station = this.createGroup({
+            transform: `translate(${x}, ${y})`,
+            ...attributes
+        });
+        
+        // Central hub
+        const hub = this.createCircle(0, 0, size * 0.4, {
+            fill: '#666666',
+            stroke: '#aaaaaa',
+            'stroke-width': 2
+        });
+        
+        // Rotating ring
+        const ring = this.createCircle(0, 0, size * 0.8, {
+            fill: 'none',
+            stroke: '#888888',
+            'stroke-width': size * 0.15,
+            opacity: 0.8
+        });
+        
+        // Docking ports (4 directions)
+        for (let i = 0; i < 4; i++) {
+            const angle = (i * 90) * Math.PI / 180;
+            const portX = Math.cos(angle) * size;
+            const portY = Math.sin(angle) * size;
+            
+            const port = this.createRect(
+                portX - size * 0.1, 
+                portY - size * 0.05, 
+                size * 0.2, 
+                size * 0.1, 
+                {
+                    fill: '#4a90e2',
+                    stroke: '#ffffff',
+                    'stroke-width': 1,
+                    transform: `rotate(${i * 90}, ${portX}, ${portY})`
+                }
+            );
+            
+            station.appendChild(port);
+        }
+        
+        // Solar panels
+        for (let i = 0; i < 6; i++) {
+            const angle = (i * 60) * Math.PI / 180;
+            const panelX = Math.cos(angle) * size * 1.2;
+            const panelY = Math.sin(angle) * size * 1.2;
+            
+            const panel = this.createRect(
+                panelX - size * 0.15, 
+                panelY - size * 0.05, 
+                size * 0.3, 
+                size * 0.1, 
+                {
+                    fill: '#1a1a3a',
+                    stroke: '#4444ff',
+                    'stroke-width': 1,
+                    opacity: 0.9,
+                    transform: `rotate(${i * 60}, ${panelX}, ${panelY})`
+                }
+            );
+            
+            station.appendChild(panel);
+        }
+        
+        // Communications array
+        const commArray = this.createRect(-size * 0.05, -size * 1.4, size * 0.1, size * 0.8, {
+            fill: '#cccccc',
+            stroke: '#ffffff',
+            'stroke-width': 1
+        });
+        
+        station.appendChild(hub);
+        station.appendChild(ring);
+        station.appendChild(commArray);
+        
+        // Navigation lights
+        const navLight1 = this.createCircle(-size * 0.7, 0, size * 0.08, {
+            fill: '#ff4444',
+            opacity: 0.8
+        });
+        const navLight2 = this.createCircle(size * 0.7, 0, size * 0.08, {
+            fill: '#44ff44',
+            opacity: 0.8
+        });
+        
+        station.appendChild(navLight1);
+        station.appendChild(navLight2);
+        
+        return station;
+    }
+    
     addToLayer(layerName, element) {
         const layer = this.getLayer(layerName);
         layer.appendChild(element);

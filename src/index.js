@@ -74,6 +74,11 @@ class MaxPixelsGame {
         });
         this.graphics.addToLayer('game', testPlanet);
         
+        const tradingStation = this.graphics.createSpaceStation(800, 600, 40, {
+            id: 'tradingStation'
+        });
+        this.graphics.addToLayer('game', tradingStation);
+        
         this.camera.centerOn(this.player.x, this.player.y);
     }
     
