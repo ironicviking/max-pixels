@@ -3,6 +3,8 @@
  * Manages game sound effects and audio using Web Audio API
  */
 
+import { AUDIO } from '../constants.js';
+
 export class AudioManager {
     constructor() {
         this.audioContext = null;
@@ -43,22 +45,22 @@ export class AudioManager {
     }
     
     generateThrusterSound() {
-        const thrusterBuffer = this.createNoiseBuffer(0.3, (freq, time) => {
-            const base = Math.sin(freq * 80 * time) * 0.4;
-            const noise = (Math.random() - 0.5) * 0.3;
-            const envelope = Math.exp(-time * 2);
-            return (base + noise) * envelope * 0.8;
+        const thrusterBuffer = this.createNoiseBuffer(AUDIO.AMBIENT_VOLUME, (freq, time) => {
+            const base = Math.sin(freq * AUDIO.FREQUENCY_MID * time) * AUDIO.VOLUME_LOW;
+            const noise = (Math.random() - AUDIO.FADE_DURATION) * AUDIO.AMBIENT_VOLUME;
+            const envelope = Math.exp(-time * AUDIO.ENVELOPE_DECAY);
+            return (base + noise) * envelope * AUDIO.THRUSTER_VOLUME;
         });
         
         this.sounds.set('thruster', thrusterBuffer);
     }
     
     generateCollisionSound() {
-        const collisionBuffer = this.createNoiseBuffer(0.5, (freq, time) => {
-            const impact = Math.sin(freq * 200 * time) * Math.exp(-time * 8);
-            const rumble = Math.sin(freq * 60 * time) * Math.exp(-time * 3);
-            const noise = (Math.random() - 0.5) * 0.4 * Math.exp(-time * 6);
-            return (impact * 0.7 + rumble * 0.3 + noise) * 0.9;
+        const collisionBuffer = this.createNoiseBuffer(AUDIO.FADE_DURATION, (freq, time) => {
+            const impact = Math.sin(freq * AUDIO.FREQUENCY_HIGH * time) * Math.exp(-time * AUDIO.IMPACT_DECAY);
+            const rumble = Math.sin(freq * AUDIO.FREQUENCY_MID * time) * Math.exp(-time * AUDIO.RUMBLE_DECAY);
+            const noise = (Math.random() - AUDIO.FADE_DURATION) * AUDIO.NOISE_MIX * Math.exp(-time * AUDIO.NOISE_DECAY);
+            return (impact * AUDIO.IMPACT_MIX + rumble * AUDIO.AMBIENT_VOLUME + noise) * AUDIO.SOUND_MIX;
         });
         
         this.sounds.set('collision', collisionBuffer);
@@ -66,10 +68,10 @@ export class AudioManager {
     
     generateAmbientHum() {
         const ambientBuffer = this.createNoiseBuffer(2.0, (freq, time) => {
-            const hum1 = Math.sin(freq * 40 * time) * 0.2;
-            const hum2 = Math.sin(freq * 43 * time) * 0.15;
-            const modulation = 1 + Math.sin(freq * 0.5 * time) * 0.1;
-            return (hum1 + hum2) * modulation * 0.3;
+            const hum1 = Math.sin(freq * AUDIO.FREQUENCY_LOW * time) * AUDIO.HUM_MIX;
+            const hum2 = Math.sin(freq * AUDIO.HUM_FREQUENCY * time) * AUDIO.FADE_DURATION;
+            const modulation = 1 + Math.sin(freq * AUDIO.FADE_DURATION * time) * AUDIO.VOLUME_LOW;
+            return (hum1 + hum2) * modulation * AUDIO.AMBIENT_VOLUME;
         });
         
         this.sounds.set('ambient', ambientBuffer);
@@ -133,34 +135,34 @@ export class AudioManager {
             setVolume: (volume) => {
                 gainNode.gain.value = volume;
             },
-            fadeOut: (duration = 0.5) => {
+            fadeOut: (duration = AUDIO.FADE_DURATION) => {
                 gainNode.gain.exponentialRampToValueAtTime(
-                    0.01, 
+                    AUDIO.RAMP_TIME, 
                     this.audioContext.currentTime + duration
                 );
-                setTimeout(() => source.stop(), duration * 1000);
+                setTimeout(() => source.stop(), duration * AUDIO.SUSTAIN_TIME);
             }
         };
     }
     
     playThruster(intensity = 1.0) {
         return this.play('thruster', {
-            volume: intensity * 0.6,
-            playbackRate: 0.8 + intensity * 0.4,
+            volume: intensity * AUDIO.VOLUME_HIGH,
+            playbackRate: AUDIO.THRUSTER_VOLUME + intensity * AUDIO.PLAYBACK_MIN,
             loop: true
         });
     }
     
     playCollision(intensity = 1.0) {
         return this.play('collision', {
-            volume: intensity * 0.8,
-            playbackRate: 0.7 + Math.random() * 0.6
+            volume: intensity * AUDIO.COLLISION_VOLUME,
+            playbackRate: AUDIO.PLAYBACK_BASE + Math.random() * AUDIO.VOLUME_HIGH
         });
     }
     
     playAmbient() {
         return this.play('ambient', {
-            volume: 0.3,
+            volume: AUDIO.AMBIENT_VOLUME,
             loop: true
         });
     }

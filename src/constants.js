@@ -22,7 +22,20 @@ export const AUDIO = {
     
     // Audio context timing
     RAMP_TIME: 0.01,
-    SUSTAIN_TIME: 1000
+    SUSTAIN_TIME: 1000,
+    
+    // Audio effect parameters
+    ENVELOPE_DECAY: 2,
+    IMPACT_DECAY: 8,
+    RUMBLE_DECAY: 3,
+    NOISE_DECAY: 6,
+    IMPACT_MIX: 0.7,
+    NOISE_MIX: 0.4,
+    SOUND_MIX: 0.9,
+    HUM_FREQUENCY: 43,
+    HUM_MIX: 0.2,
+    PLAYBACK_MIN: 0.4,
+    PLAYBACK_BASE: 0.7
 };
 
 // Camera Constants
