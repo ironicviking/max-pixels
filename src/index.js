@@ -769,13 +769,16 @@ class MaxPixelsGame {
         this.player.energy -= WEAPONS.ENERGY_COST;
         this.lastFireTime = currentTime;
         
-        // Calculate laser start position (tip of ship)
-        const laserStartX = this.player.x;
-        const laserStartY = this.player.y - this.player.radius;
+        // Convert rotation to radians (rotation is in degrees)
+        const rotationRad = this.player.rotation * Math.PI / 180;
         
-        // Calculate laser end position (ahead of ship)
-        const laserEndX = this.player.x;
-        const laserEndY = this.player.y - WEAPONS.LASER_RANGE;
+        // Calculate laser start position (tip of ship in facing direction)
+        const laserStartX = this.player.x + Math.sin(rotationRad) * this.player.radius;
+        const laserStartY = this.player.y - Math.cos(rotationRad) * this.player.radius;
+        
+        // Calculate laser end position (ahead of ship in facing direction)
+        const laserEndX = this.player.x + Math.sin(rotationRad) * WEAPONS.LASER_RANGE;
+        const laserEndY = this.player.y - Math.cos(rotationRad) * WEAPONS.LASER_RANGE;
         
         // Create laser beam using graphics engine
         const laser = this.graphics.createLaserBeam(
