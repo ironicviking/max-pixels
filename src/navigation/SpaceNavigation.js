@@ -4,6 +4,7 @@
  */
 
 import { NAVIGATION } from '../constants.js';
+import { gameIDGenerator } from '../utils/IDGenerator.js';
 
 export class SpaceNavigation {
     constructor() {
@@ -165,6 +166,9 @@ export class SpaceNavigation {
         
         // Build jump gate lookup for quick access
         this.buildJumpGateMap();
+        
+        // Generate unique IDs for all objects in sectors
+        this.assignObjectIds();
     }
     
     buildJumpGateMap() {
@@ -176,6 +180,41 @@ export class SpaceNavigation {
                 });
             });
         });
+    }
+    
+    /**
+     * Assign unique IDs to all objects in all sectors for multiplayer consistency
+     */
+    assignObjectIds() {
+        this.sectors.forEach((sector, sectorId) => {
+            // Generate unique IDs for stations
+            if (sector.stations && sector.stations.length > 0) {
+                sector.stations = gameIDGenerator.generateStationIds(sectorId, sector.stations);
+            }
+            
+            // Generate unique IDs for planets
+            if (sector.planets && sector.planets.length > 0) {
+                sector.planets = gameIDGenerator.generatePlanetIds(sectorId, sector.planets);
+            }
+            
+            // Generate unique IDs for jump gates
+            if (sector.jumpGates && sector.jumpGates.length > 0) {
+                sector.jumpGates = gameIDGenerator.generateJumpGateIds(sectorId, sector.jumpGates);
+            }
+            
+            // Generate asteroid IDs and store them for later asteroid generation
+            if (sector.asteroids && typeof sector.asteroids === 'number') {
+                sector.asteroidIds = gameIDGenerator.generateAsteroidIds(sectorId, sector.asteroids);
+            }
+            
+            // Add sector metadata
+            sector.generatedAt = Date.now();
+            sector.idVersion = 'v1';
+        });
+        
+        // Rebuild jump gate map with new IDs
+        this.jumpGates.clear();
+        this.buildJumpGateMap();
     }
     
     getCurrentSector() {
@@ -286,5 +325,97 @@ export class SpaceNavigation {
     getSectorDescription(sectorId = null) {
         const sector = sectorId ? this.sectors.get(sectorId) : this.getCurrentSector();
         return sector ? `${sector.name}: ${sector.description}` : 'Unknown sector';
+    }
+    
+    /**
+     * Find a game object by its unique ID across all sectors
+     * @param {string} objectId - Unique object ID
+     * @returns {Object|null} - Object data with sector info or null if not found
+     */
+    findObjectById(objectId) {
+        if (!gameIDGenerator.isValidId(objectId)) return null;
+        
+        const objectType = gameIDGenerator.getObjectType(objectId);
+        
+        for (const [sectorId, sector] of this.sectors) {
+            let foundObject = null;
+            
+            switch (objectType) {
+            case 'station':
+                foundObject = sector.stations?.find(obj => obj.id === objectId || obj.uniqueId === objectId);
+                break;
+            case 'planet':
+                foundObject = sector.planets?.find(obj => obj.id === objectId);
+                break;
+            case 'jumpgate':
+                foundObject = sector.jumpGates?.find(obj => obj.id === objectId || obj.uniqueId === objectId);
+                break;
+            case 'asteroid':
+                // For asteroids, we only have IDs stored, not full objects yet
+                if (sector.asteroidIds?.includes(objectId)) {
+                    foundObject = { 
+                        id: objectId, 
+                        type: 'asteroid',
+                        index: sector.asteroidIds.indexOf(objectId)
+                    };
+                }
+                break;
+            }
+            
+            if (foundObject) {
+                return {
+                    ...foundObject,
+                    sectorId,
+                    sectorName: sector.name
+                };
+            }
+        }
+        
+        return null;
+    }
+    
+    /**
+     * Get all objects of a specific type from a sector
+     * @param {string} sectorId - Sector identifier
+     * @param {string} objectType - Object type ('station', 'planet', 'jumpgate', 'asteroid')
+     * @returns {Array} - Array of objects of the specified type
+     */
+    getSectorObjects(sectorId, objectType) {
+        const sector = this.sectors.get(sectorId);
+        if (!sector) return [];
+        
+        switch (objectType) {
+        case 'station':
+            return sector.stations || [];
+        case 'planet':
+            return sector.planets || [];
+        case 'jumpgate':
+            return sector.jumpGates || [];
+        case 'asteroid':
+            return sector.asteroidIds?.map((id, index) => ({
+                id,
+                type: 'asteroid',
+                index
+            })) || [];
+        default:
+            return [];
+        }
+    }
+    
+    /**
+     * Get the total count of objects in a sector
+     * @param {string} sectorId - Sector identifier
+     * @returns {Object} - Object counts by type
+     */
+    getSectorObjectCounts(sectorId) {
+        const sector = this.sectors.get(sectorId);
+        if (!sector) return {};
+        
+        return {
+            stations: sector.stations?.length || 0,
+            planets: sector.planets?.length || 0,
+            jumpGates: sector.jumpGates?.length || 0,
+            asteroids: sector.asteroidIds?.length || sector.asteroids || 0
+        };
     }
 }
