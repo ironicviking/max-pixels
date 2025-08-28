@@ -310,15 +310,44 @@ function setupTestEnvironment() {
                         if (!this._childrenByTag) {
                             this._childrenByTag = new Map();
                         }
+                        // Keep SVG tag names in their original case for proper querySelector support
                         const tagName = child.tagName.toLowerCase();
+                        const originalTagName = child.tagName === 'ANIMATETRANSFORM' ? 'animateTransform' : tagName;
+                        
+                        // Store both lowercase and original case for SVG compatibility
                         if (!this._childrenByTag.has(tagName)) {
                             this._childrenByTag.set(tagName, []);
                         }
                         this._childrenByTag.get(tagName).push(child);
+                        
+                        if (originalTagName !== tagName) {
+                            if (!this._childrenByTag.has(originalTagName)) {
+                                this._childrenByTag.set(originalTagName, []);
+                            }
+                            this._childrenByTag.get(originalTagName).push(child);
+                        }
                     }
                     return child; 
                 },
                 querySelector: function(selector) { 
+                    // Handle ID selectors
+                    if (selector.startsWith('#')) {
+                        const id = selector.substring(1);
+                        // Check direct children first
+                        if (this._children) {
+                            for (let child of this._children) {
+                                if (child.id === id) {
+                                    return child;
+                                }
+                                // Recursively search in child elements
+                                if (child.querySelector) {
+                                    const found = child.querySelector(selector);
+                                    if (found) return found;
+                                }
+                            }
+                        }
+                        return null;
+                    }
                     // Handle tag selectors
                     if (this._childrenByTag && this._childrenByTag.has(selector)) {
                         const children = this._childrenByTag.get(selector);
@@ -327,10 +356,42 @@ function setupTestEnvironment() {
                     return null; 
                 },
                 querySelectorAll: function(selector) { 
-                    if (this._childrenByTag && this._childrenByTag.has(selector)) {
-                        return this._childrenByTag.get(selector) || [];
+                    let results = [];
+                    
+                    // Handle ID selectors
+                    if (selector.startsWith('#')) {
+                        const id = selector.substring(1);
+                        if (this._children) {
+                            for (let child of this._children) {
+                                if (child.id === id) {
+                                    results.push(child);
+                                }
+                                // Recursively search in child elements
+                                if (child.querySelectorAll) {
+                                    const childResults = child.querySelectorAll(selector);
+                                    results = results.concat(Array.from(childResults));
+                                }
+                            }
+                        }
+                        return results;
                     }
-                    return []; 
+                    
+                    // Handle tag selectors - search recursively
+                    if (this._childrenByTag && this._childrenByTag.has(selector)) {
+                        results = results.concat(this._childrenByTag.get(selector) || []);
+                    }
+                    
+                    // Also search recursively in all children for tag selectors
+                    if (this._children) {
+                        for (let child of this._children) {
+                            if (child.querySelectorAll) {
+                                const childResults = child.querySelectorAll(selector);
+                                results = results.concat(Array.from(childResults));
+                            }
+                        }
+                    }
+                    
+                    return results; 
                 },
                 addEventListener: function() {},
                 removeEventListener: function() {},
