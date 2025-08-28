@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StarSystem SVG Rendering Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background: #1a1a2e;
+            color: white;
+        }
+        
+        #test-container {
+            display: flex;
+            gap: 20px;
+        }
+        
+        #svg-container {
+            border: 1px solid #333;
+            background: #0f0f23;
+            width: 800px;
+            height: 600px;
+        }
+        
+        #system-info {
+            background: #16213e;
+            padding: 20px;
+            border-radius: 8px;
+            width: 300px;
+            max-height: 600px;
+            overflow-y: auto;
+        }
+        
+        .star { filter: drop-shadow(0 0 10px currentColor); }
+        .planet { opacity: 0.9; }
+        .moon { opacity: 0.7; }
+        .asteroid { opacity: 0.6; }
+        .space-station { filter: drop-shadow(0 0 5px #2196f3); }
+        .jump-gate { filter: drop-shadow(0 0 8px #9c27b0); }
+        
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 10px 5px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        
+        button:hover {
+            background: #45a049;
+        }
+        
+        .test-result {
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 5px;
+        }
+        
+        .success { background: #4CAF50; }
+        .error { background: #f44336; }
+    </style>
+</head>
+<body>
+    <h1>StarSystem SVG Rendering Test</h1>
+    
+    <button onclick="generateNewSystem()">Generate New System</button>
+    <button onclick="runTests()">Run Tests</button>
+    
+    <div id="test-results"></div>
+    
+    <div id="test-container">
+        <svg id="svg-container" viewBox="-400 -300 800 600" xmlns="http://www.w3.org/2000/svg">
+        </svg>
+        
+        <div id="system-info">
+            <h3>System Information</h3>
+            <div id="info-content">Generate a system to see information</div>
+        </div>
+    </div>
+    
+    <script type="module">
+        import { StarSystem } from './src/world/StarSystem.js';
+        
+        let currentSystem = null;
+        let animationId = null;
+        
+        // Mock graphics engine for SVG operations
+        class MockGraphicsEngine {
+            constructor(svgElement) {
+                this.svg = svgElement;
+            }
+            
+            createElement(tagName) {
+                return document.createElementNS('http://www.w3.org/2000/svg', tagName);
+            }
+        }
+        
+        const svgElement = document.getElementById('svg-container');
+        const graphics = new MockGraphicsEngine(svgElement);
+        
+        function generateNewSystem() {
+            // Clear previous system
+            svgElement.innerHTML = '';
+            
+            // Generate new system
+            const systemId = 'test-' + Math.floor(Math.random() * 1000);
+            currentSystem = new StarSystem(systemId, { x: Math.random() * 1000, y: Math.random() * 1000 });
+            
+            // Render the system
+            const systemElement = currentSystem.renderSystem(graphics);
+            svgElement.appendChild(systemElement);
+            
+            // Update info panel
+            updateSystemInfo();
+            
+            // Start orbit animation
+            startAnimation();
+            
+            console.log('Generated system:', currentSystem.getSystemInfo());
+        }
+        
+        function updateSystemInfo() {
+            if (!currentSystem) return;
+            
+            const info = currentSystem.getSystemInfo();
+            const bodies = currentSystem.getAllBodies();
+            
+            const infoHtml = `
+                <h4>${info.name}</h4>
+                <p><strong>Star:</strong> ${bodies.star.type} (${bodies.star.color})</p>
+                <p><strong>Planets:</strong> ${info.planetCount}</p>
+                <p><strong>Moons:</strong> ${info.moonCount}</p>
+                <p><strong>Asteroid Belts:</strong> ${info.asteroidBeltCount}</p>
+                <p><strong>Space Stations:</strong> ${info.spaceStationCount}</p>
+                <p><strong>Jump Gates:</strong> ${info.jumpGateCount}</p>
+                
+                <h5>Planets:</h5>
+                ${bodies.planets.map((planet, i) => 
+                    `<div style="margin: 5px 0;">
+                        <strong>${planet.name}</strong> (${planet.type})<br>
+                        Moons: ${planet.moons.length}, Resources: ${planet.resources.length}
+                    </div>`
+                ).join('')}
+                
+                <h5>Space Stations:</h5>
+                ${bodies.spaceStations.map(station => 
+                    `<div style="margin: 5px 0;">
+                        <strong>${station.name}</strong><br>
+                        Type: ${station.type}, Faction: ${station.faction}
+                    </div>`
+                ).join('')}
+            `;
+            
+            document.getElementById('info-content').innerHTML = infoHtml;
+        }
+        
+        function startAnimation() {
+            if (animationId) {
+                cancelAnimationFrame(animationId);
+            }
+            
+            let lastTime = 0;
+            
+            function animate(currentTime) {
+                if (currentSystem && lastTime) {
+                    const deltaTime = (currentTime - lastTime) / 1000; // Convert to seconds
+                    currentSystem.updateOrbits(deltaTime * 0.1); // Slow down animation
+                    
+                    // Re-render the system
+                    svgElement.innerHTML = '';
+                    const systemElement = currentSystem.renderSystem(graphics);
+                    svgElement.appendChild(systemElement);
+                }
+                
+                lastTime = currentTime;
+                animationId = requestAnimationFrame(animate);
+            }
+            
+            animate(0);
+        }
+        
+        function runTests() {
+            const resultsDiv = document.getElementById('test-results');
+            resultsDiv.innerHTML = '<h3>Running Tests...</h3>';
+            
+            const results = [];
+            
+            try {
+                // Test 1: System Generation
+                const testSystem = new StarSystem('test-001');
+                results.push({
+                    name: 'System Generation',
+                    success: testSystem.id === 'test-001' && testSystem.name && testSystem.star,
+                    message: testSystem.id === 'test-001' ? 'System generated successfully' : 'System generation failed'
+                });
+                
+                // Test 2: SVG Rendering
+                const svgElement = testSystem.renderSystem(graphics);
+                results.push({
+                    name: 'SVG Rendering',
+                    success: svgElement && svgElement.tagName === 'g',
+                    message: svgElement ? 'SVG element created successfully' : 'SVG rendering failed'
+                });
+                
+                // Test 3: System Info
+                const info = testSystem.getSystemInfo();
+                results.push({
+                    name: 'System Info',
+                    success: info && info.name && info.planetCount >= 0,
+                    message: info ? 'System info retrieved successfully' : 'System info failed'
+                });
+                
+                // Test 4: Bodies Collection
+                const bodies = testSystem.getAllBodies();
+                results.push({
+                    name: 'Bodies Collection',
+                    success: bodies && bodies.star && Array.isArray(bodies.planets),
+                    message: bodies ? 'Bodies collected successfully' : 'Bodies collection failed'
+                });
+                
+                // Test 5: Orbit Updates
+                const initialPlanetPos = testSystem.planets.length > 0 ? 
+                    { x: testSystem.planets[0].x, y: testSystem.planets[0].y } : null;
+                
+                if (initialPlanetPos) {
+                    testSystem.updateOrbits(1.0);
+                    const finalPlanetPos = { x: testSystem.planets[0].x, y: testSystem.planets[0].y };
+                    const moved = Math.abs(initialPlanetPos.x - finalPlanetPos.x) > 0.001 || 
+                                 Math.abs(initialPlanetPos.y - finalPlanetPos.y) > 0.001;
+                    
+                    results.push({
+                        name: 'Orbit Animation',
+                        success: moved,
+                        message: moved ? 'Orbits updating correctly' : 'Orbits not updating'
+                    });
+                }
+                
+            } catch (error) {
+                results.push({
+                    name: 'Test Execution',
+                    success: false,
+                    message: 'Error during testing: ' + error.message
+                });
+            }
+            
+            // Display results
+            const resultsHtml = results.map(result => 
+                `<div class="test-result ${result.success ? 'success' : 'error'}">
+                    <strong>${result.name}:</strong> ${result.message}
+                </div>`
+            ).join('');
+            
+            resultsDiv.innerHTML = '<h3>Test Results</h3>' + resultsHtml;
+            
+            const passed = results.filter(r => r.success).length;
+            const total = results.length;
+            resultsDiv.innerHTML += `<p><strong>Tests Passed: ${passed}/${total}</strong></p>`;
+        }
+        
+        // Make functions available globally
+        window.generateNewSystem = generateNewSystem;
+        window.runTests = runTests;
+        
+        // Generate initial system
+        generateNewSystem();
+    </script>
+</body>
+</html>

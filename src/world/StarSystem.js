@@ -431,7 +431,7 @@ export class StarSystem {
         
         // Render asteroid belts
         this.asteroidBelts.forEach(belt => {
-            belt.forEach(asteroid => {
+            belt.asteroids.forEach(asteroid => {
                 const asteroidElement = graphics.createElement('circle');
                 asteroidElement.setAttribute('cx', asteroid.x);
                 asteroidElement.setAttribute('cy', asteroid.y);
