@@ -52,6 +52,115 @@ export class GraphicsEngine {
         this.defs.appendChild(filter);
     }
     
+    createNebulaPattern(options = {}) {
+        const {
+            id = this.generateId('nebula'),
+            colors = ['#663399', '#9966cc', '#cc66cc', '#6633cc'],
+            baseSize = GRAPHICS.NEBULA_BASE_SIZE,
+            opacity = GRAPHICS.NEBULA_BASE_OPACITY
+        } = options;
+        
+        const pattern = this.createElement('pattern');
+        pattern.setAttribute('id', id);
+        pattern.setAttribute('x', '0');
+        pattern.setAttribute('y', '0');
+        pattern.setAttribute('width', baseSize);
+        pattern.setAttribute('height', baseSize);
+        pattern.setAttribute('patternUnits', 'userSpaceOnUse');
+        
+        // Create multiple overlapping ellipses for nebula effect
+        const numClouds = GRAPHICS.NEBULA_CLOUD_COUNT_MIN + Math.floor(Math.random() * (GRAPHICS.NEBULA_CLOUD_COUNT_MAX - GRAPHICS.NEBULA_CLOUD_COUNT_MIN));
+        
+        for (let i = 0; i < numClouds; i++) {
+            const ellipse = this.createElement('ellipse');
+            
+            // Random positioning within pattern
+            const cx = Math.random() * baseSize;
+            const cy = Math.random() * baseSize;
+            const rx = GRAPHICS.NEBULA_CLOUD_RX_MIN + Math.random() * (GRAPHICS.NEBULA_CLOUD_RX_MAX - GRAPHICS.NEBULA_CLOUD_RX_MIN);
+            const ry = GRAPHICS.NEBULA_CLOUD_RY_MIN + Math.random() * (GRAPHICS.NEBULA_CLOUD_RY_MAX - GRAPHICS.NEBULA_CLOUD_RY_MIN);
+            
+            // Random color from palette
+            const color = colors[Math.floor(Math.random() * colors.length)];
+            const cloudOpacity = opacity * (GRAPHICS.NEBULA_CLOUD_OPACITY_MIN + Math.random() * (GRAPHICS.NEBULA_CLOUD_OPACITY_MAX - GRAPHICS.NEBULA_CLOUD_OPACITY_MIN));
+            
+            ellipse.setAttribute('cx', cx);
+            ellipse.setAttribute('cy', cy);
+            ellipse.setAttribute('rx', rx);
+            ellipse.setAttribute('ry', ry);
+            ellipse.setAttribute('fill', color);
+            ellipse.setAttribute('opacity', cloudOpacity);
+            ellipse.setAttribute('filter', 'blur(15px)');
+            
+            // Add subtle rotation
+            const rotation = Math.random() * GRAPHICS.NEBULA_ROTATION_MAX;
+            ellipse.setAttribute('transform', `rotate(${rotation} ${cx} ${cy})`);
+            
+            pattern.appendChild(ellipse);
+        }
+        
+        this.defs.appendChild(pattern);
+        return id;
+    }
+    
+    createNebulaBackground(width, height, nebulaTypes = ['purple', 'blue', 'red']) {
+        const nebulaGroup = this.createGroup({ id: 'nebulaBackground' });
+        
+        // Create different nebula types
+        const nebulaConfigs = {
+            purple: {
+                colors: ['#663399', '#9966cc', '#cc66cc', '#6633cc'],
+                opacity: 0.25
+            },
+            blue: {
+                colors: ['#336699', '#6699cc', '#66ccff', '#3366cc'],
+                opacity: 0.2
+            },
+            red: {
+                colors: ['#994433', '#cc6666', '#ff6666', '#cc3366'],
+                opacity: 0.3
+            },
+            green: {
+                colors: ['#339966', '#66cc99', '#66ff99', '#33cc66'],
+                opacity: 0.15
+            }
+        };
+        
+        // Create 2-4 nebula regions
+        const nebulaCount = GRAPHICS.NEBULA_COUNT_MIN + Math.floor(Math.random() * (GRAPHICS.NEBULA_COUNT_MAX - GRAPHICS.NEBULA_COUNT_MIN + 1));
+        
+        for (let i = 0; i < nebulaCount; i++) {
+            const type = nebulaTypes[Math.floor(Math.random() * nebulaTypes.length)];
+            const config = nebulaConfigs[type];
+            
+            if (!config) continue;
+            
+            const patternId = this.createNebulaPattern({
+                colors: config.colors,
+                opacity: config.opacity,
+                baseSize: GRAPHICS.NEBULA_PATTERN_SIZE_MIN + Math.random() * (GRAPHICS.NEBULA_PATTERN_SIZE_MAX - GRAPHICS.NEBULA_PATTERN_SIZE_MIN)
+            });
+            
+            // Create nebula region
+            const nebulaRect = this.createElement('rect');
+            const regionWidth = width * (GRAPHICS.NEBULA_REGION_WIDTH_MIN + Math.random() * (GRAPHICS.NEBULA_REGION_WIDTH_MAX - GRAPHICS.NEBULA_REGION_WIDTH_MIN));
+            const regionHeight = height * (GRAPHICS.NEBULA_REGION_HEIGHT_MIN + Math.random() * (GRAPHICS.NEBULA_REGION_HEIGHT_MAX - GRAPHICS.NEBULA_REGION_HEIGHT_MIN));
+            const x = Math.random() * (width - regionWidth);
+            const y = Math.random() * (height - regionHeight);
+            
+            nebulaRect.setAttribute('x', x);
+            nebulaRect.setAttribute('y', y);
+            nebulaRect.setAttribute('width', regionWidth);
+            nebulaRect.setAttribute('height', regionHeight);
+            nebulaRect.setAttribute('fill', `url(#${patternId})`);
+            nebulaRect.setAttribute('opacity', GRAPHICS.NEBULA_REGION_OPACITY);
+            
+            nebulaGroup.appendChild(nebulaRect);
+        }
+        
+        return nebulaGroup;
+    }
+    
     createElement(type) {
         return document.createElementNS('http://www.w3.org/2000/svg', type);
     }
@@ -226,7 +335,7 @@ export class GraphicsEngine {
         return gradientId;
     }
     
-    createStarField(count, bounds = { width: GRAPHICS.DEFAULT_CANVAS_WIDTH, height: GRAPHICS.DEFAULT_CANVAS_HEIGHT }) {
+    createStarField(count, bounds = { width: GRAPHICS.DEFAULT_CANVAS_WIDTH, height: GRAPHICS.DEFAULT_CANVAS_HEIGHT }, options = {}) {
         // Parameter validation
         if (typeof count !== 'number' || !isFinite(count) || count < 0) {
             throw new Error('GraphicsEngine.createStarField: count must be a non-negative finite number');
@@ -241,7 +350,15 @@ export class GraphicsEngine {
             throw new Error('GraphicsEngine.createStarField: bounds.height must be a positive finite number');
         }
         
+        const { includeNebulae = true, nebulaTypes = ['purple', 'blue', 'red'] } = options;
+        
         const starField = this.createGroup({ id: 'starField' });
+        
+        // Add nebula backgrounds first (rendered behind stars)
+        if (includeNebulae && Math.random() < GRAPHICS.NEBULA_CHANCE) { // 60% chance for nebulae
+            const nebulaBackground = this.createNebulaBackground(bounds.width, bounds.height, nebulaTypes);
+            starField.appendChild(nebulaBackground);
+        }
         
         for (let i = 0; i < count; i++) {
             const x = Math.random() * bounds.width;
