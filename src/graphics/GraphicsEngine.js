@@ -1395,6 +1395,140 @@ export class GraphicsEngine {
         }
     }
     
+    createComet(x, y, size, attributes = {}) {
+        if (!Number.isFinite(x)) {
+            throw new Error('GraphicsEngine.createComet: x must be a finite number');
+        }
+        if (!Number.isFinite(y)) {
+            throw new Error('GraphicsEngine.createComet: y must be a finite number');
+        }
+        if (!Number.isFinite(size) || size <= 0) {
+            throw new Error('GraphicsEngine.createComet: size must be a positive finite number');
+        }
+        if (typeof attributes !== 'object' || attributes === null) {
+            throw new Error('GraphicsEngine.createComet: attributes must be an object');
+        }
+
+        const comet = this.createGroup({
+            transform: `translate(${x}, ${y})`,
+            class: 'comet',
+            ...attributes
+        });
+
+        // Extract velocity for tail orientation
+        const velocity = attributes.velocity || { x: 1, y: 0 };
+        const tailAngle = Math.atan2(velocity.y, velocity.x) + Math.PI; // Tail points opposite to velocity
+
+        // Comet colors
+        const nucleusColor = attributes.nucleusColor || '#888888';
+        const comaColor = attributes.comaColor || '#ccccaa';
+        const dustTailColor = attributes.dustTailColor || '#ffeeaa';
+        const ionTailColor = attributes.ionTailColor || '#aaccff';
+
+        // Create nucleus (rocky/ice core)
+        const nucleus = this.createCircle(0, 0, size * GRAPHICS.COMET_NUCLEUS_RATIO, {
+            fill: nucleusColor,
+            stroke: '#666666',
+            'stroke-width': 1,
+            opacity: GRAPHICS.COMET_NUCLEUS_OPACITY
+        });
+
+        // Create coma (glowing atmosphere around nucleus)
+        const comaGradientId = this.createGradient('radial', [
+            { offset: '0%', color: comaColor },
+            { offset: '70%', color: comaColor, opacity: 0.3 },
+            { offset: '100%', color: comaColor, opacity: 0 }
+        ], {
+            cx: '50%',
+            cy: '50%'
+        });
+
+        const coma = this.createCircle(0, 0, size * GRAPHICS.COMET_COMA_RATIO, {
+            fill: `url(#${comaGradientId})`,
+            opacity: GRAPHICS.COMET_COMA_OPACITY
+        });
+
+        // Calculate tail length based on comet size
+        const tailLength = size * (GRAPHICS.COMET_TAIL_LENGTH_MIN + Math.random() * (GRAPHICS.COMET_TAIL_LENGTH_MAX - GRAPHICS.COMET_TAIL_LENGTH_MIN));
+
+        // Create dust tail (curved, yellowish)
+        const dustTailEndX = Math.cos(tailAngle) * tailLength;
+        const dustTailEndY = Math.sin(tailAngle) * tailLength;
+        
+        const dustTailGradientId = this.createGradient('linear', [
+            { offset: '0%', color: dustTailColor, opacity: GRAPHICS.COMET_DUST_TAIL_OPACITY },
+            { offset: '70%', color: dustTailColor, opacity: 0.1 },
+            { offset: '100%', color: dustTailColor, opacity: 0 }
+        ], {
+            x1: '0%', y1: '0%', x2: '100%', y2: '0%'
+        });
+
+        // Create dust tail using ellipse
+        const dustTail = this.createElement('ellipse');
+        dustTail.setAttribute('cx', dustTailEndX / 2);
+        dustTail.setAttribute('cy', dustTailEndY / 2);
+        dustTail.setAttribute('rx', tailLength / 2);
+        dustTail.setAttribute('ry', size * GRAPHICS.COMET_DUST_TAIL_WIDTH_RATIO);
+        dustTail.setAttribute('fill', `url(#${dustTailGradientId})`);
+        dustTail.setAttribute('transform', `rotate(${(tailAngle * GRAPHICS.ANGLE_180) / Math.PI})`);
+
+        // Create ion tail (straighter, bluish)
+        const ionTailGradientId = this.createGradient('linear', [
+            { offset: '0%', color: ionTailColor, opacity: GRAPHICS.COMET_ION_TAIL_OPACITY },
+            { offset: '80%', color: ionTailColor, opacity: 0.2 },
+            { offset: '100%', color: ionTailColor, opacity: 0 }
+        ], {
+            x1: '0%', y1: '0%', x2: '100%', y2: '0%'
+        });
+
+        const ionTail = this.createElement('ellipse');
+        ionTail.setAttribute('cx', dustTailEndX / GRAPHICS.COMET_ION_TAIL_OFFSET_RATIO);
+        ionTail.setAttribute('cy', dustTailEndY / GRAPHICS.COMET_ION_TAIL_OFFSET_RATIO);
+        ionTail.setAttribute('rx', tailLength / GRAPHICS.COMET_ION_TAIL_OFFSET_RATIO);
+        ionTail.setAttribute('ry', size * GRAPHICS.COMET_ION_TAIL_WIDTH_RATIO);
+        ionTail.setAttribute('fill', `url(#${ionTailGradientId})`);
+        ionTail.setAttribute('transform', `rotate(${(tailAngle * GRAPHICS.ANGLE_180) / Math.PI})`);
+
+        // Add tail particles for visual enhancement
+        const particleGroup = this.createGroup({
+            id: `comet_particles_${this.generateId('comet')}`
+        });
+
+        for (let i = 0; i < GRAPHICS.COMET_TAIL_PARTICLES; i++) {
+            const particleDistance = (tailLength * (GRAPHICS.COMET_PARTICLE_DISTANCE_MIN + Math.random() * GRAPHICS.COMET_PARTICLE_DISTANCE_RANGE));
+            const particleSpread = size * (Math.random() - GRAPHICS.COMET_PARTICLE_SPREAD_CENTER) * 2;
+            const particleX = Math.cos(tailAngle) * particleDistance + particleSpread * Math.cos(tailAngle + Math.PI/2);
+            const particleY = Math.sin(tailAngle) * particleDistance + particleSpread * Math.sin(tailAngle + Math.PI/2);
+            
+            const particleSize = GRAPHICS.COMET_PARTICLE_SIZE_MIN + Math.random() * (GRAPHICS.COMET_PARTICLE_SIZE_MAX - GRAPHICS.COMET_PARTICLE_SIZE_MIN);
+            
+            const particle = this.createCircle(particleX, particleY, particleSize, {
+                fill: Math.random() > GRAPHICS.COMET_PARTICLE_COLOR_THRESHOLD ? dustTailColor : ionTailColor,
+                opacity: GRAPHICS.COMET_PARTICLE_OPACITY * (1 - i / GRAPHICS.COMET_TAIL_PARTICLES)
+            });
+
+            particleGroup.appendChild(particle);
+        }
+
+        // Assemble comet (order matters for layering)
+        comet.appendChild(dustTail);
+        comet.appendChild(ionTail);
+        comet.appendChild(particleGroup);
+        comet.appendChild(coma);
+        comet.appendChild(nucleus);
+
+        // Add subtle animation to coma (pulsing effect)
+        const comaAnimation = this.createElement('animate');
+        comaAnimation.setAttribute('attributeName', 'opacity');
+        comaAnimation.setAttribute('values', `${GRAPHICS.COMET_COMA_OPACITY};${GRAPHICS.COMET_COMA_OPACITY * GRAPHICS.COMET_COMA_ANIMATION_OPACITY_FACTOR};${GRAPHICS.COMET_COMA_OPACITY}`);
+        comaAnimation.setAttribute('dur', GRAPHICS.COMET_ANIMATION_DURATION);
+        comaAnimation.setAttribute('repeatCount', 'indefinite');
+        
+        coma.appendChild(comaAnimation);
+
+        return comet;
+    }
+    
     createSpaceStation(x, y, size = GRAPHICS.STATION_DEFAULT_SIZE, attributes = {}) {
         const station = this.createGroup({
             transform: `translate(${x}, ${y})`,

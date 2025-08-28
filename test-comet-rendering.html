@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Max-Pixels - Comet Rendering Test</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            background: #0a0a0a;
+            color: #ffffff;
+            font-family: monospace;
+        }
+        
+        #game-container {
+            background: #000;
+            border: 1px solid #333;
+            margin: 20px 0;
+        }
+        
+        .controls {
+            margin: 10px 0;
+        }
+        
+        .controls button {
+            margin: 5px;
+            padding: 8px 16px;
+            background: #333;
+            color: #fff;
+            border: 1px solid #666;
+            cursor: pointer;
+        }
+        
+        .controls button:hover {
+            background: #555;
+        }
+        
+        .info {
+            margin: 10px 0;
+            font-size: 14px;
+            color: #aaa;
+        }
+    </style>
+</head>
+<body>
+    <h1>🌟 Max-Pixels - Comet Rendering Test</h1>
+    
+    <div class="info">
+        Testing the createComet graphics utility with different sizes, velocities, and colors
+    </div>
+    
+    <div class="controls">
+        <button onclick="clearCanvas()">Clear Canvas</button>
+        <button onclick="addRandomComet()">Add Random Comet</button>
+        <button onclick="addCometField()">Add Comet Field</button>
+        <button onclick="testCometVariations()">Test Variations</button>
+    </div>
+    
+    <svg id="game-container" width="800" height="600" viewBox="0 0 800 600">
+        <defs></defs>
+    </svg>
+    
+    <div class="info" id="status">
+        Ready - Click "Test Variations" to see different comet types
+    </div>
+
+    <script type="module">
+        import { GraphicsEngine } from './src/graphics/GraphicsEngine.js';
+        
+        // Initialize graphics engine
+        const svgContainer = document.getElementById('game-container');
+        const graphics = new GraphicsEngine(svgContainer);
+        
+        // Test functions
+        window.clearCanvas = function() {
+            graphics.clear();
+            document.getElementById('status').textContent = 'Canvas cleared';
+        };
+        
+        window.addRandomComet = function() {
+            const x = Math.random() * 700 + 50;
+            const y = Math.random() * 500 + 50;
+            const size = Math.random() * 20 + 5;
+            
+            // Random velocity for tail direction
+            const velocity = {
+                x: (Math.random() - 0.5) * 4,
+                y: (Math.random() - 0.5) * 4
+            };
+            
+            const comet = graphics.createComet(x, y, size, { velocity });
+            graphics.addToLayer('comets', comet);
+            
+            document.getElementById('status').textContent = `Added comet at (${x.toFixed(0)}, ${y.toFixed(0)}) with size ${size.toFixed(1)}`;
+        };
+        
+        window.addCometField = function() {
+            graphics.clear();
+            
+            for (let i = 0; i < 8; i++) {
+                const x = Math.random() * 700 + 50;
+                const y = Math.random() * 500 + 50;
+                const size = Math.random() * 15 + 3;
+                
+                const velocity = {
+                    x: (Math.random() - 0.5) * 6,
+                    y: (Math.random() - 0.5) * 6
+                };
+                
+                const comet = graphics.createComet(x, y, size, { velocity });
+                graphics.addToLayer('comets', comet);
+            }
+            
+            document.getElementById('status').textContent = 'Added field of 8 random comets';
+        };
+        
+        window.testCometVariations = function() {
+            graphics.clear();
+            
+            // Test different comet configurations
+            const testCases = [
+                {
+                    x: 150, y: 100, size: 8,
+                    velocity: { x: 2, y: 0 },
+                    nucleusColor: '#666666',
+                    comaColor: '#aaaaaa',
+                    dustTailColor: '#ffddaa',
+                    ionTailColor: '#aabbff',
+                    label: 'Standard Comet (right)'
+                },
+                {
+                    x: 150, y: 200, size: 12,
+                    velocity: { x: -1, y: -1 },
+                    nucleusColor: '#554433',
+                    comaColor: '#ddccaa',
+                    dustTailColor: '#ffcc88',
+                    ionTailColor: '#88bbff',
+                    label: 'Large Comet (up-left)'
+                },
+                {
+                    x: 150, y: 300, size: 6,
+                    velocity: { x: 0, y: 2 },
+                    nucleusColor: '#333333',
+                    comaColor: '#999988',
+                    dustTailColor: '#ffee99',
+                    ionTailColor: '#99ccff',
+                    label: 'Small Comet (down)'
+                },
+                {
+                    x: 150, y: 400, size: 15,
+                    velocity: { x: -2, y: 1 },
+                    nucleusColor: '#445566',
+                    comaColor: '#aabbcc',
+                    dustTailColor: '#ffffaa',
+                    ionTailColor: '#aaccff',
+                    label: 'Bright Comet (down-left)'
+                }
+            ];
+            
+            testCases.forEach((config, index) => {
+                const { x, y, size, velocity, nucleusColor, comaColor, dustTailColor, ionTailColor, label } = config;
+                
+                const comet = graphics.createComet(x, y, size, {
+                    velocity,
+                    nucleusColor,
+                    comaColor,
+                    dustTailColor,
+                    ionTailColor
+                });
+                
+                graphics.addToLayer('comets', comet);
+                
+                // Add label
+                const labelText = graphics.createText(label, x + 100, y + 5, {
+                    fill: '#cccccc',
+                    'font-size': '12px',
+                    'font-family': 'monospace'
+                });
+                graphics.addToLayer('labels', labelText);
+            });
+            
+            document.getElementById('status').textContent = 'Displaying comet variations with different sizes, velocities, and colors';
+        };
+        
+        // Create initial layer
+        graphics.createLayer('comets', 1);
+        graphics.createLayer('labels', 2);
+        
+        // Show initial test
+        testCometVariations();
+    </script>
+</body>
+</html>
