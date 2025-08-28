@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Solar Corona Effects Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background: #0a0a1a;
+            color: white;
+        }
+        
+        #test-container {
+            display: flex;
+            gap: 20px;
+        }
+        
+        #svg-container {
+            border: 1px solid #333;
+            background: #050510;
+            width: 800px;
+            height: 600px;
+        }
+        
+        #controls {
+            background: #16213e;
+            padding: 20px;
+            border-radius: 8px;
+            width: 300px;
+        }
+        
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 10px 5px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        
+        button:hover {
+            background: #45a049;
+        }
+        
+        .info {
+            background: #2a3f5f;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Solar Corona Effects Demonstration</h1>
+    
+    <div id="test-container">
+        <svg id="svg-container" viewBox="-400 -300 800 600" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+                <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+                    <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
+                    <feMerge>
+                        <feMergeNode in="coloredBlur"/>
+                        <feMergeNode in="SourceGraphic"/>
+                    </feMerge>
+                </filter>
+            </defs>
+        </svg>
+        
+        <div id="controls">
+            <h3>Solar Corona Test</h3>
+            <button onclick="generateStars()">Generate New Star Field</button>
+            <button onclick="toggleCoronaVisibility()">Toggle Corona Visibility</button>
+            <button onclick="resetView()">Reset View</button>
+            
+            <div class="info">
+                <h4>About Corona Effects</h4>
+                <p>• Large stars (size ≥ 2.5) can have corona effects</p>
+                <p>• Corona appears with 70% probability</p>
+                <p>• Multiple animated layers create depth</p>
+                <p>• Each layer has pulsing animation with different timing</p>
+            </div>
+            
+            <div id="star-info">
+                <h4>Generated Stars</h4>
+                <div id="star-list"></div>
+            </div>
+        </div>
+    </div>
+    
+    <script type="module">
+        import { GraphicsEngine } from './src/graphics/GraphicsEngine.js';
+        import { GRAPHICS } from './src/constants.js';
+        
+        const svgElement = document.getElementById('svg-container');
+        const graphics = new GraphicsEngine(svgElement);
+        
+        let currentStars = [];
+        let coronaVisible = true;
+        
+        const starTypes = ['O', 'B', 'A', 'F', 'G', 'K', 'M'];
+        const starColors = {
+            'O': '#9bb0ff',
+            'B': '#aabfff', 
+            'A': '#cad7ff',
+            'F': '#f8f7ff',
+            'G': '#fff4ea',
+            'K': '#ffd2a1',
+            'M': '#ffad51'
+        };
+        
+        function generateStars() {
+            // Clear existing stars
+            const existingStars = svgElement.querySelectorAll('.test-star');
+            existingStars.forEach(star => star.remove());
+            currentStars = [];
+            
+            const starCount = 15;
+            const starInfo = [];
+            
+            for (let i = 0; i < starCount; i++) {
+                // Generate star parameters
+                const x = (Math.random() - 0.5) * 700;
+                const y = (Math.random() - 0.5) * 500;
+                const size = 1.5 + Math.random() * 3.5; // Range 1.5 to 5.0
+                const type = starTypes[Math.floor(Math.random() * starTypes.length)];
+                const color = starColors[type];
+                
+                // Create star
+                const star = graphics.createStar(x, y, size, color, type);
+                star.classList.add('test-star');
+                svgElement.appendChild(star);
+                
+                currentStars.push({
+                    element: star,
+                    x, y, size, type, color
+                });
+                
+                // Check if star has corona
+                const hasCorona = star.querySelector('[data-corona="true"]') !== null;
+                
+                starInfo.push({
+                    type,
+                    size: size.toFixed(1),
+                    hasCorona,
+                    color
+                });
+            }
+            
+            // Update info display
+            updateStarInfo(starInfo);
+        }
+        
+        function updateStarInfo(starInfo) {
+            const starList = document.getElementById('star-list');
+            const coronaStars = starInfo.filter(s => s.hasCorona).length;
+            
+            starList.innerHTML = `
+                <p><strong>Total Stars:</strong> ${starInfo.length}</p>
+                <p><strong>Stars with Corona:</strong> ${coronaStars}</p>
+                <div style="max-height: 200px; overflow-y: auto; margin-top: 10px;">
+                    ${starInfo.map((star, i) => `
+                        <div style="margin: 3px 0; padding: 3px; background: ${star.hasCorona ? '#1a4a1a' : '#3a3a3a'}; border-radius: 3px;">
+                            Star ${i + 1}: ${star.type} (${star.size}) ${star.hasCorona ? '✨ Corona' : ''}
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+        
+        function toggleCoronaVisibility() {
+            coronaVisible = !coronaVisible;
+            const coronas = svgElement.querySelectorAll('[data-corona="true"]');
+            
+            coronas.forEach(corona => {
+                corona.style.display = coronaVisible ? 'block' : 'none';
+            });
+            
+            const button = document.querySelector('button[onclick="toggleCoronaVisibility()"]');
+            button.textContent = coronaVisible ? 'Hide Corona' : 'Show Corona';
+        }
+        
+        function resetView() {
+            svgElement.setAttribute('viewBox', '-400 -300 800 600');
+        }
+        
+        // Make functions available globally
+        window.generateStars = generateStars;
+        window.toggleCoronaVisibility = toggleCoronaVisibility;
+        window.resetView = resetView;
+        
+        // Generate initial stars
+        generateStars();
+        
+        console.log('Corona effects test loaded. Large stars (size ≥ 2.5) may show animated corona effects.');
+    </script>
+</body>
+</html>

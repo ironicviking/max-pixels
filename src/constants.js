@@ -158,6 +158,23 @@ export const GRAPHICS = {
     STAR_TWINKLE_MIN_DURATION: 2,
     STAR_TWINKLE_MAX_DURATION: 3,
     
+    // Solar corona effects
+    STAR_CORONA_MIN_SIZE_THRESHOLD: 2.5, // Minimum star size to show corona
+    STAR_CORONA_SIZE_MULTIPLIER: 1.8, // Corona size relative to star
+    STAR_CORONA_OPACITY_BASE: 0.1, // Base corona opacity
+    STAR_CORONA_OPACITY_VARIATION: 0.05, // Random opacity variation
+    STAR_CORONA_ANIMATION_DURATION_MIN: 4, // Minimum animation duration in seconds
+    STAR_CORONA_ANIMATION_DURATION_MAX: 8, // Maximum animation duration in seconds
+    STAR_CORONA_PULSE_INTENSITY: 0.3, // How much corona opacity varies during pulse
+    STAR_CORONA_CHANCE: 0.7, // Chance for eligible stars to have corona effects
+    STAR_CORONA_LAYER_COUNT: 3, // Number of corona layers
+    STAR_CORONA_LAYER_SIZE_INCREMENT: 0.2, // Size increase per layer relative to star size
+    STAR_CORONA_LAYER_OPACITY_DECAY: 0.3, // Opacity reduction per layer
+    STAR_CORONA_STROKE_WIDTH_RATIO: 0.1, // Corona stroke width relative to star size
+    STAR_CORONA_ANIMATION_DELAY: 0.3, // Animation delay offset per layer
+    STAR_CORONA_DURATION_OFFSET: 0.5, // Duration variation per layer
+    BLUR_BASE_RADIUS: 2, // Base blur radius for corona layers
+    
     // Binary star systems
     STAR_BINARY_CHANCE: 0.05,
     STAR_BINARY_SEPARATION: 8,

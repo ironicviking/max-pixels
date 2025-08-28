@@ -736,6 +736,13 @@ export class GraphicsEngine {
         
         starGroup.appendChild(star);
         
+        // Add solar corona effect for larger main sequence stars
+        const corona = this.createSolarCorona(size, color, type);
+        if (corona) {
+            // Corona should be behind the main star
+            starGroup.insertBefore(corona, star);
+        }
+        
         // Add twinkling animation to some stars
         if (Math.random() < GRAPHICS.STAR_TWINKLE_CHANCE) {
             this.addTwinkleAnimation(star);
@@ -752,6 +759,63 @@ export class GraphicsEngine {
         animate.setAttribute('repeatCount', 'indefinite');
         
         star.appendChild(animate);
+    }
+    
+    createSolarCorona(size, color, _type) {
+        // Only create corona for larger main sequence stars
+        if (size < GRAPHICS.STAR_CORONA_MIN_SIZE_THRESHOLD) {
+            return null;
+        }
+        
+        // Check if this star should have corona effects
+        if (Math.random() > GRAPHICS.STAR_CORONA_CHANCE) {
+            return null;
+        }
+        
+        const coronaSize = size * GRAPHICS.STAR_CORONA_SIZE_MULTIPLIER;
+        const baseOpacity = GRAPHICS.STAR_CORONA_OPACITY_BASE + 
+                           Math.random() * GRAPHICS.STAR_CORONA_OPACITY_VARIATION;
+        
+        // Create corona group for multiple layers
+        const coronaGroup = this.createGroup({
+            'data-corona': 'true'
+        });
+        
+        // Create multiple corona layers for depth effect
+        for (let i = 0; i < GRAPHICS.STAR_CORONA_LAYER_COUNT; i++) {
+            const layerSize = coronaSize + (i * size * GRAPHICS.STAR_CORONA_LAYER_SIZE_INCREMENT);
+            const layerOpacity = baseOpacity * (1 - i * GRAPHICS.STAR_CORONA_LAYER_OPACITY_DECAY);
+            
+            const coronaLayer = this.createCircle(0, 0, layerSize, {
+                fill: 'none',
+                stroke: color,
+                'stroke-width': size * GRAPHICS.STAR_CORONA_STROKE_WIDTH_RATIO,
+                opacity: layerOpacity,
+                filter: `blur(${GRAPHICS.BLUR_BASE_RADIUS + i}px)`
+            });
+            
+            // Add pulsing animation to each layer
+            const pulseAnimation = this.createElement('animate');
+            pulseAnimation.setAttribute('attributeName', 'opacity');
+            const minOpacity = layerOpacity * (1 - GRAPHICS.STAR_CORONA_PULSE_INTENSITY);
+            const maxOpacity = layerOpacity * (1 + GRAPHICS.STAR_CORONA_PULSE_INTENSITY);
+            pulseAnimation.setAttribute('values', `${layerOpacity};${minOpacity};${maxOpacity};${layerOpacity}`);
+            
+            // Vary animation duration for each layer
+            const duration = GRAPHICS.STAR_CORONA_ANIMATION_DURATION_MIN + 
+                           Math.random() * (GRAPHICS.STAR_CORONA_ANIMATION_DURATION_MAX - GRAPHICS.STAR_CORONA_ANIMATION_DURATION_MIN) + 
+                           (i * GRAPHICS.STAR_CORONA_DURATION_OFFSET); // Slight offset per layer
+            pulseAnimation.setAttribute('dur', `${duration}s`);
+            pulseAnimation.setAttribute('repeatCount', 'indefinite');
+            
+            // Add slight delay to create wave effect
+            pulseAnimation.setAttribute('begin', `${i * GRAPHICS.STAR_CORONA_ANIMATION_DELAY}s`);
+            
+            coronaLayer.appendChild(pulseAnimation);
+            coronaGroup.appendChild(coronaLayer);
+        }
+        
+        return coronaGroup;
     }
     
     createAsteroidField(count, bounds = { width: GRAPHICS.DEFAULT_CANVAS_WIDTH, height: GRAPHICS.DEFAULT_CANVAS_HEIGHT }) {
