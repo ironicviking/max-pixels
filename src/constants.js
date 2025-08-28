@@ -43,7 +43,11 @@ export const AUDIO = {
     LASER_ZAP_DECAY: 12,
     LASER_ENERGY_DECAY: 6,
     LASER_FREQUENCY_MULT: 2,
-    LASER_ZAP_FREQUENCY_MULT: 4
+    LASER_ZAP_FREQUENCY_MULT: 4,
+    
+    // Weapon recharge sound parameters
+    WEAPON_RECHARGE_VOLUME: 0.4,
+    WEAPON_RECHARGE_DURATION: 0.6
 };
 
 // Camera Constants
@@ -497,6 +501,7 @@ export const WEAPONS = {
     ENERGY_COST: 20,      // Energy cost per laser shot
     ENERGY_REGEN_RATE: 15, // Energy regenerated per second
     LOW_ENERGY_THRESHOLD: 15, // Below this, visual warning appears
+    ENERGY_RECHARGE_SOUND_THRESHOLD: 80, // Above this, play recharge complete sound
     
     // Laser impact effects
     IMPACT_SIZE: 12,

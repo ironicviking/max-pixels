@@ -992,6 +992,22 @@ describe('Trading System', function() {
 });
 
 /**
+ * Weapon System Tests
+ */
+describe('Weapon System', function() {
+    test('should have weapon recharge constants defined', function() {
+        const { WEAPONS, AUDIO } = await import('../src/constants.js');
+        
+        assert(typeof WEAPONS.ENERGY_RECHARGE_SOUND_THRESHOLD === 'number', 'Should have recharge sound threshold');
+        assert(WEAPONS.ENERGY_RECHARGE_SOUND_THRESHOLD > 0, 'Recharge threshold should be positive');
+        assert(WEAPONS.ENERGY_RECHARGE_SOUND_THRESHOLD < WEAPONS.MAX_ENERGY, 'Threshold should be less than max energy');
+        
+        assert(typeof AUDIO.WEAPON_RECHARGE_VOLUME === 'number', 'Should have recharge volume constant');
+        assert(typeof AUDIO.WEAPON_RECHARGE_DURATION === 'number', 'Should have recharge duration constant');
+    });
+});
+
+/**
  * Auth Service Tests
  */
 describe('Authentication Service', function() {
@@ -1211,6 +1227,36 @@ describe('Audio Manager', function() {
         
         // Restore original context
         audio.audioContext = originalContext;
+    });
+    
+    test('should generate weapon recharge sound', function() {
+        const audio = new AudioManager();
+        
+        if (audio.isEnabled) {
+            assert(audio.sounds.has('weaponRecharge'), 'Should have weapon recharge sound');
+            
+            const rechargeBuffer = audio.sounds.get('weaponRecharge');
+            if (rechargeBuffer) {
+                assert(rechargeBuffer instanceof AudioBuffer, 'Recharge should be AudioBuffer');
+                assert(rechargeBuffer.length > 0, 'Recharge buffer should have samples');
+                assert(rechargeBuffer.duration > 0.5, 'Recharge sound should be at least 0.5 seconds');
+            }
+        }
+    });
+    
+    test('should play weapon recharge sound', function() {
+        const audio = new AudioManager();
+        
+        const result = audio.playWeaponRecharge();
+        
+        if (audio.isEnabled) {
+            if (result) {
+                assert(typeof result.stop === 'function', 'Should return valid sound object with stop method');
+                assert(typeof result.setVolume === 'function', 'Should return sound object with setVolume method');
+            }
+        } else {
+            assertEqual(result, null, 'Should return null when audio is disabled');
+        }
     });
 });
 

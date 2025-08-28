@@ -43,6 +43,7 @@ export class AudioManager {
         this.generateCollisionSound();
         this.generateAmbientHum();
         this.generateLaserSound();
+        this.generateWeaponRechargeSound();
     }
     
     generateThrusterSound() {
@@ -87,6 +88,17 @@ export class AudioManager {
         });
         
         this.sounds.set('laser', laserBuffer);
+    }
+    
+    generateWeaponRechargeSound() {
+        const rechargeBuffer = this.createNoiseBuffer(0.6, (freq, time) => {
+            const chargeUp = Math.sin(freq * AUDIO.FREQUENCY_MID * time * (1 + time * 2)) * (time * 3);
+            const sparkle = Math.sin(freq * AUDIO.FREQUENCY_HIGH * time * 3) * Math.sin(freq * 8 * time) * 0.2;
+            const hum = Math.sin(freq * AUDIO.FREQUENCY_LOW * time) * 0.3 * (1 - Math.exp(-time * 4));
+            return (chargeUp * 0.4 + sparkle + hum) * Math.min(1, time * 4) * AUDIO.VOLUME_MEDIUM;
+        });
+        
+        this.sounds.set('weaponRecharge', rechargeBuffer);
     }
     
     createNoiseBuffer(duration, waveFunction) {
@@ -183,6 +195,13 @@ export class AudioManager {
         return this.play('laser', {
             volume: intensity * AUDIO.LASER_VOLUME,
             playbackRate: AUDIO.PLAYBACK_BASE + Math.random() * AUDIO.VOLUME_LOW
+        });
+    }
+    
+    playWeaponRecharge() {
+        return this.play('weaponRecharge', {
+            volume: AUDIO.VOLUME_MEDIUM,
+            playbackRate: AUDIO.PLAYBACK_BASE + Math.random() * 0.2
         });
     }
     

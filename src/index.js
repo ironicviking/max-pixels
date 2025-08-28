@@ -59,6 +59,7 @@ class MaxPixelsGame {
         
         // Weapon system
         this.lastFireTime = 0;
+        this.lastEnergyRechargeSound = 0;
         
         console.log('Max-Pixels initializing...');
         this.init();
@@ -553,6 +554,7 @@ class MaxPixelsGame {
     updateEnergy() {
         const currentTime = Date.now();
         const deltaTime = (currentTime - this.player.lastEnergyRegenTime) / 1000; // Convert to seconds
+        const previousEnergy = this.player.energy;
         
         // Regenerate energy over time
         if (this.player.energy < WEAPONS.MAX_ENERGY) {
@@ -560,9 +562,42 @@ class MaxPixelsGame {
                 WEAPONS.MAX_ENERGY,
                 this.player.energy + (WEAPONS.ENERGY_REGEN_RATE * deltaTime)
             );
+            
+            // Play recharge sound when energy crosses the recharge threshold
+            if (previousEnergy < WEAPONS.ENERGY_RECHARGE_SOUND_THRESHOLD && 
+                this.player.energy >= WEAPONS.ENERGY_RECHARGE_SOUND_THRESHOLD &&
+                currentTime - this.lastEnergyRechargeSound > 2000) { // Minimum 2 second cooldown
+                
+                this.audio.playWeaponRecharge();
+                this.lastEnergyRechargeSound = currentTime;
+                this.showEnergyRechargeEffect();
+                console.log('Weapon energy recharged!');
+            }
         }
         
         this.player.lastEnergyRegenTime = currentTime;
+    }
+    
+    showEnergyRechargeEffect() {
+        // Create a brief visual flash on the energy bar to indicate recharge
+        const energyFill = document.getElementById('energy-fill');
+        if (!energyFill) return;
+        
+        // Save original styles
+        const originalBackground = energyFill.style.backgroundColor;
+        const originalBoxShadow = energyFill.style.boxShadow;
+        
+        // Apply recharge flash effect
+        energyFill.style.backgroundColor = '#00ffff';
+        energyFill.style.boxShadow = '0 0 8px #00ffff';
+        energyFill.style.transition = 'all 0.1s ease-in-out';
+        
+        // Revert to normal after brief flash
+        setTimeout(() => {
+            energyFill.style.backgroundColor = originalBackground || '#44ff44';
+            energyFill.style.boxShadow = originalBoxShadow || '';
+            energyFill.style.transition = '';
+        }, 150);
     }
     
     updateThrusterEffects() {
