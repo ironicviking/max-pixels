@@ -13,7 +13,7 @@ import { AuthUI } from './ui/AuthUI.js';
 import { TradingSystem } from './trading/TradingSystem.js';
 import { TradingUI } from './ui/TradingUI.js';
 import { SpaceNavigation } from './navigation/SpaceNavigation.js';
-import { RESOURCES, WEAPONS, PLAYER } from './constants.js';
+import { RESOURCES, WEAPONS, PLAYER, UI } from './constants.js';
 
 class MaxPixelsGame {
     constructor() {
@@ -47,6 +47,10 @@ class MaxPixelsGame {
         this.nearbyStation = null;
         this.nearbyJumpGate = null;
         this.interactionRange = 80;
+        
+        // Visual feedback tracking
+        this.highlightedStation = null;
+        this.highlightedJumpGate = null;
         
         this.activeThrusterSound = null;
         this.ambientSound = null;
@@ -178,6 +182,12 @@ class MaxPixelsGame {
     }
     
     clearSector() {
+        // Clear visual feedback tracking
+        this.highlightedStation = null;
+        this.highlightedJumpGate = null;
+        this.nearbyStation = null;
+        this.nearbyJumpGate = null;
+        
         // Clear asteroids data
         this.asteroids = [];
         this.stations = [];
@@ -287,6 +297,27 @@ class MaxPixelsGame {
             }
         }
         
+        // Update visual feedback for stations
+        if (closestStation !== this.highlightedStation) {
+            // Remove glow from previously highlighted station
+            if (this.highlightedStation) {
+                const prevStationElement = this.graphics.svg.querySelector(`#${this.highlightedStation.id}`);
+                if (prevStationElement) {
+                    this.graphics.removeProximityGlow(prevStationElement);
+                }
+            }
+            
+            // Add glow to newly highlighted station
+            if (closestStation) {
+                const stationElement = this.graphics.svg.querySelector(`#${closestStation.id}`);
+                if (stationElement) {
+                    this.graphics.addProximityGlow(stationElement, UI.PROXIMITY_GLOW_COLOR);
+                }
+            }
+            
+            this.highlightedStation = closestStation;
+        }
+        
         if (closestStation !== this.nearbyStation) {
             this.nearbyStation = closestStation;
             this.updateInteractionPrompt();
@@ -310,6 +341,27 @@ class MaxPixelsGame {
         const nearbyGate = this.navigation.checkJumpGateProximity(
             this.player.x, this.player.y, this.interactionRange
         );
+        
+        // Update visual feedback for jump gates
+        if (nearbyGate !== this.highlightedJumpGate) {
+            // Remove glow from previously highlighted gate
+            if (this.highlightedJumpGate) {
+                const prevGateElement = this.graphics.svg.querySelector(`#${this.highlightedJumpGate.id}`);
+                if (prevGateElement) {
+                    this.graphics.removeProximityGlow(prevGateElement);
+                }
+            }
+            
+            // Add glow to newly highlighted gate
+            if (nearbyGate) {
+                const gateElement = this.graphics.svg.querySelector(`#${nearbyGate.id}`);
+                if (gateElement) {
+                    this.graphics.addProximityGlow(gateElement, UI.PROXIMITY_GLOW_COLOR);
+                }
+            }
+            
+            this.highlightedJumpGate = nearbyGate;
+        }
         
         if (nearbyGate !== this.nearbyJumpGate) {
             this.nearbyJumpGate = nearbyGate;

@@ -370,7 +370,15 @@ export const UI = {
     LOADING_FADE_DURATION: 1000,
     NOTIFICATION_DURATION: 3000,
     ANIMATION_DELAY: 300,
-    HUD_UPDATE_INTERVAL: 16 // ~60fps
+    HUD_UPDATE_INTERVAL: 16, // ~60fps
+    
+    // Proximity feedback effects
+    PROXIMITY_GLOW_COLOR: '#00ffff',
+    PROXIMITY_GLOW_OPACITY: 0.6,
+    PROXIMITY_PULSE_MIN: 0.3,
+    PROXIMITY_PULSE_MAX: 0.8,
+    PROXIMITY_PULSE_DURATION: '1.5s',
+    PROXIMITY_FILTER_ID: 'proximityGlow'
 };
 
 // Trading Constants

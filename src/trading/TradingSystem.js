@@ -219,9 +219,25 @@ export class TradingSystem {
     }
     
     updatePrices(itemId, action, quantity) {
-        const stationData = this.stationInventories.get('tradingStation');
-        const stationItem = stationData.inventory.get(itemId);
+        // Parameter validation
+        if (typeof itemId !== 'string' || itemId.trim() === '') {
+            throw new Error('Invalid itemId: must be a non-empty string');
+        }
         
+        if (typeof action !== 'string' || !['buy', 'sell'].includes(action)) {
+            throw new Error('Invalid action: must be "buy" or "sell"');
+        }
+        
+        if (typeof quantity !== 'number' || !isFinite(quantity) || quantity <= 0) {
+            throw new Error('Invalid quantity: must be a positive finite number');
+        }
+        
+        const stationData = this.stationInventories.get('tradingStation');
+        if (!stationData) {
+            throw new Error('Trading station not found');
+        }
+        
+        const stationItem = stationData.inventory.get(itemId);
         if (!stationItem) return;
         
         // Simple supply/demand pricing

@@ -69,6 +69,40 @@ describe('Graphics Engine', function() {
         TestRunner.cleanupTestDOM();
     });
     
+    test('should validate createAsteroid parameters', function() {
+        const testContainer = TestRunner.setupTestDOM();
+        const canvas = testContainer.querySelector('#gameCanvas');
+        const graphics = new GraphicsEngine(canvas);
+        
+        // Test valid parameters
+        const asteroid = graphics.createAsteroid(10, 20, 15);
+        assert(asteroid !== null, 'Should create asteroid with valid parameters');
+        assertEqual(asteroid.tagName, 'g', 'Should create group element');
+        
+        // Test invalid x parameter
+        assertThrows(() => graphics.createAsteroid('invalid', 20, 15), 'Should throw for invalid x');
+        assertThrows(() => graphics.createAsteroid(Infinity, 20, 15), 'Should throw for infinite x');
+        assertThrows(() => graphics.createAsteroid(NaN, 20, 15), 'Should throw for NaN x');
+        
+        // Test invalid y parameter
+        assertThrows(() => graphics.createAsteroid(10, 'invalid', 15), 'Should throw for invalid y');
+        assertThrows(() => graphics.createAsteroid(10, Infinity, 15), 'Should throw for infinite y');
+        assertThrows(() => graphics.createAsteroid(10, NaN, 15), 'Should throw for NaN y');
+        
+        // Test invalid size parameter
+        assertThrows(() => graphics.createAsteroid(10, 20, 'invalid'), 'Should throw for invalid size');
+        assertThrows(() => graphics.createAsteroid(10, 20, 0), 'Should throw for zero size');
+        assertThrows(() => graphics.createAsteroid(10, 20, -5), 'Should throw for negative size');
+        assertThrows(() => graphics.createAsteroid(10, 20, Infinity), 'Should throw for infinite size');
+        assertThrows(() => graphics.createAsteroid(10, 20, NaN), 'Should throw for NaN size');
+        
+        // Test invalid attributes parameter
+        assertThrows(() => graphics.createAsteroid(10, 20, 15, null), 'Should throw for null attributes');
+        assertThrows(() => graphics.createAsteroid(10, 20, 15, 'invalid'), 'Should throw for non-object attributes');
+        
+        TestRunner.cleanupTestDOM();
+    });
+    
     test('should validate createCircle parameters', function() {
         const testContainer = TestRunner.setupTestDOM();
         const canvas = testContainer.querySelector('#gameCanvas');
@@ -771,6 +805,73 @@ describe('Trading System', function() {
         const expectedValue = (ironItem.basePrice * 5) + (copperItem.basePrice * 3);
         
         assertEqual(totalValue, expectedValue, 'Should calculate correct total value');
+    });
+    
+    test('should validate updatePrices parameters - invalid itemId', function() {
+        const trading = new TradingSystem();
+        
+        // Test invalid itemId types and values
+        const invalidItemIds = [null, undefined, '', '   ', 123, {}, [], true];
+        
+        invalidItemIds.forEach(invalidId => {
+            let errorThrown = false;
+            try {
+                trading.updatePrices(invalidId, 'buy', 1);
+            } catch (error) {
+                errorThrown = true;
+                assert(error.message.includes('Invalid itemId'), 'Should throw itemId validation error');
+            }
+            assert(errorThrown, `Should throw error for invalid itemId: ${invalidId}`);
+        });
+    });
+    
+    test('should validate updatePrices parameters - invalid action', function() {
+        const trading = new TradingSystem();
+        
+        // Test invalid action types and values
+        const invalidActions = [null, undefined, '', 'BUY', 'SELL', 'purchase', 'trade', 123, {}, [], true];
+        
+        invalidActions.forEach(invalidAction => {
+            let errorThrown = false;
+            try {
+                trading.updatePrices('ore-iron', invalidAction, 1);
+            } catch (error) {
+                errorThrown = true;
+                assert(error.message.includes('Invalid action'), 'Should throw action validation error');
+            }
+            assert(errorThrown, `Should throw error for invalid action: ${invalidAction}`);
+        });
+    });
+    
+    test('should validate updatePrices parameters - invalid quantity', function() {
+        const trading = new TradingSystem();
+        
+        // Test invalid quantity types and values
+        const invalidQuantities = [null, undefined, '', '5', 0, -1, -10, NaN, Infinity, -Infinity, {}, [], true];
+        
+        invalidQuantities.forEach(invalidQuantity => {
+            let errorThrown = false;
+            try {
+                trading.updatePrices('ore-iron', 'buy', invalidQuantity);
+            } catch (error) {
+                errorThrown = true;
+                assert(error.message.includes('Invalid quantity'), 'Should throw quantity validation error');
+            }
+            assert(errorThrown, `Should throw error for invalid quantity: ${invalidQuantity}`);
+        });
+    });
+    
+    test('should validate updatePrices parameters - valid inputs', function() {
+        const trading = new TradingSystem();
+        
+        // These should not throw errors
+        try {
+            trading.updatePrices('ore-iron', 'buy', 1);
+            trading.updatePrices('ore-copper', 'sell', 5.5);
+            trading.updatePrices('fuel-hydrogen', 'buy', 0.1);
+        } catch (error) {
+            assert(false, `Valid parameters should not throw errors: ${error.message}`);
+        }
     });
 });
 

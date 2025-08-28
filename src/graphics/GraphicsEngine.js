@@ -16,7 +16,39 @@ export class GraphicsEngine {
     createDefs() {
         const defs = this.createElement('defs');
         this.svg.appendChild(defs);
+        this.createProximityGlowFilter();
         return defs;
+    }
+    
+    createProximityGlowFilter() {
+        const filter = this.createElement('filter');
+        filter.setAttribute('id', 'proximityGlow');
+        filter.setAttribute('x', '-50%');
+        filter.setAttribute('y', '-50%');
+        filter.setAttribute('width', '200%');
+        filter.setAttribute('height', '200%');
+        
+        // Gaussian blur for glow effect
+        const blur = this.createElement('feGaussianBlur');
+        blur.setAttribute('stdDeviation', '4');
+        blur.setAttribute('result', 'coloredBlur');
+        
+        // Merge original with blurred version
+        const merge = this.createElement('feMerge');
+        
+        const mergeNode1 = this.createElement('feMergeNode');
+        mergeNode1.setAttribute('in', 'coloredBlur');
+        
+        const mergeNode2 = this.createElement('feMergeNode');
+        mergeNode2.setAttribute('in', 'SourceGraphic');
+        
+        merge.appendChild(mergeNode1);
+        merge.appendChild(mergeNode2);
+        
+        filter.appendChild(blur);
+        filter.appendChild(merge);
+        
+        this.defs.appendChild(filter);
     }
     
     createElement(type) {
@@ -231,6 +263,20 @@ export class GraphicsEngine {
     }
     
     createAsteroid(x, y, size, attributes = {}) {
+        // Parameter validation
+        if (typeof x !== 'number' || !isFinite(x)) {
+            throw new Error('GraphicsEngine.createAsteroid: x must be a finite number');
+        }
+        if (typeof y !== 'number' || !isFinite(y)) {
+            throw new Error('GraphicsEngine.createAsteroid: y must be a finite number');
+        }
+        if (typeof size !== 'number' || !isFinite(size) || size <= 0) {
+            throw new Error('GraphicsEngine.createAsteroid: size must be a positive finite number');
+        }
+        if (typeof attributes !== 'object' || attributes === null) {
+            throw new Error('GraphicsEngine.createAsteroid: attributes must be an object');
+        }
+        
         const asteroid = this.createGroup({
             transform: `translate(${x}, ${y})`,
             ...attributes
@@ -1114,5 +1160,62 @@ export class GraphicsEngine {
         return new Promise(resolve => {
             setTimeout(resolve, duration);
         });
+    }
+    
+    addProximityGlow(element, color = '#00ffff') {
+        if (!element) return;
+        
+        // Apply glow filter
+        element.style.filter = 'url(#proximityGlow)';
+        element.setAttribute('data-proximity-glow', 'true');
+        
+        // Add pulsing animation
+        const pulseAnimation = this.createElement('animate');
+        pulseAnimation.setAttribute('attributeName', 'opacity');
+        pulseAnimation.setAttribute('values', '0.4;0.8;0.4');
+        pulseAnimation.setAttribute('dur', '1.5s');
+        pulseAnimation.setAttribute('repeatCount', 'indefinite');
+        pulseAnimation.setAttribute('id', 'proximityPulse');
+        
+        element.appendChild(pulseAnimation);
+        
+        // Add colored stroke for enhanced visibility
+        if (element.tagName === 'g') {
+            const children = element.querySelectorAll('circle, path, rect, line');
+            children.forEach(child => {
+                const originalStroke = child.getAttribute('stroke');
+                child.setAttribute('data-original-stroke', originalStroke || 'none');
+                child.setAttribute('stroke', color);
+                child.setAttribute('stroke-width', '2');
+            });
+        }
+    }
+    
+    removeProximityGlow(element) {
+        if (!element) return;
+        
+        // Remove filter
+        element.style.filter = '';
+        element.removeAttribute('data-proximity-glow');
+        
+        // Remove pulsing animation
+        const pulseAnimation = element.querySelector('#proximityPulse');
+        if (pulseAnimation) {
+            element.removeChild(pulseAnimation);
+        }
+        
+        // Restore original strokes
+        if (element.tagName === 'g') {
+            const children = element.querySelectorAll('[data-original-stroke]');
+            children.forEach(child => {
+                const originalStroke = child.getAttribute('data-original-stroke');
+                if (originalStroke === 'none') {
+                    child.removeAttribute('stroke');
+                } else {
+                    child.setAttribute('stroke', originalStroke);
+                }
+                child.removeAttribute('data-original-stroke');
+            });
+        }
     }
 }
