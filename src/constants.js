@@ -96,7 +96,17 @@ export const PLAYER = {
     LOW_HEALTH_THRESHOLD: 30, // Below this, visual warning appears
     CRITICAL_HEALTH_THRESHOLD: 15, // Below this, critical warning
     DEATH_RESPAWN_DELAY: 2000, // 2 seconds before respawn
-    INVINCIBILITY_DURATION: 2000 // 2 seconds of invincibility after respawn/damage
+    INVINCIBILITY_DURATION: 2000, // 2 seconds of invincibility after respawn/damage
+    
+    // Shield System
+    MAX_SHIELD: 50, // Maximum shield capacity
+    SHIELD_REGEN_RATE: 10, // Shield regenerated per second
+    SHIELD_REGEN_DELAY: 4000, // Wait 4 seconds after shield break before regen starts
+    SHIELD_DAMAGE_REDUCTION: 0.5, // Shields absorb 50% of damage
+    SHIELD_ACTIVATION_KEY: 'KeyG', // Key to manually toggle shields
+    SHIELD_AUTO_ACTIVATE: true, // Auto-activate shields when taking damage
+    SHIELD_RECHARGE_COMPLETE_THRESHOLD: 40, // Above this, play shield online sound
+    LOW_SHIELD_THRESHOLD: 15 // Below this, visual warning appears
 };
 
 // Graphics Constants

@@ -54,7 +54,12 @@ class MaxPixelsGame {
             isInvincible: false,
             invincibilityEndTime: 0,
             isDead: false,
-            respawnTime: 0
+            respawnTime: 0,
+            shield: PLAYER.MAX_SHIELD,
+            lastShieldRegenTime: Date.now(),
+            lastShieldBreakTime: 0,
+            shieldsActive: false,
+            lastShieldRechargeSound: 0
         };
         
         this.asteroids = [];
@@ -141,6 +146,15 @@ class MaxPixelsGame {
             }
         );
         this.graphics.addToLayer('game', this.weaponHeatIndicator);
+        
+        // Create shield effect (initially hidden)
+        this.shieldEffect = this.graphics.createShieldEffect(
+            this.player.x, this.player.y, this.player.radius + 10, {
+                id: 'playerShield'
+            }
+        );
+        this.shieldEffect.style.display = 'none'; // Start hidden
+        this.graphics.addToLayer('game', this.shieldEffect);
         
         this.camera.centerOn(this.player.x, this.player.y);
     }
@@ -551,6 +565,7 @@ class MaxPixelsGame {
         this.updateEnergy();
         this.updateHeat();
         this.updateHealth();
+        this.updateShield();
         this.updateThrusterEffects();
         this.updateCamera();
         this.checkCollisions();
@@ -593,6 +608,11 @@ class MaxPixelsGame {
             } else if (this.nearbyJumpGate) {
                 this.jumpThroughGate(this.nearbyJumpGate);
             }
+        }
+        
+        // Shield activation toggle
+        if (this.input.justPressed(PLAYER.SHIELD_ACTIVATION_KEY)) {
+            this.toggleShields();
         }
         
         // Weapon firing
@@ -644,6 +664,12 @@ class MaxPixelsGame {
         if (this.weaponHeatIndicator) {
             this.weaponHeatIndicator.setAttribute('transform', 
                 `translate(${this.player.x}, ${this.player.y + WEAPONS.HEAT_INDICATOR_OFFSET})`);
+        }
+        
+        // Update shield effect position
+        if (this.shieldEffect) {
+            this.shieldEffect.setAttribute('transform', 
+                `translate(${this.player.x}, ${this.player.y})`);
         }
             
         // Send position updates to multiplayer server
@@ -757,20 +783,141 @@ class MaxPixelsGame {
         this.player.lastHealthRegenTime = currentTime;
     }
     
+    updateShield() {
+        const currentTime = Date.now();
+        
+        // Skip shield regen if shields broken recently
+        if ((currentTime - this.player.lastShieldBreakTime) < PLAYER.SHIELD_REGEN_DELAY) {
+            return;
+        }
+        
+        const deltaTime = (currentTime - this.player.lastShieldRegenTime) / 1000;
+        const previousShield = this.player.shield;
+        
+        // Regenerate shield over time
+        if (this.player.shield < PLAYER.MAX_SHIELD) {
+            this.player.shield = Math.min(
+                PLAYER.MAX_SHIELD,
+                this.player.shield + (PLAYER.SHIELD_REGEN_RATE * deltaTime)
+            );
+            
+            // Visual feedback when shield is recharged
+            if (previousShield < PLAYER.SHIELD_RECHARGE_COMPLETE_THRESHOLD && 
+                this.player.shield >= PLAYER.SHIELD_RECHARGE_COMPLETE_THRESHOLD &&
+                currentTime - this.player.lastShieldRechargeSound > 2000) { // Minimum 2 second cooldown
+                
+                this.audio.playWeaponRecharge(); // Reuse weapon recharge sound for now
+                this.player.lastShieldRechargeSound = currentTime;
+                this.showShieldRechargeEffect();
+                console.log('Shields recharged!');
+            }
+        }
+        
+        this.player.lastShieldRegenTime = currentTime;
+        
+        // Auto-hide shields when fully depleted
+        if (this.player.shield <= 0 && this.player.shieldsActive) {
+            this.player.shieldsActive = false;
+            this.hideShields();
+        }
+    }
+    
+    toggleShields() {
+        if (this.player.shield <= 0) {
+            console.log('Cannot activate shields - no shield energy!');
+            return;
+        }
+        
+        this.player.shieldsActive = !this.player.shieldsActive;
+        
+        if (this.player.shieldsActive) {
+            this.showShields();
+            console.log('Shields activated');
+        } else {
+            this.hideShields();
+            console.log('Shields deactivated');
+        }
+    }
+    
+    showShields() {
+        if (this.shieldEffect) {
+            this.shieldEffect.style.display = 'block';
+        }
+    }
+    
+    hideShields() {
+        if (this.shieldEffect) {
+            this.shieldEffect.style.display = 'none';
+        }
+    }
+    
+    showShieldRechargeEffect() {
+        // Create shield recharge particle effect
+        this.particles.createEnergyRechargeEffect(this.player.x, this.player.y, {
+            colors: ['#00aaff', '#44ccff', '#88eeff', '#aaccff', '#ffffff'],
+            particleCount: 15,
+            particleLife: 1500,
+            velocity: { min: 25, max: 50 },
+            size: { min: 2, max: 6 }
+        });
+    }
+    
     takeDamage(amount, source = 'unknown') {
         if (this.player.isInvincible || this.player.isDead) {
             return false; // No damage taken
         }
         
-        this.player.health -= amount;
+        let damageToHealth = amount;
+        let shieldDamage = 0;
+        
+        // Auto-activate shields if enabled and player takes damage
+        if (PLAYER.SHIELD_AUTO_ACTIVATE && this.player.shield > 0 && !this.player.shieldsActive) {
+            this.player.shieldsActive = true;
+            this.showShields();
+            console.log('Shields auto-activated!');
+        }
+        
+        // Apply shield damage reduction if shields are active and have energy
+        if (this.player.shieldsActive && this.player.shield > 0) {
+            const shieldAbsorption = amount * PLAYER.SHIELD_DAMAGE_REDUCTION;
+            shieldDamage = Math.min(shieldAbsorption, this.player.shield);
+            damageToHealth = amount - shieldDamage;
+            
+            this.player.shield = Math.max(0, this.player.shield - shieldDamage);
+            
+            // Check if shields are broken
+            if (this.player.shield <= 0) {
+                this.player.shieldsActive = false;
+                this.player.lastShieldBreakTime = Date.now();
+                this.hideShields();
+                this.showShieldBreakEffect();
+                console.log('Shields broken!');
+            }
+        }
+        
+        // Apply remaining damage to health
+        this.player.health -= damageToHealth;
         this.player.lastDamageTime = Date.now();
         
         // Visual and audio feedback
-        this.showDamageEffect();
-        this.camera.shake(20, 600);
+        if (shieldDamage > 0 && damageToHealth > 0) {
+            // Both shield and health damage
+            this.showShieldDamageEffect();
+            this.showDamageEffect();
+            this.camera.shake(15, 400);
+        } else if (shieldDamage > 0) {
+            // Only shield damage
+            this.showShieldDamageEffect();
+            this.camera.shake(10, 300);
+        } else {
+            // Only health damage
+            this.showDamageEffect();
+            this.camera.shake(20, 600);
+        }
+        
         this.audio.playCollision(0.9);
         
-        console.log(`Player took ${amount} damage from ${source}. Health: ${Math.round(this.player.health)}/${PLAYER.MAX_HEALTH}`);
+        console.log(`Player took ${Math.round(amount)} damage from ${source}. Shield: ${Math.round(this.player.shield)}/${PLAYER.MAX_SHIELD}, Health: ${Math.round(this.player.health)}/${PLAYER.MAX_HEALTH}`);
         
         if (this.player.health <= 0) {
             this.playerDeath();
@@ -783,6 +930,26 @@ class MaxPixelsGame {
         this.showInvincibilityEffect();
         
         return true; // Damage taken
+    }
+    
+    showShieldDamageEffect() {
+        // Flash the shield effect briefly when taking shield damage
+        if (this.shieldEffect && this.player.shieldsActive) {
+            const originalOpacity = this.shieldEffect.style.opacity || '1';
+            this.shieldEffect.style.opacity = '0.3';
+            setTimeout(() => {
+                this.shieldEffect.style.opacity = originalOpacity;
+            }, 150);
+        }
+    }
+    
+    showShieldBreakEffect() {
+        // Create shield break particle effect
+        this.particles.createExplosionEffect(this.player.x, this.player.y, {
+            particleCount: 20,
+            colors: ['#00aaff', '#44ccff', '#88eeff', '#ffffff'],
+            velocity: { min: 60, max: 120 }
+        });
     }
     
     playerDeath() {
@@ -814,6 +981,8 @@ class MaxPixelsGame {
         this.player.heat = 0;
         this.player.isOverheated = false;
         this.player.isDead = false;
+        this.player.shield = PLAYER.MAX_SHIELD;
+        this.player.shieldsActive = false;
         this.player.x = PLAYER.SPAWN_X;
         this.player.y = PLAYER.SPAWN_Y;
         this.player.velocity.x = 0;
@@ -1069,6 +1238,13 @@ class MaxPixelsGame {
                         <div id="heat-fill" class="heat-fill"></div>
                     </div>
                 </div>
+                <div class="hud-section shield">
+                    <h3>Shield</h3>
+                    <div>Level: <span id="player-shield">50</span>/50</div>
+                    <div class="shield-bar">
+                        <div id="shield-fill" class="shield-fill"></div>
+                    </div>
+                </div>
                 <div class="hud-section inventory">
                     <h3>Inventory</h3>
                     <div>Iron: <span id="inventory-iron">0</span></div>
@@ -1083,6 +1259,7 @@ class MaxPixelsGame {
                     <div>WASD / Arrow Keys: Move</div>
                     <div>Shift: Boost</div>
                     <div>Space: Fire Laser</div>
+                    <div>G: Toggle Shields</div>
                     <div>Q: Zoom Out | E: Zoom In</div>
                 </div>
                 <div class="hud-section camera">
@@ -1304,6 +1481,27 @@ class MaxPixelsGame {
                 } else {
                     heatFill.style.boxShadow = '0 0 6px #ff4444';
                 }
+            }
+        }
+        
+        // Update shield display
+        const shieldLevel = Math.round(this.player.shield);
+        const shieldPercentage = (this.player.shield / PLAYER.MAX_SHIELD) * 100;
+        document.getElementById('player-shield').textContent = shieldLevel;
+        
+        const shieldFill = document.getElementById('shield-fill');
+        if (shieldFill) {
+            shieldFill.style.width = shieldPercentage + '%';
+            // Change color based on shield level
+            if (this.player.shield <= PLAYER.LOW_SHIELD_THRESHOLD) {
+                shieldFill.style.backgroundColor = '#ff4444';
+                shieldFill.style.boxShadow = '0 0 6px #ff4444';
+            } else if (this.player.shield < PLAYER.MAX_SHIELD * 0.5) {
+                shieldFill.style.backgroundColor = '#ffaa44';
+                shieldFill.style.boxShadow = '';
+            } else {
+                shieldFill.style.backgroundColor = '#00aaff';
+                shieldFill.style.boxShadow = this.player.shieldsActive ? '0 0 8px #00aaff' : '';
             }
         }
         
