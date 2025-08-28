@@ -83,11 +83,15 @@ export class TestFramework {
      * @param {string} message - Error message if assertion fails
      */
     assertThrows(func, message = 'Expected function to throw') {
+        let thrown = false;
         try {
             func();
-            throw new Error(message);
         } catch (error) {
-            // Expected behavior
+            thrown = true;
+        }
+        
+        if (!thrown) {
+            throw new Error(message);
         }
     }
 
