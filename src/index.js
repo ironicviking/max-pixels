@@ -455,7 +455,7 @@ class MaxPixelsGame {
     }
     
     updatePlayer() {
-        const deltaTime = 1/60;
+        const deltaTime = PLAYER.DELTA_TIME;
         
         // Update rotation based on movement direction
         if (this.player.velocity.x !== 0 || this.player.velocity.y !== 0) {

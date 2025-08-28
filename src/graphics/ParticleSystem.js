@@ -19,9 +19,7 @@ const PARTICLE_DEFAULTS = {
     WIND: { x: 0, y: 0 },
     VELOCITY_MIN: 50,
     VELOCITY_MAX: 100,
-    OFFSET: 10,
-    FPS: 60,
-    FRAME_TIME: 16
+    OFFSET: 10
 };
 
 export class ParticleSystem {
