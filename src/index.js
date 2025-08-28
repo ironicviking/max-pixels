@@ -1384,12 +1384,138 @@ class MaxPixelsGame {
     }
     
     updateGameObjectsFromState(gameObjects) {
-        // This method can be expanded to sync game objects like asteroids, stations
-        // For now, just log the received objects for debugging
         console.log(`Received ${gameObjects.length} game objects from server:`, gameObjects);
         
-        // TODO: Implement synchronization of asteroids, stations, and other game objects
-        // This would be useful for ensuring all players see the same world state
+        if (!Array.isArray(gameObjects)) {
+            console.warn('Invalid gameObjects data received');
+            return;
+        }
+
+        // Group received objects by type
+        const receivedAsteroids = gameObjects.filter(obj => obj.type === 'asteroid');
+        const receivedStations = gameObjects.filter(obj => obj.type === 'station');
+
+        // Synchronize asteroids
+        this.synchronizeAsteroids(receivedAsteroids);
+        
+        // Synchronize stations
+        this.synchronizeStations(receivedStations);
+    }
+
+    synchronizeAsteroids(serverAsteroids) {
+        const gameLayer = this.graphics.getLayer('background');
+        if (!gameLayer) return;
+
+        // Create a set of server asteroid IDs for quick lookup
+        const serverAsteroidIds = new Set(serverAsteroids.map(ast => ast.id));
+        
+        // Remove local asteroids that don't exist on server
+        this.asteroids = this.asteroids.filter(localAsteroid => {
+            if (!serverAsteroidIds.has(localAsteroid.id)) {
+                // Remove asteroid visual element
+                const asteroidElement = gameLayer.querySelector(`#${localAsteroid.id}`);
+                if (asteroidElement) {
+                    gameLayer.removeChild(asteroidElement);
+                }
+                console.log(`Removed asteroid ${localAsteroid.id} (deleted on server)`);
+                return false;
+            }
+            return true;
+        });
+
+        // Add or update asteroids from server
+        serverAsteroids.forEach(serverAsteroid => {
+            const existingIndex = this.asteroids.findIndex(ast => ast.id === serverAsteroid.id);
+            
+            if (existingIndex >= 0) {
+                // Update existing asteroid position/size if changed
+                const localAsteroid = this.asteroids[existingIndex];
+                if (localAsteroid.x !== serverAsteroid.x || 
+                    localAsteroid.y !== serverAsteroid.y || 
+                    localAsteroid.size !== serverAsteroid.size) {
+                    
+                    // Update local data
+                    this.asteroids[existingIndex] = { ...serverAsteroid };
+                    
+                    // Update visual element
+                    const asteroidElement = gameLayer.querySelector(`#${serverAsteroid.id}`);
+                    if (asteroidElement) {
+                        asteroidElement.setAttribute('transform', `translate(${serverAsteroid.x}, ${serverAsteroid.y})`);
+                        // Note: size changes would require recreating the element
+                    }
+                }
+            } else {
+                // Add new asteroid
+                this.asteroids.push({ ...serverAsteroid });
+                
+                // Create visual element
+                const asteroidElement = this.graphics.createAsteroid(
+                    serverAsteroid.x, 
+                    serverAsteroid.y, 
+                    serverAsteroid.size, 
+                    { id: serverAsteroid.id }
+                );
+                this.graphics.addToLayer('background', asteroidElement);
+                console.log(`Added new asteroid ${serverAsteroid.id} from server`);
+            }
+        });
+    }
+
+    synchronizeStations(serverStations) {
+        const gameLayer = this.graphics.getLayer('game');
+        if (!gameLayer) return;
+
+        // Create a set of server station IDs for quick lookup
+        const serverStationIds = new Set(serverStations.map(station => station.id));
+        
+        // Remove local stations that don't exist on server
+        this.stations = this.stations.filter(localStation => {
+            if (!serverStationIds.has(localStation.id)) {
+                // Remove station visual element
+                const stationElement = gameLayer.querySelector(`#${localStation.id}`);
+                if (stationElement) {
+                    gameLayer.removeChild(stationElement);
+                }
+                console.log(`Removed station ${localStation.id} (deleted on server)`);
+                return false;
+            }
+            return true;
+        });
+
+        // Add or update stations from server
+        serverStations.forEach(serverStation => {
+            const existingIndex = this.stations.findIndex(station => station.id === serverStation.id);
+            
+            if (existingIndex >= 0) {
+                // Update existing station data if changed
+                const localStation = this.stations[existingIndex];
+                if (localStation.x !== serverStation.x || 
+                    localStation.y !== serverStation.y) {
+                    
+                    // Update local data
+                    this.stations[existingIndex] = { ...serverStation };
+                    
+                    // Update visual element position
+                    const stationElement = gameLayer.querySelector(`#${serverStation.id}`);
+                    if (stationElement) {
+                        stationElement.setAttribute('transform', `translate(${serverStation.x}, ${serverStation.y})`);
+                    }
+                }
+            } else {
+                // Add new station
+                this.stations.push({ ...serverStation });
+                
+                // Create visual element
+                const stationElement = this.graphics.createSpaceStation(
+                    serverStation.x, 
+                    serverStation.y, 
+                    serverStation.radius || 40, 
+                    { id: serverStation.id }
+                );
+                this.graphics.addToLayer('game', stationElement);
+                console.log(`Added new station ${serverStation.id} from server`);
+            }
+        });
     }
     
     showNetworkStatus(message, type = 'info') {
