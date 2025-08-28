@@ -120,7 +120,7 @@ export class StarSystem {
             y: Math.sin(angle) * orbitDistance,
             orbitSpeed: WORLD_GEN.PLANET_BASE_ORBIT_SPEED / Math.sqrt(orbitDistance), // Kepler's laws approximation
             resources: this.generatePlanetResources(planetType),
-            moons: Math.floor(Math.random() * (WORLD_GEN.MAX_MOONS_PER_PLANET + 1)) // 0-2 moons
+            moons: this.generateMoons(index, planetType.size)
         };
     }
     
@@ -152,6 +152,58 @@ export class StarSystem {
         }));
     }
     
+    generateMoons(planetIndex, planetSize) {
+        const moonCount = Math.floor(Math.random() * (WORLD_GEN.MAX_MOONS_PER_PLANET + 1));
+        const moons = [];
+        
+        for (let i = 0; i < moonCount; i++) {
+            const moonDistance = (planetSize * WORLD_GEN.MOON_BASE_DISTANCE_MULTIPLIER) + (i * WORLD_GEN.MOON_ORBIT_SPACING) + Math.random() * WORLD_GEN.MOON_ORBIT_RANDOMNESS; // Distance from planet
+            const moonAngle = Math.random() * 2 * Math.PI;
+            const moonSize = Math.random() * WORLD_GEN.MOON_MAX_SIZE_RATIO + WORLD_GEN.MOON_MIN_SIZE_RATIO; // 10-40% of planet size
+            
+            const moonTypes = [
+                { type: 'Rocky Moon', color: '#9e9e9e', resources: ['iron', 'titanium'] },
+                { type: 'Ice Moon', color: '#e3f2fd', resources: ['water', 'frozen_gases'] },
+                { type: 'Volcanic Moon', color: '#ff7043', resources: ['sulfur', 'rare_minerals'] },
+                { type: 'Dead Moon', color: '#757575', resources: ['dust', 'minerals'] }
+            ];
+            
+            const moonType = moonTypes[Math.floor(Math.random() * moonTypes.length)];
+            
+            moons.push({
+                id: IDGenerator.generate(),
+                name: `${this.name.split(' ')[0]} ${planetIndex + 1}-${i + 1}`,
+                type: moonType.type,
+                color: moonType.color,
+                size: moonSize,
+                orbitDistance: moonDistance,
+                orbitAngle: moonAngle,
+                x: Math.cos(moonAngle) * moonDistance, // Relative to planet
+                y: Math.sin(moonAngle) * moonDistance,
+                orbitSpeed: WORLD_GEN.PLANET_BASE_ORBIT_SPEED * 2 / Math.sqrt(moonDistance), // Faster orbital speed
+                resources: this.generateMoonResources(moonType),
+                tidallyLocked: Math.random() < WORLD_GEN.MOON_TIDAL_LOCK_PROBABILITY // 70% chance of tidal locking
+            });
+        }
+        
+        return moons;
+    }
+    
+    generateMoonResources(moonType) {
+        const resources = [];
+        
+        moonType.resources.forEach(resource => {
+            if (Math.random() < WORLD_GEN.RESOURCE_SPAWN_PROBABILITY * WORLD_GEN.MOON_RESOURCE_SPAWN_MULTIPLIER) { // Slightly lower spawn rate than planets
+                resources.push({
+                    type: resource,
+                    abundance: Math.random() * (WORLD_GEN.MAX_RESOURCE_ABUNDANCE * WORLD_GEN.MOON_RESOURCE_ABUNDANCE_MULTIPLIER - WORLD_GEN.MIN_RESOURCE_ABUNDANCE * WORLD_GEN.MOON_RESOURCE_ABUNDANCE_MIN_MULTIPLIER) + WORLD_GEN.MIN_RESOURCE_ABUNDANCE * WORLD_GEN.MOON_RESOURCE_ABUNDANCE_MIN_MULTIPLIER // Lower abundance than planets
+                });
+            }
+        });
+        
+        return resources;
+    }
+    
     generateAsteroidBelt() {
         const beltDistance = Math.random() * (WORLD_GEN.MAX_ASTEROID_BELT_DISTANCE - WORLD_GEN.MIN_ASTEROID_BELT_DISTANCE) + WORLD_GEN.MIN_ASTEROID_BELT_DISTANCE; // 300-1100 units from star
         const asteroidCount = Math.floor(Math.random() * (WORLD_GEN.MAX_ASTEROIDS_PER_BELT - WORLD_GEN.MIN_ASTEROIDS_PER_BELT)) + WORLD_GEN.MIN_ASTEROIDS_PER_BELT;
@@ -159,15 +211,15 @@ export class StarSystem {
         
         for (let i = 0; i < asteroidCount; i++) {
             const angle = Math.random() * 2 * Math.PI;
-            const distance = beltDistance + (Math.random() - 0.5) * WORLD_GEN.BELT_SPREAD; // Spread within belt
+            const distance = beltDistance + (Math.random() - WORLD_GEN.BELT_CENTER_OFFSET) * WORLD_GEN.BELT_SPREAD; // Spread within belt
             
             asteroids.push({
                 id: IDGenerator.generate(),
                 x: Math.cos(angle) * distance,
                 y: Math.sin(angle) * distance,
                 size: Math.random() * (WORLD_GEN.MAX_ASTEROID_SIZE - WORLD_GEN.MIN_ASTEROID_SIZE) + WORLD_GEN.MIN_ASTEROID_SIZE, // 5-25 units
-                rotation: Math.random() * 360,
-                rotationSpeed: (Math.random() - 0.5) * 2,
+                rotation: Math.random() * WORLD_GEN.FULL_CIRCLE_DEGREES,
+                rotationSpeed: (Math.random() - WORLD_GEN.ROTATION_SPEED_VARIANCE) * 2,
                 resources: this.generateAsteroidResources(),
                 orbitSpeed: WORLD_GEN.ASTEROID_BASE_ORBIT_SPEED / Math.sqrt(distance)
             });
@@ -212,7 +264,7 @@ export class StarSystem {
         
         return {
             id: IDGenerator.generate(),
-            name: `${stationType.type} ${Math.floor(Math.random() * 999) + 1}`,
+            name: `${stationType.type} ${Math.floor(Math.random() * WORLD_GEN.STATION_NAME_MAX_NUMBER) + 1}`,
             type: stationType.type,
             services: stationType.services,
             x: Math.cos(angle) * distance,
@@ -266,7 +318,7 @@ export class StarSystem {
         
         return {
             id: IDGenerator.generate(),
-            name: `Gate ${Math.floor(Math.random() * 26) + 1}`,
+            name: `Gate ${Math.floor(Math.random() * WORLD_GEN.GATE_NAME_MAX_NUMBER) + 1}`,
             x: Math.cos(angle) * distance,
             y: Math.sin(angle) * distance,
             destinationSystem: null, // To be connected by galaxy generator
@@ -282,6 +334,17 @@ export class StarSystem {
             planet.orbitAngle += planet.orbitSpeed * deltaTime;
             planet.x = Math.cos(planet.orbitAngle) * planet.orbitDistance;
             planet.y = Math.sin(planet.orbitAngle) * planet.orbitDistance;
+            
+            // Update moon positions relative to their planet
+            planet.moons.forEach(moon => {
+                moon.orbitAngle += moon.orbitSpeed * deltaTime;
+                // Calculate moon position relative to planet
+                const moonRelativeX = Math.cos(moon.orbitAngle) * moon.orbitDistance;
+                const moonRelativeY = Math.sin(moon.orbitAngle) * moon.orbitDistance;
+                // Position moon in world space (planet position + relative position)
+                moon.x = planet.x + moonRelativeX;
+                moon.y = planet.y + moonRelativeY;
+            });
         });
         
         // Update asteroid belt positions
@@ -299,12 +362,15 @@ export class StarSystem {
     }
     
     getSystemInfo() {
+        const totalMoons = this.planets.reduce((count, planet) => count + planet.moons.length, 0);
+        
         return {
             id: this.id,
             name: this.name,
             coordinates: this.coordinates,
             star: this.star,
             planetCount: this.planets.length,
+            moonCount: totalMoons,
             asteroidBeltCount: this.asteroidBelts.length,
             spaceStationCount: this.spaceStations.length,
             jumpGateCount: this.jumpGates.length
@@ -312,9 +378,16 @@ export class StarSystem {
     }
     
     getAllBodies() {
+        // Collect all moons from all planets
+        const allMoons = [];
+        this.planets.forEach(planet => {
+            allMoons.push(...planet.moons);
+        });
+        
         return {
             star: this.star,
             planets: this.planets,
+            moons: allMoons,
             asteroidBelts: this.asteroidBelts,
             spaceStations: this.spaceStations,
             jumpGates: this.jumpGates
