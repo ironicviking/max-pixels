@@ -1592,8 +1592,11 @@ export class GraphicsEngine {
             sweepLine.appendChild(sweepAnimation);
             radarGroup.appendChild(sweepLine);
             
-            // Create sweep trail effect
-            const sweepTrail = this.createPath(`M 0,0 L 0,${-radius} A ${radius},${radius} 0 0,1 ${radius * GRAPHICS.RATIO_SIZE_MID},${-radius * GRAPHICS.MATH_SQRT_3_HALF}`, {
+            // Create sweep trail effect with precise 60-degree arc calculations
+            const DEGREES_60_IN_RADIANS = Math.PI / 3; // 60 degrees for radar sweep trail arc
+            const trailArcEndX = radius * Math.sin(DEGREES_60_IN_RADIANS); // sin(60°) = √3/2
+            const trailArcEndY = -radius * Math.cos(DEGREES_60_IN_RADIANS); // cos(60°) = 1/2
+            const sweepTrail = this.createPath(`M 0,0 L 0,${-radius} A ${radius},${radius} 0 0,1 ${trailArcEndX},${trailArcEndY}`, {
                 fill: scanlineColor,
                 opacity: 0.1,
                 id: `${id}_trail`
