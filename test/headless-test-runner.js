@@ -40,10 +40,40 @@ function setupTestEnvironment() {
                 style: {},
                 innerHTML: '',
                 textContent: '',
-                setAttribute: function(name, value) { this[name] = value; },
+                _children: [],
+                setAttribute: function(name, value) { 
+                    this[name] = value; 
+                    if (name === 'id') this.id = value;
+                },
                 getAttribute: function(name) { return this[name]; },
-                appendChild: function(child) { return child; },
-                querySelector: function() { return null; },
+                appendChild: function(child) { 
+                    this._children.push(child);
+                    // Register element by ID for querySelector
+                    if (child.id) {
+                        this._elementsById = this._elementsById || {};
+                        this._elementsById[child.id] = child;
+                    }
+                    return child; 
+                },
+                querySelector: function(selector) { 
+                    // Handle ID selectors
+                    if (selector.startsWith('#')) {
+                        const id = selector.substring(1);
+                        if (this._elementsById && this._elementsById[id]) {
+                            return this._elementsById[id];
+                        }
+                        // Check innerHTML-created elements
+                        if (this.innerHTML.includes(`id="${id}"`)) {
+                            if (id === 'gameCanvas') {
+                                return global.document.getElementById('gameCanvas');
+                            }
+                            if (id === 'ui') {
+                                return global.document.getElementById('ui');
+                            }
+                        }
+                    }
+                    return null; 
+                },
                 querySelectorAll: function() { return []; },
                 addEventListener: function() {},
                 removeEventListener: function() {},
@@ -94,9 +124,21 @@ function setupTestEnvironment() {
                     },
                     gameCanvas: {
                         tagName: 'svg',
+                        _children: [],
                         setAttribute: function(name, value) { this[name] = value; },
                         getAttribute: function(name) { return this[name]; },
-                        querySelector: function(selector) { return null; },
+                        appendChild: function(child) { 
+                            this._children = this._children || [];
+                            this._children.push(child);
+                            return child; 
+                        },
+                        querySelector: function(selector) { 
+                            // Support basic tag name queries for GraphicsEngine
+                            if (selector === 'defs') {
+                                return this._children.find(child => child.tagName === 'DEFS') || null;
+                            }
+                            return null; 
+                        },
                         querySelectorAll: function() { return []; },
                         style: {}
                     },
@@ -171,6 +213,33 @@ function setupTestEnvironment() {
         },
         head: {
             appendChild: function(child) { return child; }
+        },
+        
+        // Add createElementNS for SVG support in headless testing
+        createElementNS: function(namespace, tagName) {
+            const element = {
+                tagName: tagName.toUpperCase(),
+                namespaceURI: namespace,
+                id: '',
+                className: '',
+                style: {},
+                innerHTML: '',
+                textContent: '',
+                setAttribute: function(name, value) { this[name] = value; },
+                getAttribute: function(name) { return this[name]; },
+                appendChild: function(child) { 
+                    this._children = this._children || [];
+                    this._children.push(child);
+                    return child; 
+                },
+                querySelector: function() { return null; },
+                querySelectorAll: function() { return []; },
+                addEventListener: function() {},
+                removeEventListener: function() {},
+                dispatchEvent: function() { return true; },
+                _children: []
+            };
+            return element;
         }
     };
     
