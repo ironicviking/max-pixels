@@ -1293,6 +1293,108 @@ export class GraphicsEngine {
         return color;
     }
     
+    createMoon(x, y, radius, attributes = {}) {
+        if (!Number.isFinite(x)) {
+            throw new Error('GraphicsEngine.createMoon: x must be a finite number');
+        }
+        if (!Number.isFinite(y)) {
+            throw new Error('GraphicsEngine.createMoon: y must be a finite number');
+        }
+        if (!Number.isFinite(radius) || radius <= 0) {
+            throw new Error('GraphicsEngine.createMoon: radius must be a positive finite number');
+        }
+        if (typeof attributes !== 'object' || attributes === null) {
+            throw new Error('GraphicsEngine.createMoon: attributes must be an object');
+        }
+
+        const moon = this.createGroup({
+            transform: `translate(${x}, ${y})`,
+            class: 'moon',
+            ...attributes
+        });
+        
+        const surfaceColor = attributes.surfaceColor || '#9a9a9a';
+        const coreColor = attributes.coreColor || '#666666';
+        
+        // Create radial gradient for moon surface
+        const gradientId = this.createGradient('radial', [
+            { offset: '0%', color: surfaceColor },
+            { offset: '70%', color: coreColor },
+            { offset: '100%', color: '#333333' }
+        ], {
+            cx: '25%',
+            cy: '25%'
+        });
+        
+        // Moon body
+        const body = this.createCircle(0, 0, radius, {
+            fill: `url(#${gradientId})`,
+            stroke: '#555555',
+            'stroke-width': 1,
+            opacity: 0.9
+        });
+        
+        moon.appendChild(body);
+        
+        // Add prominent craters (moons have more visible cratering)
+        this.addMoonCraters(moon, radius, surfaceColor);
+        
+        // Add maria (dark patches) 
+        this.addMoonMaria(moon, radius, surfaceColor);
+        
+        return moon;
+    }
+    
+    addMoonCraters(moon, radius, surfaceColor) {
+        const craterCount = Math.floor(radius / GRAPHICS.MOON_CRATER_BASE_COUNT) + Math.floor(Math.random() * GRAPHICS.MOON_CRATER_RANDOM_COUNT);
+        
+        for (let i = 0; i < craterCount; i++) {
+            const angle = Math.random() * Math.PI * GRAPHICS.FULL_CIRCLE;
+            const distance = Math.random() * radius * GRAPHICS.MOON_CRATER_DISTANCE_MAX;
+            const craterX = Math.cos(angle) * distance;
+            const craterY = Math.sin(angle) * distance;
+            const craterRadius = Math.random() * radius * GRAPHICS.MOON_CRATER_SIZE_MAX + radius * GRAPHICS.MOON_CRATER_SIZE_MIN;
+            
+            // Prominent crater base
+            const craterBase = this.createCircle(craterX, craterY, craterRadius, {
+                fill: this.darkenColor(surfaceColor, GRAPHICS.MOON_CRATER_DARKEN_FACTOR),
+                opacity: GRAPHICS.RATIO_OPACITY_HIGH
+            });
+            
+            // Bright crater rim
+            const craterRim = this.createCircle(craterX, craterY, craterRadius * GRAPHICS.MOON_CRATER_RIM_RATIO, {
+                fill: 'none',
+                stroke: this.lightenColor(surfaceColor, GRAPHICS.MOON_CRATER_LIGHTEN_FACTOR),
+                'stroke-width': 1,
+                opacity: GRAPHICS.RATIO_OPACITY_MEDIUM
+            });
+            
+            moon.appendChild(craterBase);
+            moon.appendChild(craterRim);
+        }
+    }
+    
+    addMoonMaria(moon, radius, surfaceColor) {
+        const mariaCount = GRAPHICS.MOON_MARIA_MIN_COUNT + Math.floor(Math.random() * GRAPHICS.MOON_MARIA_MAX_COUNT);
+        
+        for (let i = 0; i < mariaCount; i++) {
+            const angle = Math.random() * Math.PI * GRAPHICS.FULL_CIRCLE;
+            const distance = Math.random() * radius * GRAPHICS.MOON_MARIA_DISTANCE_MAX;
+            const mariaX = Math.cos(angle) * distance;
+            const mariaY = Math.sin(angle) * distance;
+            const mariaRadius = Math.random() * radius * GRAPHICS.MOON_MARIA_SIZE_MAX + radius * GRAPHICS.MOON_MARIA_SIZE_MIN;
+            
+            // Dark maria patch
+            const maria = this.createCircle(mariaX, mariaY, mariaRadius, {
+                fill: this.darkenColor(surfaceColor, GRAPHICS.MOON_MARIA_DARKEN_FACTOR),
+                opacity: GRAPHICS.MOON_MARIA_DARKEN_FACTOR,
+                'clip-path': `circle(${radius}px at 0px 0px)`
+            });
+            
+            moon.appendChild(maria);
+        }
+    }
+    
     createSpaceStation(x, y, size = GRAPHICS.STATION_DEFAULT_SIZE, attributes = {}) {
         const station = this.createGroup({
             transform: `translate(${x}, ${y})`,

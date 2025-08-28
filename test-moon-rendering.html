@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Moon Rendering Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background: #0f0f23;
+            color: white;
+        }
+        
+        #test-container {
+            display: flex;
+            gap: 20px;
+        }
+        
+        #svg-container {
+            border: 1px solid #333;
+            background: #000011;
+            width: 800px;
+            height: 600px;
+        }
+        
+        #moon-info {
+            background: #16213e;
+            padding: 20px;
+            border-radius: 8px;
+            width: 300px;
+        }
+        
+        .moon { 
+            cursor: pointer;
+            transition: opacity 0.3s ease;
+        }
+        
+        .moon:hover { 
+            opacity: 0.8; 
+        }
+        
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 10px 5px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        
+        button:hover {
+            background: #45a049;
+        }
+    </style>
+</head>
+<body>
+    <h1>Moon Rendering Test</h1>
+    <p>Testing the new createMoon() method in the GraphicsEngine</p>
+    
+    <div id="test-container">
+        <div id="svg-container">
+            <svg id="testSVG" width="800" height="600" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                    <radialGradient id="spaceBackground" cx="50%" cy="50%" r="100%">
+                        <stop offset="0%" style="stop-color:#000033;stop-opacity:1" />
+                        <stop offset="100%" style="stop-color:#000011;stop-opacity:1" />
+                    </radialGradient>
+                </defs>
+                <rect width="100%" height="100%" fill="url(#spaceBackground)" />
+            </svg>
+        </div>
+        
+        <div id="moon-info">
+            <h3>Moon Test Results</h3>
+            <button onclick="generateMoons()">Generate New Moons</button>
+            <button onclick="clearMoons()">Clear Moons</button>
+            
+            <div id="results">
+                <p>Click "Generate New Moons" to test the createMoon() method</p>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { GraphicsEngine } from './src/graphics/GraphicsEngine.js';
+
+        const svg = document.getElementById('testSVG');
+        const graphics = new GraphicsEngine(svg);
+        const resultsDiv = document.getElementById('results');
+
+        // Test different moon sizes and colors
+        const moonConfigs = [
+            { x: 150, y: 150, radius: 40, surfaceColor: '#9a9a9a', coreColor: '#666666', name: 'Classic Moon' },
+            { x: 350, y: 200, radius: 25, surfaceColor: '#d4af37', coreColor: '#b8860b', name: 'Golden Moon' },
+            { x: 550, y: 180, radius: 35, surfaceColor: '#87ceeb', coreColor: '#4682b4', name: 'Ice Moon' },
+            { x: 200, y: 350, radius: 20, surfaceColor: '#8b4513', coreColor: '#654321', name: 'Rocky Moon' },
+            { x: 450, y: 400, radius: 50, surfaceColor: '#708090', coreColor: '#2f4f4f', name: 'Large Moon' },
+            { x: 650, y: 350, radius: 15, surfaceColor: '#ff6347', coreColor: '#dc143c', name: 'Volcanic Moon' }
+        ];
+
+        window.generateMoons = function() {
+            clearMoons();
+            let testResults = '<h4>Generated Moons:</h4><ul>';
+            
+            try {
+                moonConfigs.forEach((config, index) => {
+                    const moon = graphics.createMoon(
+                        config.x, 
+                        config.y, 
+                        config.radius, 
+                        { 
+                            id: `test-moon-${index}`,
+                            surfaceColor: config.surfaceColor,
+                            coreColor: config.coreColor
+                        }
+                    );
+                    
+                    svg.appendChild(moon);
+                    testResults += `<li>${config.name}: ${config.radius}px radius ✅</li>`;
+                });
+                
+                testResults += '</ul><p style="color: #4CAF50">✅ All moons created successfully!</p>';
+                testResults += '<p>Moons feature:</p><ul>';
+                testResults += '<li>Radial gradient shading</li>';
+                testResults += '<li>Prominent crater formations</li>';
+                testResults += '<li>Maria (dark patches)</li>';
+                testResults += '<li>No atmosphere (unlike planets)</li>';
+                testResults += '</ul>';
+                
+            } catch (error) {
+                testResults += `</ul><p style="color: #ff4444">❌ Error: ${error.message}</p>`;
+            }
+            
+            resultsDiv.innerHTML = testResults;
+        };
+
+        window.clearMoons = function() {
+            moonConfigs.forEach((_, index) => {
+                const moon = document.getElementById(`test-moon-${index}`);
+                if (moon) {
+                    moon.remove();
+                }
+            });
+            resultsDiv.innerHTML = '<p>Moons cleared</p>';
+        };
+
+        // Test error conditions
+        function testErrorConditions() {
+            console.log('Testing error conditions...');
+            
+            try {
+                graphics.createMoon('invalid', 100, 20);
+                console.error('Should have thrown error for invalid x');
+            } catch (e) {
+                console.log('✅ Correctly caught invalid x error:', e.message);
+            }
+            
+            try {
+                graphics.createMoon(100, 'invalid', 20);
+                console.error('Should have thrown error for invalid y');
+            } catch (e) {
+                console.log('✅ Correctly caught invalid y error:', e.message);
+            }
+            
+            try {
+                graphics.createMoon(100, 100, -5);
+                console.error('Should have thrown error for negative radius');
+            } catch (e) {
+                console.log('✅ Correctly caught negative radius error:', e.message);
+            }
+        }
+        
+        testErrorConditions();
+    </script>
+</body>
+</html>
