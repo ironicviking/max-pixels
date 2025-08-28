@@ -494,6 +494,63 @@ export class GraphicsEngine {
         return ship;
     }
     
+    createOtherPlayerShip(x, y, playerId, playerColor = '#ff6b35', size = 20) {
+        // Parameter validation
+        if (typeof x !== 'number' || !isFinite(x)) {
+            throw new Error('GraphicsEngine.createOtherPlayerShip: x must be a finite number');
+        }
+        if (typeof y !== 'number' || !isFinite(y)) {
+            throw new Error('GraphicsEngine.createOtherPlayerShip: y must be a finite number');
+        }
+        if (typeof playerId !== 'string' || playerId.length === 0) {
+            throw new Error('GraphicsEngine.createOtherPlayerShip: playerId must be a non-empty string');
+        }
+        if (typeof size !== 'number' || !isFinite(size) || size <= 0) {
+            throw new Error('GraphicsEngine.createOtherPlayerShip: size must be a positive finite number');
+        }
+        if (typeof playerColor !== 'string' || playerColor.length === 0) {
+            throw new Error('GraphicsEngine.createOtherPlayerShip: playerColor must be a non-empty string');
+        }
+        
+        const ship = this.createGroup({
+            id: `otherPlayer_${playerId}`,
+            transform: `translate(${x}, ${y})`
+        });
+        
+        // Create hull with player-specific color
+        const hull = this.createPath(
+            `M 0 -${size} L ${size * GRAPHICS.SPACESHIP_HULL_WING_RATIO} ${size} L 0 ${size * GRAPHICS.SPACESHIP_HULL_BODY_RATIO} L -${size * GRAPHICS.SPACESHIP_HULL_WING_RATIO} ${size} Z`,
+            {
+                fill: playerColor,
+                stroke: '#ffffff',
+                'stroke-width': GRAPHICS.SPACESHIP_STROKE_WIDTH,
+                opacity: 0.8
+            }
+        );
+        
+        // Different engine color for other players
+        const engine = this.createCircle(0, size * GRAPHICS.SPACESHIP_ENGINE_RATIO, size * GRAPHICS.SPACESHIP_ENGINE_SIZE_RATIO, {
+            fill: '#00ff88',
+            opacity: 0.6
+        });
+        
+        // Player name label
+        const nameLabel = this.createText(playerId, 0, -size - 15, {
+            'text-anchor': 'middle',
+            fill: '#ffffff',
+            'font-family': 'monospace',
+            'font-size': '12px',
+            'font-weight': 'bold',
+            'text-shadow': '0 0 2px #000000'
+        });
+        
+        ship.appendChild(hull);
+        ship.appendChild(engine);
+        ship.appendChild(nameLabel);
+        
+        return ship;
+    }
+    
     updateSpaceshipThrusters(shipElement, movement, boost = false) {
         const mainThruster = shipElement.querySelector('#mainThruster');
         const leftThruster = shipElement.querySelector('#leftThruster');
