@@ -168,6 +168,14 @@ export class IDGenerator {
         this.counter = 0;
         this.sectorCounters.clear();
     }
+    
+    /**
+     * Static convenience method for generating a simple ID
+     * @returns {string} - Simple unique ID
+     */
+    static generate() {
+        return gameIDGenerator.generateGlobalId('player');
+    }
 }
 
 // Export singleton instance for consistent ID generation

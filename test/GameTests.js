@@ -12,6 +12,8 @@ import { SpaceNavigation } from '../src/navigation/SpaceNavigation.js';
 import { TradingSystem } from '../src/trading/TradingSystem.js';
 import { AuthService } from '../src/auth/AuthService.js';
 import { AudioManager } from '../src/audio/AudioManager.js';
+import { Player } from '../src/player/Player.js';
+import { ShipMovement } from '../src/movement/ShipMovement.js';
 
 /**
  * Graphics Engine Tests
@@ -1723,6 +1725,148 @@ describe('Game Physics', function() {
         
         const collision = distance < (player.radius + asteroid.size);
         assert(!collision, 'Should not detect collision when objects are separated');
+    });
+});
+
+/**
+ * Ship Movement System Tests
+ */
+describe('Ship Movement System', function() {
+    test('should initialize with player and input manager', function() {
+        const player = new Player('TestPilot');
+        const input = new InputManager();
+        const movement = new ShipMovement(player, input);
+        
+        assert(movement.player === player, 'Should store player reference');
+        assert(movement.input === input, 'Should store input manager reference');
+        assertEqual(movement.rotationSpeed, 3, 'Should have default rotation speed');
+        assertEqual(movement.thrustPower, 0.8, 'Should have default thrust power');
+    });
+    
+    test('should handle rotation input', function() {
+        const player = new Player('TestPilot');
+        const input = new InputManager();
+        const movement = new ShipMovement(player, input);
+        
+        // Mock input state for left rotation - use specific key codes, not action names
+        input.keys.set('KeyA', { isPressed: true, justPressed: false, justReleased: false });
+        
+        // Run input handling multiple times to overcome smoothing
+        for (let i = 0; i < 10; i++) {
+            movement.handleRotationInput(0.016); // 60fps frame time
+        }
+        
+        // Should apply rotation to player (after smoothing takes effect)
+        assert(Math.abs(player.rotationSpeed) > 0.1, 'Should apply rotation when input is active');
+    });
+    
+    test('should handle thrust input', function() {
+        const player = new Player('TestPilot');
+        const input = new InputManager();
+        const movement = new ShipMovement(player, input);
+        
+        // Mock input state for forward thrust - use specific key code
+        input.keys.set('KeyW', { isPressed: true, justPressed: false, justReleased: false });
+        
+        // Run input handling multiple times to overcome smoothing
+        for (let i = 0; i < 10; i++) {
+            movement.handleThrustInput(0.016);
+        }
+        
+        // Should apply thrust to player
+        assert(movement.isThrusting, 'Should be thrusting when forward key is pressed');
+        assert(player.thrust > 0.1, 'Player should have thrust applied after smoothing');
+    });
+    
+    test('should handle boost input', function() {
+        const player = new Player('TestPilot');
+        const input = new InputManager();
+        const movement = new ShipMovement(player, input);
+        
+        // Set up boost conditions: thrusting + boost key + sufficient energy
+        input.keys.set('KeyW', { isPressed: true, justPressed: false, justReleased: false });
+        input.keys.set('ShiftLeft', { isPressed: true, justPressed: false, justReleased: false });
+        
+        // Establish thrusting first
+        for (let i = 0; i < 10; i++) {
+            movement.handleThrustInput(0.016);
+        }
+        
+        player.energy = 100; // Full energy
+        const initialEnergy = player.energy;
+        movement.handleBoostInput(0.016);
+        
+        assert(movement.isBoosting, 'Should be boosting when conditions are met');
+        assert(player.energy < initialEnergy, 'Should consume energy for boost');
+    });
+    
+    test('should handle weapon firing', function() {
+        const player = new Player('TestPilot');
+        const input = new InputManager();
+        const movement = new ShipMovement(player, input);
+        
+        // Set up firing conditions
+        player.energy = 100;
+        player.weaponHeat = 0;
+        
+        const projectile = movement.fireWeapon();
+        
+        assert(projectile !== null, 'Should create projectile when firing');
+        assertEqual(projectile.type, 'laser', 'Should create laser projectile');
+        assert(projectile.x === player.position.x, 'Projectile should start at player position');
+        assert(projectile.y === player.position.y, 'Projectile should start at player position');
+    });
+    
+    test('should reset controls when player dies', function() {
+        const player = new Player('TestPilot');
+        const input = new InputManager();
+        const movement = new ShipMovement(player, input);
+        
+        // Set some control states
+        movement.isThrusting = true;
+        movement.isBoosting = true;
+        movement.rotationDirection = 1;
+        
+        movement.resetControls();
+        
+        assert(!movement.isThrusting, 'Should reset thrust state');
+        assert(!movement.isBoosting, 'Should reset boost state');
+        assertEqual(movement.rotationDirection, 0, 'Should reset rotation state');
+        assertEqual(player.thrust, 0, 'Should reset player thrust');
+        assertEqual(player.rotationSpeed, 0, 'Should reset player rotation');
+    });
+    
+    test('should provide movement status', function() {
+        const player = new Player('TestPilot');
+        const input = new InputManager();
+        const movement = new ShipMovement(player, input);
+        
+        movement.isThrusting = true;
+        movement.isBoosting = false;
+        movement.thrustLevel = 0.5;
+        
+        const status = movement.getMovementStatus();
+        
+        assert(status.isThrusting, 'Should report thrust status');
+        assert(!status.isBoosting, 'Should report boost status');
+        assertEqual(status.thrustLevel, 0.5, 'Should report thrust level');
+        assert(typeof status.canBoost === 'boolean', 'Should report boost capability');
+    });
+    
+    test('should update movement configuration', function() {
+        const player = new Player('TestPilot');
+        const input = new InputManager();
+        const movement = new ShipMovement(player, input);
+        
+        movement.setMovementConfig({
+            rotationSpeed: 5.0,
+            thrustPower: 0.9,
+            boostCostPerSecond: 30
+        });
+        
+        assertEqual(movement.rotationSpeed, 5.0, 'Should update rotation speed');
+        assertEqual(movement.thrustPower, 0.9, 'Should update thrust power');
+        assertEqual(movement.boostCostPerSecond, 30, 'Should update boost cost');
     });
 });
 

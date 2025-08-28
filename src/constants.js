@@ -87,6 +87,12 @@ export const PLAYER = {
     DELTA_TIME: 1/60,
     BOUNDARY_MARGIN: 25,
     ROTATION_SMOOTHING: 0.15,
+    ROTATION_SPEED: 3.0, // radians per second
+    THRUST_POWER: 0.8, // 0-1 thrust level
+    THRUST_SMOOTHING: 0.1, // Smoothing factor for thrust changes
+    ROTATION_CONTROL_SMOOTHING: 0.2, // Smoothing factor for rotation control
+    REVERSE_THRUST_MULTIPLIER: 0.6, // Reverse thrust power multiplier
+    BOOST_CAPABILITY_CHECK_TIME: 0.1, // Time window for boost capability check
     
     // Health System
     MAX_HEALTH: 100,
@@ -653,6 +659,12 @@ export const WEAPONS = {
     ENERGY_REGEN_RATE: 15, // Energy regenerated per second
     LOW_ENERGY_THRESHOLD: 15, // Below this, visual warning appears
     ENERGY_RECHARGE_SOUND_THRESHOLD: 80, // Above this, play recharge complete sound
+    BOOST_ENERGY_COST: 20, // Energy cost per second for boost
+    
+    // Laser projectiles
+    LASER_SPEED: 800,     // pixels per second
+    LASER_DAMAGE: 25,     // base damage per laser hit
+    LASER_LIFETIME: 2000, // milliseconds before laser expires
     
     // Laser impact effects
     IMPACT_SIZE: 12,
