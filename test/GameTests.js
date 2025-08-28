@@ -3,7 +3,7 @@
  * Tests for graphics engine, physics, navigation, and game mechanics
  */
 
-import { TestRunner, describe, test, assert, assertEqual, assertApproxEqual, waitFor } from './TestFramework.js';
+import { TestRunner, describe, test, assert, assertEqual, assertApproxEqual, assertThrows, waitFor } from './TestFramework.js';
 import { GraphicsEngine } from '../src/graphics/GraphicsEngine.js';
 import { ParticleSystem } from '../src/graphics/ParticleSystem.js';
 import { Camera } from '../src/graphics/Camera.js';
