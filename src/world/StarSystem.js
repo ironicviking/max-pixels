@@ -35,26 +35,127 @@ export class StarSystem {
     }
     
     generateStar() {
-        const starTypes = [
-            { type: 'Red Dwarf', color: '#ff6b6b', size: 0.6, temperature: 3000 },
-            { type: 'Yellow Dwarf', color: '#ffd93d', size: 1.0, temperature: 5800 },
-            { type: 'White Dwarf', color: '#ffffff', size: 0.8, temperature: 8000 },
-            { type: 'Blue Giant', color: '#74c0fc', size: 1.5, temperature: 12000 },
-            { type: 'Red Giant', color: '#ff8787', size: 2.0, temperature: 4000 }
+        // Realistic stellar classification based on Harvard spectral types
+        // Frequency based on actual stellar population in the galaxy
+        const stellarClasses = [
+            { 
+                spectralClass: 'O', 
+                type: 'Blue Supergiant', 
+                color: '#a8d8ff', 
+                size: 15.0, 
+                temperature: 35000, 
+                mass: 20.0,
+                frequency: 0.00003 // Extremely rare
+            },
+            { 
+                spectralClass: 'B', 
+                type: 'Blue Giant', 
+                color: '#b8e0ff', 
+                size: 7.0, 
+                temperature: 18000, 
+                mass: 8.0,
+                frequency: 0.13 // Rare
+            },
+            { 
+                spectralClass: 'A', 
+                type: 'White Main Sequence', 
+                color: '#ffffff', 
+                size: 1.8, 
+                temperature: 8500, 
+                mass: 2.0,
+                frequency: 0.6 // Uncommon
+            },
+            { 
+                spectralClass: 'F', 
+                type: 'Yellow-White Main Sequence', 
+                color: '#fff2cc', 
+                size: 1.3, 
+                temperature: 6500, 
+                mass: 1.4,
+                frequency: 3.0 // Common
+            },
+            { 
+                spectralClass: 'G', 
+                type: 'Yellow Dwarf', 
+                color: '#ffff99', 
+                size: 1.0, 
+                temperature: 5800, 
+                mass: 1.0,
+                frequency: 7.6 // Very common (like our Sun)
+            },
+            { 
+                spectralClass: 'K', 
+                type: 'Orange Dwarf', 
+                color: '#ffcc66', 
+                size: 0.8, 
+                temperature: 4200, 
+                mass: 0.7,
+                frequency: 12.1 // Very common
+            },
+            { 
+                spectralClass: 'M', 
+                type: 'Red Dwarf', 
+                color: '#ff9999', 
+                size: 0.4, 
+                temperature: 3000, 
+                mass: 0.3,
+                frequency: 76.45 // Most common stars in galaxy
+            }
         ];
         
-        const starType = starTypes[Math.floor(Math.random() * starTypes.length)];
+        // Weighted random selection based on actual stellar frequencies
+        const totalFrequency = stellarClasses.reduce((sum, cls) => sum + cls.frequency, 0);
+        let random = Math.random() * totalFrequency;
+        
+        let selectedClass = stellarClasses[stellarClasses.length - 1]; // Default to M-class
+        for (const cls of stellarClasses) {
+            random -= cls.frequency;
+            if (random <= 0) {
+                selectedClass = cls;
+                break;
+            }
+        }
+        
+        // Add some variance to star properties within each class
+        const sizeVariance = 0.1 + Math.random() * 0.2; // ±10-20% size variance
+        const tempVariance = 0.05 + Math.random() * 0.1; // ±5-10% temperature variance
+        const massVariance = 0.1 + Math.random() * 0.2; // ±10-20% mass variance
         
         return {
             id: IDGenerator.generate(),
-            type: starType.type,
-            color: starType.color,
-            size: starType.size,
-            temperature: starType.temperature,
+            spectralClass: selectedClass.spectralClass,
+            type: selectedClass.type,
+            color: selectedClass.color,
+            size: selectedClass.size * sizeVariance,
+            temperature: selectedClass.temperature * tempVariance,
+            mass: selectedClass.mass * massVariance,
             x: 0, // Stars are at system center
             y: 0,
-            luminosity: starType.size * starType.temperature / WORLD_GEN.STAR_TEMPERATURE_REFERENCE // Relative to Sun
+            luminosity: Math.pow(selectedClass.size * sizeVariance, 2) * 
+                       Math.pow(selectedClass.temperature * tempVariance / WORLD_GEN.STAR_TEMPERATURE_REFERENCE, 4), // Stefan-Boltzmann law approximation
+            lifespan: this.calculateStellarLifespan(selectedClass.mass * massVariance),
+            habitableZoneInner: this.calculateHabitableZone(selectedClass.size * sizeVariance, selectedClass.temperature * tempVariance, true),
+            habitableZoneOuter: this.calculateHabitableZone(selectedClass.size * sizeVariance, selectedClass.temperature * tempVariance, false)
         };
+    }
+    
+    calculateStellarLifespan(mass) {
+        // Main sequence lifetime approximation: L ∝ M^-2.5 (in billions of years)
+        // Sun's lifetime ≈ 10 billion years
+        return 10 * Math.pow(mass, -2.5);
+    }
+    
+    calculateHabitableZone(size, temperature, isInner) {
+        // Habitable zone calculation based on stellar luminosity
+        // Inner edge: runaway greenhouse effect
+        // Outer edge: maximum greenhouse effect
+        const luminosity = Math.pow(size, 2) * Math.pow(temperature / WORLD_GEN.STAR_TEMPERATURE_REFERENCE, 4);
+        
+        if (isInner) {
+            return Math.sqrt(luminosity / 1.1); // Inner edge in AU
+        } else {
+            return Math.sqrt(luminosity / 0.53); // Outer edge in AU
+        }
     }
     
     generateSystem() {
@@ -447,14 +548,18 @@ export class StarSystem {
         const systemGroup = graphics.createElement('g');
         systemGroup.setAttribute('id', `star-system-${this.id}`);
         
-        // Render star
-        const star = graphics.createElement('circle');
-        star.setAttribute('cx', this.star.x);
-        star.setAttribute('cy', this.star.y);
-        star.setAttribute('r', this.star.size);
-        star.setAttribute('fill', this.star.color);
-        star.setAttribute('class', 'star');
-        systemGroup.appendChild(star);
+        // Render star using enhanced graphics engine with spectral class
+        const starElement = graphics.createStar(
+            this.star.x, 
+            this.star.y, 
+            this.star.size, 
+            this.star.color, 
+            this.star.spectralClass
+        );
+        starElement.setAttribute('class', 'star');
+        starElement.setAttribute('data-spectral-class', this.star.spectralClass);
+        starElement.setAttribute('data-star-type', this.star.type);
+        systemGroup.appendChild(starElement);
         
         // Render planets and their moons
         this.planets.forEach(planet => {

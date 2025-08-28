@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stellar Classification Test - Max-Pixels</title>
+    <style>
+        body {
+            font-family: 'Courier New', monospace;
+            background: #000;
+            color: #fff;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+        .star-info {
+            background: rgba(255,255,255,0.1);
+            border: 1px solid #333;
+            margin: 10px 0;
+            padding: 15px;
+            border-radius: 5px;
+        }
+        .star-preview {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            margin-right: 10px;
+            vertical-align: middle;
+        }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+            margin: 20px 0;
+        }
+        .stat {
+            background: rgba(0,255,100,0.1);
+            padding: 10px;
+            border-radius: 3px;
+        }
+        button {
+            background: #0066cc;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background: #0088ff;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🌟 Stellar Classification Test</h1>
+        <p>Testing the new realistic stellar classification system with O,B,A,F,G,K,M spectral types</p>
+        
+        <button onclick="generateSystems()">Generate 20 Star Systems</button>
+        <button onclick="clearResults()">Clear Results</button>
+        
+        <div class="stats" id="stats">
+            <div class="stat">Systems Generated: <span id="systemCount">0</span></div>
+            <div class="stat">O-Type Stars: <span id="oCount">0</span></div>
+            <div class="stat">B-Type Stars: <span id="bCount">0</span></div>
+            <div class="stat">A-Type Stars: <span id="aCount">0</span></div>
+            <div class="stat">F-Type Stars: <span id="fCount">0</span></div>
+            <div class="stat">G-Type Stars: <span id="gCount">0</span></div>
+            <div class="stat">K-Type Stars: <span id="kCount">0</span></div>
+            <div class="stat">M-Type Stars: <span id="mCount">0</span></div>
+        </div>
+        
+        <div id="results"></div>
+    </div>
+
+    <script type="module">
+        import { StarSystem } from './src/world/StarSystem.js';
+        
+        let systemCount = 0;
+        let spectralCounts = {
+            O: 0, B: 0, A: 0, F: 0, G: 0, K: 0, M: 0
+        };
+        
+        window.generateSystems = function() {
+            const resultsDiv = document.getElementById('results');
+            
+            for (let i = 0; i < 20; i++) {
+                const system = new StarSystem(`test-system-${systemCount + i}`, { x: Math.random() * 1000, y: Math.random() * 1000 });
+                const star = system.star;
+                
+                spectralCounts[star.spectralClass]++;
+                
+                const starDiv = document.createElement('div');
+                starDiv.className = 'star-info';
+                starDiv.innerHTML = `
+                    <div>
+                        <span class="star-preview" style="background-color: ${star.color}"></span>
+                        <strong>${system.name}</strong> - ${star.type} (${star.spectralClass}-class)
+                    </div>
+                    <div style="font-size: 0.9em; margin-top: 5px; color: #ccc;">
+                        Mass: ${star.mass.toFixed(2)} M☉ | 
+                        Size: ${star.size.toFixed(2)} R☉ | 
+                        Temp: ${Math.floor(star.temperature)}K | 
+                        Lifespan: ${star.lifespan.toFixed(1)}B years
+                    </div>
+                    <div style="font-size: 0.8em; margin-top: 3px; color: #aaa;">
+                        Habitable Zone: ${star.habitableZoneInner.toFixed(2)} - ${star.habitableZoneOuter.toFixed(2)} AU |
+                        Luminosity: ${star.luminosity.toFixed(3)} L☉
+                    </div>
+                `;
+                resultsDiv.appendChild(starDiv);
+            }
+            
+            systemCount += 20;
+            updateStats();
+        };
+        
+        window.clearResults = function() {
+            document.getElementById('results').innerHTML = '';
+            systemCount = 0;
+            spectralCounts = { O: 0, B: 0, A: 0, F: 0, G: 0, K: 0, M: 0 };
+            updateStats();
+        };
+        
+        function updateStats() {
+            document.getElementById('systemCount').textContent = systemCount;
+            document.getElementById('oCount').textContent = spectralCounts.O;
+            document.getElementById('bCount').textContent = spectralCounts.B;
+            document.getElementById('aCount').textContent = spectralCounts.A;
+            document.getElementById('fCount').textContent = spectralCounts.F;
+            document.getElementById('gCount').textContent = spectralCounts.G;
+            document.getElementById('kCount').textContent = spectralCounts.K;
+            document.getElementById('mCount').textContent = spectralCounts.M;
+        }
+    </script>
+</body>
+</html>
