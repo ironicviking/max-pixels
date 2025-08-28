@@ -426,6 +426,111 @@ describe('Graphics Engine', function() {
         
         TestRunner.cleanupTestDOM();
     });
+    
+    test('should create weapon charge indicator with low energy warning', function() {
+        const testContainer = TestRunner.setupTestDOM();
+        const canvas = testContainer.querySelector('#gameCanvas');
+        const graphics = new GraphicsEngine(canvas);
+        
+        // Test low energy indicator (below warning threshold)
+        const lowEnergyIndicator = graphics.createWeaponChargeIndicator(100, 150, 0.15); // 15% charge
+        assert(lowEnergyIndicator !== null, 'Should create low energy weapon charge indicator');
+        assertEqual(lowEnergyIndicator.tagName, 'G', 'Should create group element');
+        
+        // Check for warning animation elements when energy is low
+        const warningRing = lowEnergyIndicator.querySelector('#warning-pulse-ring');
+        assert(warningRing !== null, 'Should have warning pulse ring for low energy');
+        assertEqual(warningRing.tagName, 'CIRCLE', 'Warning ring should be a circle');
+        assertEqual(warningRing.getAttribute('stroke'), '#ff0000', 'Warning ring should be red');
+        
+        // Check for pulse animation
+        const pulseAnimation = warningRing.querySelector('animate');
+        assert(pulseAnimation !== null, 'Warning ring should have pulse animation');
+        assertEqual(pulseAnimation.getAttribute('attributeName'), 'opacity', 'Animation should target opacity');
+        assertEqual(pulseAnimation.getAttribute('repeatCount'), 'indefinite', 'Animation should repeat indefinitely');
+        
+        TestRunner.cleanupTestDOM();
+    });
+    
+    test('should not show warning animation for high energy', function() {
+        const testContainer = TestRunner.setupTestDOM();
+        const canvas = testContainer.querySelector('#gameCanvas');
+        const graphics = new GraphicsEngine(canvas);
+        
+        // Test high energy indicator (above warning threshold)
+        const highEnergyIndicator = graphics.createWeaponChargeIndicator(100, 150, 0.8); // 80% charge
+        assert(highEnergyIndicator !== null, 'Should create high energy weapon charge indicator');
+        
+        // Should not have warning animation for high energy
+        const warningRing = highEnergyIndicator.querySelector('#warning-pulse-ring');
+        assertEqual(warningRing, null, 'Should not have warning pulse ring for high energy');
+        
+        TestRunner.cleanupTestDOM();
+    });
+    
+    test('should update weapon charge indicator with warning animation', function() {
+        const testContainer = TestRunner.setupTestDOM();
+        const canvas = testContainer.querySelector('#gameCanvas');
+        const graphics = new GraphicsEngine(canvas);
+        
+        // Start with high energy
+        const indicator = graphics.createWeaponChargeIndicator(100, 150, 0.8);
+        assert(indicator.querySelector('#warning-pulse-ring') === null, 'Should not have warning initially');
+        
+        // Update to low energy - should add warning
+        graphics.updateWeaponChargeIndicator(indicator, 0.15);
+        const warningRingAfterUpdate = indicator.querySelector('#warning-pulse-ring');
+        assert(warningRingAfterUpdate !== null, 'Should add warning pulse ring when energy drops');
+        assert(warningRingAfterUpdate.querySelector('animate') !== null, 'Warning should have pulse animation');
+        
+        // Update back to high energy - should remove warning
+        graphics.updateWeaponChargeIndicator(indicator, 0.8);
+        const warningRingAfterRecharge = indicator.querySelector('#warning-pulse-ring');
+        assertEqual(warningRingAfterRecharge, null, 'Should remove warning pulse ring when energy restored');
+        
+        TestRunner.cleanupTestDOM();
+    });
+    
+    test('should have correct warning animation properties', function() {
+        const testContainer = TestRunner.setupTestDOM();
+        const canvas = testContainer.querySelector('#gameCanvas');
+        const graphics = new GraphicsEngine(canvas);
+        
+        const lowEnergyIndicator = graphics.createWeaponChargeIndicator(0, 0, 0.1); // 10% charge
+        const warningRing = lowEnergyIndicator.querySelector('#warning-pulse-ring');
+        const pulseAnimation = warningRing.querySelector('animate');
+        
+        // Check animation timing and values
+        const animationDuration = pulseAnimation.getAttribute('dur');
+        assert(typeof animationDuration === 'string', 'Animation should have duration');
+        assert(animationDuration.length > 0, 'Duration should be specified');
+        
+        const animationValues = pulseAnimation.getAttribute('values');
+        assert(typeof animationValues === 'string', 'Animation should have opacity values');
+        assert(animationValues.includes(';'), 'Values should contain semicolon separators');
+        
+        // Check ring positioning and styling
+        assertEqual(warningRing.getAttribute('fill'), 'none', 'Warning ring should have no fill');
+        assertEqual(warningRing.getAttribute('stroke-width'), '2', 'Warning ring should have correct stroke width');
+        
+        TestRunner.cleanupTestDOM();
+    });
+    
+    test('should handle updateLowEnergyWarning with null indicator', function() {
+        const testContainer = TestRunner.setupTestDOM();
+        const canvas = testContainer.querySelector('#gameCanvas');
+        const graphics = new GraphicsEngine(canvas);
+        
+        // Should not throw error when called with null indicator
+        try {
+            graphics.updateLowEnergyWarning(null, 0.1);
+            assert(true, 'Should handle null indicator gracefully');
+        } catch (error) {
+            assert(false, 'Should not throw error with null indicator');
+        }
+        
+        TestRunner.cleanupTestDOM();
+    });
 });
 
 /**
