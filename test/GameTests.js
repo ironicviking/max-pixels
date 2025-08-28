@@ -946,6 +946,188 @@ describe('Graphics Engine', function() {
         
         TestRunner.cleanupTestDOM();
     });
+    
+    test('should validate createTradeRoute parameters', function() {
+        const testContainer = TestRunner.setupTestDOM();
+        const canvas = testContainer.querySelector('#gameCanvas');
+        const graphics = new GraphicsEngine(canvas);
+        
+        // Test invalid startX
+        assertThrows(
+            () => graphics.createTradeRoute('invalid', 100, 200, 300),
+            'Should throw error for invalid startX'
+        );
+        
+        // Test invalid startY
+        assertThrows(
+            () => graphics.createTradeRoute(100, 'invalid', 200, 300),
+            'Should throw error for invalid startY'
+        );
+        
+        // Test invalid endX
+        assertThrows(
+            () => graphics.createTradeRoute(100, 100, 'invalid', 300),
+            'Should throw error for invalid endX'
+        );
+        
+        // Test invalid endY
+        assertThrows(
+            () => graphics.createTradeRoute(100, 100, 200, 'invalid'),
+            'Should throw error for invalid endY'
+        );
+        
+        // Test invalid options
+        assertThrows(
+            () => graphics.createTradeRoute(100, 100, 200, 300, 'invalid'),
+            'Should throw error for invalid options'
+        );
+        
+        TestRunner.cleanupTestDOM();
+    });
+    
+    test('should create trade route with correct structure', function() {
+        const testContainer = TestRunner.setupTestDOM();
+        const canvas = testContainer.querySelector('#gameCanvas');
+        const graphics = new GraphicsEngine(canvas);
+        
+        const tradeRoute = graphics.createTradeRoute(100, 150, 400, 250, {
+            id: 'test-route',
+            routeType: 'profitable'
+        });
+        
+        // Check basic structure
+        assert(tradeRoute !== null, 'Trade route should be created');
+        assertEqual(tradeRoute.tagName, 'G', 'Trade route should be a group element');
+        assertEqual(tradeRoute.getAttribute('id'), 'test-route', 'Should have correct ID');
+        assertEqual(tradeRoute.getAttribute('class'), 'trade-route', 'Should have correct class');
+        
+        // Check that it contains a line element
+        const line = tradeRoute.querySelector('line');
+        assert(line !== null, 'Should contain a line element');
+        assertEqual(line.getAttribute('x1'), '100', 'Line should have correct start X');
+        assertEqual(line.getAttribute('y1'), '150', 'Line should have correct start Y');
+        assertEqual(line.getAttribute('x2'), '400', 'Line should have correct end X');
+        assertEqual(line.getAttribute('y2'), '250', 'Line should have correct end Y');
+        
+        TestRunner.cleanupTestDOM();
+    });
+    
+    test('should create trade route with different types', function() {
+        const testContainer = TestRunner.setupTestDOM();
+        const canvas = testContainer.querySelector('#gameCanvas');
+        const graphics = new GraphicsEngine(canvas);
+        
+        // Test different route types
+        const activeRoute = graphics.createTradeRoute(0, 0, 100, 100, { routeType: 'active' });
+        const profitableRoute = graphics.createTradeRoute(0, 0, 100, 100, { routeType: 'profitable' });
+        const lossRoute = graphics.createTradeRoute(0, 0, 100, 100, { routeType: 'loss' });
+        const inactiveRoute = graphics.createTradeRoute(0, 0, 100, 100, { routeType: 'inactive' });
+        
+        // Check that routes are created with different properties
+        const activeLine = activeRoute.querySelector('line');
+        const profitableLine = profitableRoute.querySelector('line');
+        const lossLine = lossRoute.querySelector('line');
+        const inactiveLine = inactiveRoute.querySelector('line');
+        
+        // Routes should have different colors based on type
+        assert(activeLine.getAttribute('stroke') !== profitableLine.getAttribute('stroke'), 'Active and profitable routes should have different colors');
+        assert(profitableLine.getAttribute('stroke') !== lossLine.getAttribute('stroke'), 'Profitable and loss routes should have different colors');
+        assert(lossLine.getAttribute('stroke') !== inactiveLine.getAttribute('stroke'), 'Loss and inactive routes should have different colors');
+        
+        TestRunner.cleanupTestDOM();
+    });
+    
+    test('should create trade route with arrows when enabled', function() {
+        const testContainer = TestRunner.setupTestDOM();
+        const canvas = testContainer.querySelector('#gameCanvas');
+        const graphics = new GraphicsEngine(canvas);
+        
+        const routeWithArrows = graphics.createTradeRoute(50, 50, 550, 150, {
+            id: 'route-with-arrows',
+            showArrows: true
+        });
+        
+        const routeWithoutArrows = graphics.createTradeRoute(50, 50, 550, 150, {
+            id: 'route-without-arrows',
+            showArrows: false
+        });
+        
+        // Check arrows are present/absent
+        const arrowsGroup1 = routeWithArrows.querySelector('#route-with-arrows_arrows');
+        const arrowsGroup2 = routeWithoutArrows.querySelector('#route-without-arrows_arrows');
+        
+        assert(arrowsGroup1 !== null, 'Route with arrows should have arrow group');
+        assert(arrowsGroup2 === null, 'Route without arrows should not have arrow group');
+        
+        // Check that arrows exist by counting children
+        assert(arrowsGroup1._children && arrowsGroup1._children.length > 0, 'Should have at least one arrow for long route');
+        
+        TestRunner.cleanupTestDOM();
+    });
+    
+    test('should create trade route with custom color', function() {
+        const testContainer = TestRunner.setupTestDOM();
+        const canvas = testContainer.querySelector('#gameCanvas');
+        const graphics = new GraphicsEngine(canvas);
+        
+        const customColor = '#ff5500';
+        const tradeRoute = graphics.createTradeRoute(100, 100, 200, 200, {
+            customColor: customColor
+        });
+        
+        const line = tradeRoute.querySelector('line');
+        assertEqual(line.getAttribute('stroke'), customColor, 'Should use custom color');
+        
+        TestRunner.cleanupTestDOM();
+    });
+    
+    test('should create trade route with animation controls', function() {
+        const testContainer = TestRunner.setupTestDOM();
+        const canvas = testContainer.querySelector('#gameCanvas');
+        const graphics = new GraphicsEngine(canvas);
+        
+        const animatedRoute = graphics.createTradeRoute(100, 100, 300, 200, {
+            id: 'animated-route',
+            animated: true
+        });
+        
+        const staticRoute = graphics.createTradeRoute(100, 100, 300, 200, {
+            id: 'static-route',
+            animated: false
+        });
+        
+        // Check for animation elements using IDs
+        const animatedLine = animatedRoute.querySelector('#animated-route_line');
+        const staticLine = staticRoute.querySelector('#static-route_line');
+        
+        const pulseAnimation = animatedRoute.querySelector('#animated-route_pulse_animation');
+        const dashAnimation = animatedRoute.querySelector('#animated-route_dash_animation');
+        
+        assert(pulseAnimation !== null, 'Animated route should have pulse animation');
+        assert(dashAnimation !== null, 'Animated route should have dash animation');
+        
+        // Static route should not have animations
+        const staticPulse = staticRoute.querySelector('#static-route_pulse_animation');
+        assert(staticPulse === null, 'Static route should not have animations');
+        
+        TestRunner.cleanupTestDOM();
+    });
+    
+    test('should not create arrows for very short routes', function() {
+        const testContainer = TestRunner.setupTestDOM();
+        const canvas = testContainer.querySelector('#gameCanvas');
+        const graphics = new GraphicsEngine(canvas);
+        
+        // Create very short route (less than 2 * arrow size)
+        const shortRoute = graphics.createTradeRoute(100, 100, 110, 110, {
+            showArrows: true
+        });
+        
+        const arrowsGroup = shortRoute.querySelector('.trade-route-arrows');
+        assert(arrowsGroup === null, 'Very short routes should not have arrows');
+        
+        TestRunner.cleanupTestDOM();
+    });
 });
 
 /**

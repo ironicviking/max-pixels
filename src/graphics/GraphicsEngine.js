@@ -2702,4 +2702,163 @@ export class GraphicsEngine {
         
         return wormhole;
     }
+
+    /**
+     * Create animated trade route visualization between two points
+     * @param {number} startX - Starting X coordinate
+     * @param {number} startY - Starting Y coordinate  
+     * @param {number} endX - Ending X coordinate
+     * @param {number} endY - Ending Y coordinate
+     * @param {Object} options - Configuration options
+     * @param {string} [options.id] - Unique identifier for the route
+     * @param {string} [options.routeType] - Route type: 'active', 'profitable', 'loss', 'inactive'
+     * @param {boolean} [options.animated] - Whether to show animation
+     * @param {boolean} [options.showArrows] - Whether to show direction arrows
+     * @param {string} [options.customColor] - Custom color override
+     * @returns {SVGElement} Trade route SVG group
+     */
+    createTradeRoute(startX, startY, endX, endY, options = {}) {
+        // Validate inputs
+        if (!Number.isFinite(startX)) {
+            throw new Error('GraphicsEngine.createTradeRoute: startX must be a finite number');
+        }
+        if (!Number.isFinite(startY)) {
+            throw new Error('GraphicsEngine.createTradeRoute: startY must be a finite number');
+        }
+        if (!Number.isFinite(endX)) {
+            throw new Error('GraphicsEngine.createTradeRoute: endX must be a finite number');
+        }
+        if (!Number.isFinite(endY)) {
+            throw new Error('GraphicsEngine.createTradeRoute: endY must be a finite number');
+        }
+        if (typeof options !== 'object' || options === null) {
+            throw new Error('GraphicsEngine.createTradeRoute: options must be an object');
+        }
+
+        const {
+            id = 'trade-route-' + Date.now(),
+            routeType = 'active',
+            animated = true,
+            showArrows = true,
+            customColor = null
+        } = options;
+
+        // Determine route color based on type
+        let routeColor;
+        switch (routeType) {
+        case 'profitable':
+            routeColor = GRAPHICS.TRADE_ROUTE_PROFIT_COLOR;
+            break;
+        case 'loss':
+            routeColor = GRAPHICS.TRADE_ROUTE_LOSS_COLOR;
+            break;
+        case 'inactive':
+            routeColor = GRAPHICS.TRADE_ROUTE_INACTIVE_COLOR;
+            break;
+        case 'active':
+        default:
+            routeColor = GRAPHICS.TRADE_ROUTE_ACTIVE_COLOR;
+            break;
+        }
+
+        if (customColor) {
+            routeColor = customColor;
+        }
+
+        // Create the main route group
+        const tradeRoute = this.createGroup({
+            id,
+            class: 'trade-route'
+        });
+
+        // Calculate route length and direction for arrow placement
+        const deltaX = endX - startX;
+        const deltaY = endY - startY;
+        const routeLength = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+        
+        // Create main route line
+        const routeLine = this.createLine(startX, startY, endX, endY, {
+            id: `${id}_line`,
+            stroke: routeColor,
+            'stroke-width': GRAPHICS.TRADE_ROUTE_LINE_WIDTH,
+            'stroke-dasharray': `${GRAPHICS.TRADE_ROUTE_DASH_LENGTH},${GRAPHICS.TRADE_ROUTE_DASH_GAP}`,
+            opacity: animated ? GRAPHICS.TRADE_ROUTE_PULSE_OPACITY_MIN : GRAPHICS.TRADE_ROUTE_PULSE_OPACITY_MAX,
+            fill: 'none',
+            class: `trade-route-line ${routeType}`
+        });
+
+        // Add pulsing animation if enabled
+        if (animated) {
+            const pulseAnimation = this.createElement('animate');
+            pulseAnimation.setAttribute('id', `${id}_pulse_animation`);
+            pulseAnimation.setAttribute('attributeName', 'opacity');
+            pulseAnimation.setAttribute('values', 
+                `${GRAPHICS.TRADE_ROUTE_PULSE_OPACITY_MIN};${GRAPHICS.TRADE_ROUTE_PULSE_OPACITY_MAX};${GRAPHICS.TRADE_ROUTE_PULSE_OPACITY_MIN}`
+            );
+            pulseAnimation.setAttribute('dur', `${GRAPHICS.TRADE_ROUTE_ANIMATION_DURATION}s`);
+            pulseAnimation.setAttribute('repeatCount', 'indefinite');
+            routeLine.appendChild(pulseAnimation);
+
+            // Add animated dash offset for flowing effect
+            const dashAnimation = this.createElement('animate');
+            dashAnimation.setAttribute('id', `${id}_dash_animation`);
+            dashAnimation.setAttribute('attributeName', 'stroke-dashoffset');
+            dashAnimation.setAttribute('values', '0;24;0');
+            dashAnimation.setAttribute('dur', `${GRAPHICS.TRADE_ROUTE_ANIMATION_DURATION * 2}s`);
+            dashAnimation.setAttribute('repeatCount', 'indefinite');
+            routeLine.appendChild(dashAnimation);
+        }
+
+        tradeRoute.appendChild(routeLine);
+
+        // Create direction arrows if enabled
+        if (showArrows && routeLength > GRAPHICS.TRADE_ROUTE_ARROW_SIZE * 2) {
+            const arrowGroup = this.createGroup({
+                id: `${id}_arrows`,
+                class: 'trade-route-arrows'
+            });
+
+            // Calculate number of arrows based on route length
+            const numArrows = Math.floor(routeLength / GRAPHICS.TRADE_ROUTE_ARROW_SPACING);
+            
+            for (let i = 1; i <= numArrows; i++) {
+                const progress = i / (numArrows + 1);
+                const arrowX = startX + deltaX * progress;
+                const arrowY = startY + deltaY * progress;
+                
+                // Calculate arrow rotation angle
+                const angle = Math.atan2(deltaY, deltaX) * GRAPHICS.RADIANS_TO_DEGREES;
+                
+                // Create arrow shape
+                const arrow = this.createPath(
+                    `M 0,0 L ${-GRAPHICS.TRADE_ROUTE_ARROW_SIZE},${-GRAPHICS.TRADE_ROUTE_ARROW_SIZE/2} L ${-GRAPHICS.TRADE_ROUTE_ARROW_SIZE/2},0 L ${-GRAPHICS.TRADE_ROUTE_ARROW_SIZE},${GRAPHICS.TRADE_ROUTE_ARROW_SIZE/2} Z`,
+                    {
+                        fill: routeColor,
+                        transform: `translate(${arrowX},${arrowY}) rotate(${angle})`,
+                        opacity: animated ? GRAPHICS.TRADE_ROUTE_PULSE_OPACITY_MIN : GRAPHICS.TRADE_ROUTE_PULSE_OPACITY_MAX,
+                        class: 'trade-route-arrow'
+                    }
+                );
+
+                // Sync arrow animation with route line
+                if (animated) {
+                    const arrowPulseAnimation = this.createElement('animate');
+                    arrowPulseAnimation.setAttribute('attributeName', 'opacity');
+                    arrowPulseAnimation.setAttribute('values', 
+                        `${GRAPHICS.TRADE_ROUTE_PULSE_OPACITY_MIN};${GRAPHICS.TRADE_ROUTE_PULSE_OPACITY_MAX};${GRAPHICS.TRADE_ROUTE_PULSE_OPACITY_MIN}`
+                    );
+                    arrowPulseAnimation.setAttribute('dur', `${GRAPHICS.TRADE_ROUTE_ANIMATION_DURATION}s`);
+                    arrowPulseAnimation.setAttribute('repeatCount', 'indefinite');
+                    arrowPulseAnimation.setAttribute('begin', `${i * GRAPHICS.TRADE_ROUTE_ARROW_STAGGER_DELAY}s`); // Stagger arrow animations
+                    arrow.appendChild(arrowPulseAnimation);
+                }
+
+                arrowGroup.appendChild(arrow);
+            }
+
+            tradeRoute.appendChild(arrowGroup);
+        }
+
+        return tradeRoute;
+    }
 }
