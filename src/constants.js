@@ -492,6 +492,12 @@ export const WEAPONS = {
     LASER_WIDTH: 3,
     LASER_DURATION: '0.2s',
     
+    // Energy system
+    MAX_ENERGY: 100,      // Maximum energy capacity
+    ENERGY_COST: 20,      // Energy cost per laser shot
+    ENERGY_REGEN_RATE: 15, // Energy regenerated per second
+    LOW_ENERGY_THRESHOLD: 15, // Below this, visual warning appears
+    
     // Laser impact effects
     IMPACT_SIZE: 12,
     IMPACT_COLOR: '#ffff00',

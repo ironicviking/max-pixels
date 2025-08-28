@@ -38,7 +38,9 @@ class MaxPixelsGame {
             velocity: { x: 0, y: 0 },
             speed: 200,
             radius: 25,
-            rotation: 0
+            rotation: 0,
+            energy: WEAPONS.MAX_ENERGY,
+            lastEnergyRegenTime: Date.now()
         };
         
         this.asteroids = [];
@@ -467,6 +469,7 @@ class MaxPixelsGame {
     update(timestamp) {
         this.handleInput();
         this.updatePlayer();
+        this.updateEnergy();
         this.updateThrusterEffects();
         this.updateCamera();
         this.checkCollisions();
@@ -547,6 +550,21 @@ class MaxPixelsGame {
         this.player.y = Math.max(25, Math.min(bounds.height - 25, this.player.y));
     }
     
+    updateEnergy() {
+        const currentTime = Date.now();
+        const deltaTime = (currentTime - this.player.lastEnergyRegenTime) / 1000; // Convert to seconds
+        
+        // Regenerate energy over time
+        if (this.player.energy < WEAPONS.MAX_ENERGY) {
+            this.player.energy = Math.min(
+                WEAPONS.MAX_ENERGY,
+                this.player.energy + (WEAPONS.ENERGY_REGEN_RATE * deltaTime)
+            );
+        }
+        
+        this.player.lastEnergyRegenTime = currentTime;
+    }
+    
     updateThrusterEffects() {
         const movement = this.input.getMovementVector();
         const boost = this.input.isPressed('boost');
@@ -622,6 +640,13 @@ class MaxPixelsGame {
                     <h3>Speed</h3>
                     <div>Velocity: <span id="player-speed">0</span></div>
                 </div>
+                <div class="hud-section energy">
+                    <h3>Energy</h3>
+                    <div>Level: <span id="player-energy">100</span>/100</div>
+                    <div class="energy-bar">
+                        <div id="energy-fill" class="energy-fill"></div>
+                    </div>
+                </div>
                 <div class="hud-section inventory">
                     <h3>Inventory</h3>
                     <div>Iron: <span id="inventory-iron">0</span></div>
@@ -662,6 +687,24 @@ class MaxPixelsGame {
         ) * this.player.speed;
         document.getElementById('player-speed').textContent = Math.round(speed);
         
+        // Update energy display
+        const energyLevel = Math.round(this.player.energy);
+        const energyPercentage = (this.player.energy / WEAPONS.MAX_ENERGY) * 100;
+        document.getElementById('player-energy').textContent = energyLevel;
+        
+        const energyFill = document.getElementById('energy-fill');
+        if (energyFill) {
+            energyFill.style.width = energyPercentage + '%';
+            // Change color based on energy level
+            if (this.player.energy < WEAPONS.LOW_ENERGY_THRESHOLD) {
+                energyFill.style.backgroundColor = '#ff4444';
+            } else if (this.player.energy < WEAPONS.MAX_ENERGY * 0.5) {
+                energyFill.style.backgroundColor = '#ffaa44';
+            } else {
+                energyFill.style.backgroundColor = '#44ff44';
+            }
+        }
+        
         document.getElementById('camera-zoom').textContent = this.camera.zoom.toFixed(1);
         
         // Update particle system debug info
@@ -681,6 +724,14 @@ class MaxPixelsGame {
             return;
         }
         
+        // Check if player has enough energy
+        if (this.player.energy < WEAPONS.ENERGY_COST) {
+            console.log('Insufficient energy to fire laser!');
+            return;
+        }
+        
+        // Consume energy
+        this.player.energy -= WEAPONS.ENERGY_COST;
         this.lastFireTime = currentTime;
         
         // Calculate laser start position (tip of ship)
