@@ -86,7 +86,17 @@ export const PLAYER = {
     // Movement
     DELTA_TIME: 1/60,
     BOUNDARY_MARGIN: 25,
-    ROTATION_SMOOTHING: 0.15
+    ROTATION_SMOOTHING: 0.15,
+    
+    // Health System
+    MAX_HEALTH: 100,
+    ASTEROID_COLLISION_DAMAGE: 25,
+    HEALTH_REGEN_RATE: 5, // Health regenerated per second
+    HEALTH_REGEN_DELAY: 3000, // Wait 3 seconds after damage before regen starts
+    LOW_HEALTH_THRESHOLD: 30, // Below this, visual warning appears
+    CRITICAL_HEALTH_THRESHOLD: 15, // Below this, critical warning
+    DEATH_RESPAWN_DELAY: 2000, // 2 seconds before respawn
+    INVINCIBILITY_DURATION: 2000 // 2 seconds of invincibility after respawn/damage
 };
 
 // Graphics Constants

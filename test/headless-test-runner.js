@@ -42,7 +42,7 @@ function setupTestEnvironment() {
                 textContent: '',
                 _children: [],
                 setAttribute: function(name, value) { 
-                    this[name] = value; 
+                    this[name] = String(value); 
                     if (name === 'id') this.id = value;
                 },
                 getAttribute: function(name) { return this[name]; },
@@ -91,7 +91,7 @@ function setupTestEnvironment() {
             if (tag.toLowerCase() === 'svg') {
                 element.createSVGElement = (svgTag) => ({
                     tagName: svgTag.toUpperCase(),
-                    setAttribute: function(name, value) { this[name] = value; },
+                    setAttribute: function(name, value) { this[name] = String(value); },
                     getAttribute: function(name) { return this[name]; },
                     appendChild: function(child) { return child; },
                     _children: []
@@ -149,8 +149,8 @@ function setupTestEnvironment() {
             // Return mock elements for common game elements
             const mockElements = {
                 'gameCanvas': {
-                    tagName: 'svg',
-                    setAttribute: function(name, value) { this[name] = value; },
+                    tagName: 'SVG',
+                    setAttribute: function(name, value) { this[name] = String(value); },
                     getAttribute: function(name) { return this[name]; },
                     querySelector: function() { return null; },
                     appendChild: function(child) { return child; }
@@ -170,9 +170,9 @@ function setupTestEnvironment() {
                         return null;
                     },
                     gameCanvas: {
-                        tagName: 'svg',
+                        tagName: 'SVG',
                         _children: [],
-                        setAttribute: function(name, value) { this[name] = value; },
+                        setAttribute: function(name, value) { this[name] = String(value); },
                         getAttribute: function(name) { return this[name]; },
                         appendChild: function(child) { 
                             this._children = this._children || [];
@@ -226,7 +226,7 @@ function setupTestEnvironment() {
                 style: {},
                 textContent: '',
                 innerHTML: '',
-                setAttribute: function(name, value) { this[name] = value; },
+                setAttribute: function(name, value) { this[name] = String(value); },
                 getAttribute: function(name) { return this[name]; }
             };
         },
@@ -298,7 +298,7 @@ function setupTestEnvironment() {
                 _children: [],
                 _childrenByTag: new Map(),
                 setAttribute: function(name, value) { 
-                    this[name] = value;
+                    this[name] = String(value);
                     if (name === 'id') this.id = value;
                 },
                 getAttribute: function(name) { return this[name]; },

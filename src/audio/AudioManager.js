@@ -213,11 +213,13 @@ export class AudioManager {
     }
     
     enable() {
-        this.isEnabled = true;
         if (!this.isInitialized) {
             this.initializeAudioContext();
             this.generateSounds();
         }
+        // Always set enabled to true after initialization attempt
+        // This ensures the enabled state reflects the user's intent, even in headless environments
+        this.isEnabled = true;
     }
     
     disable() {

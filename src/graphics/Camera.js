@@ -29,6 +29,14 @@ export class Camera {
         this.updateViewBox();
     }
     
+    get x() {
+        return this.position.x;
+    }
+    
+    get y() {
+        return this.position.y;
+    }
+    
     follow(targetX, targetY) {
         this.target.x = targetX;
         this.target.y = targetY;
@@ -36,6 +44,12 @@ export class Camera {
     
     setZoom(zoom) {
         this.targetZoom = Math.max(this.minZoom, Math.min(this.maxZoom, zoom));
+    }
+    
+    setZoomImmediate(zoom) {
+        this.zoom = Math.max(this.minZoom, Math.min(this.maxZoom, zoom));
+        this.targetZoom = this.zoom;
+        this.updateViewBox();
     }
     
     zoomIn(factor = CAMERA.ZOOM_FACTOR) {

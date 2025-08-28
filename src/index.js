@@ -43,7 +43,14 @@ class MaxPixelsGame {
             radius: 25,
             rotation: 0,
             energy: WEAPONS.MAX_ENERGY,
-            lastEnergyRegenTime: Date.now()
+            lastEnergyRegenTime: Date.now(),
+            health: PLAYER.MAX_HEALTH,
+            lastHealthRegenTime: Date.now(),
+            lastDamageTime: 0,
+            isInvincible: false,
+            invincibilityEndTime: 0,
+            isDead: false,
+            respawnTime: 0
         };
         
         this.asteroids = [];
@@ -265,8 +272,12 @@ class MaxPixelsGame {
     }
     
     handleCollision(asteroid) {
-        // Play collision sound
-        this.audio.playCollision(0.8);
+        // Take damage from asteroid collision
+        const damageTaken = this.takeDamage(PLAYER.ASTEROID_COLLISION_DAMAGE, 'asteroid');
+        
+        if (!damageTaken) {
+            return; // No damage due to invincibility
+        }
         
         // Create explosion particle effect at collision point
         this.particles.createExplosionEffect(asteroid.x, asteroid.y, {
@@ -277,26 +288,8 @@ class MaxPixelsGame {
         
         // Create sparks effect at player position
         this.particles.createSparksEffect(this.player.x, this.player.y);
-        
-        // Reset player position to center
-        this.player.x = 960;
-        this.player.y = 540;
-        this.player.velocity.x = 0;
-        this.player.velocity.y = 0;
-        
-        // Update player ship visual position
-        this.playerShip.setAttribute('transform', 
-            `translate(${this.player.x}, ${this.player.y}) rotate(${this.player.rotation})`);
             
-        // Visual feedback - briefly flash red
-        this.playerShip.querySelector('path').setAttribute('fill', '#ff4444');
-        setTimeout(() => {
-            this.playerShip.querySelector('path').setAttribute('fill', '#4a90e2');
-        }, 200);
-        
-        this.camera.shake(15, 500);
-            
-        console.log('Collision detected! Player reset to center.');
+        console.log('Collision with asteroid detected!');
     }
     
     checkStationProximity() {
@@ -486,6 +479,7 @@ class MaxPixelsGame {
         this.handleInput();
         this.updatePlayer();
         this.updateEnergy();
+        this.updateHealth();
         this.updateThrusterEffects();
         this.updateCamera();
         this.checkCollisions();
@@ -596,6 +590,229 @@ class MaxPixelsGame {
         this.player.lastEnergyRegenTime = currentTime;
     }
     
+    updateHealth() {
+        const currentTime = Date.now();
+        
+        // Handle invincibility
+        if (this.player.isInvincible && currentTime > this.player.invincibilityEndTime) {
+            this.player.isInvincible = false;
+            this.removeInvincibilityEffect();
+        }
+        
+        // Handle respawn after death
+        if (this.player.isDead && currentTime > this.player.respawnTime) {
+            this.respawnPlayer();
+            return;
+        }
+        
+        // Skip health regen if player is dead or recently damaged
+        if (this.player.isDead || (currentTime - this.player.lastDamageTime) < PLAYER.HEALTH_REGEN_DELAY) {
+            return;
+        }
+        
+        const deltaTime = (currentTime - this.player.lastHealthRegenTime) / 1000;
+        const previousHealth = this.player.health;
+        
+        // Regenerate health over time
+        if (this.player.health < PLAYER.MAX_HEALTH) {
+            this.player.health = Math.min(
+                PLAYER.MAX_HEALTH,
+                this.player.health + (PLAYER.HEALTH_REGEN_RATE * deltaTime)
+            );
+            
+            // Visual feedback when health is fully restored
+            if (previousHealth < PLAYER.MAX_HEALTH && this.player.health >= PLAYER.MAX_HEALTH) {
+                this.showHealthRegenEffect();
+                console.log('Health fully restored!');
+            }
+        }
+        
+        this.player.lastHealthRegenTime = currentTime;
+    }
+    
+    takeDamage(amount, source = 'unknown') {
+        if (this.player.isInvincible || this.player.isDead) {
+            return false; // No damage taken
+        }
+        
+        this.player.health -= amount;
+        this.player.lastDamageTime = Date.now();
+        
+        // Visual and audio feedback
+        this.showDamageEffect();
+        this.camera.shake(20, 600);
+        this.audio.playCollision(0.9);
+        
+        console.log(`Player took ${amount} damage from ${source}. Health: ${Math.round(this.player.health)}/${PLAYER.MAX_HEALTH}`);
+        
+        if (this.player.health <= 0) {
+            this.playerDeath();
+            return true; // Fatal damage
+        }
+        
+        // Grant temporary invincibility
+        this.player.isInvincible = true;
+        this.player.invincibilityEndTime = Date.now() + PLAYER.INVINCIBILITY_DURATION;
+        this.showInvincibilityEffect();
+        
+        return true; // Damage taken
+    }
+    
+    playerDeath() {
+        this.player.health = 0;
+        this.player.isDead = true;
+        this.player.respawnTime = Date.now() + PLAYER.DEATH_RESPAWN_DELAY;
+        this.player.velocity.x = 0;
+        this.player.velocity.y = 0;
+        
+        console.log('Player died! Respawning in', PLAYER.DEATH_RESPAWN_DELAY / 1000, 'seconds...');
+        
+        // Create death explosion effect
+        this.particles.createExplosionEffect(this.player.x, this.player.y, {
+            particleCount: 50,
+            colors: ['#ff0000', '#ff4444', '#ffaa00', '#ffffff', '#ff8800'],
+            velocity: { min: 100, max: 200 }
+        });
+        
+        // Hide player ship temporarily
+        this.playerShip.style.opacity = '0';
+        
+        // Show death screen overlay
+        this.showDeathScreen();
+    }
+    
+    respawnPlayer() {
+        this.player.health = PLAYER.MAX_HEALTH;
+        this.player.energy = WEAPONS.MAX_ENERGY;
+        this.player.isDead = false;
+        this.player.x = PLAYER.SPAWN_X;
+        this.player.y = PLAYER.SPAWN_Y;
+        this.player.velocity.x = 0;
+        this.player.velocity.y = 0;
+        this.player.rotation = 0;
+        
+        // Grant spawn invincibility
+        this.player.isInvincible = true;
+        this.player.invincibilityEndTime = Date.now() + PLAYER.INVINCIBILITY_DURATION;
+        
+        // Update visual position
+        this.playerShip.setAttribute('transform', 
+            `translate(${this.player.x}, ${this.player.y}) rotate(${this.player.rotation})`);
+        this.playerShip.style.opacity = '1';
+        
+        // Center camera on player
+        this.camera.centerOn(this.player.x, this.player.y);
+        
+        // Visual effects
+        this.showRespawnEffect();
+        this.showInvincibilityEffect();
+        
+        // Hide death screen
+        this.hideDeathScreen();
+        
+        console.log('Player respawned!');
+    }
+    
+    showDamageEffect() {
+        // Flash the player ship red briefly
+        const shipPath = this.playerShip.querySelector('path');
+        if (shipPath) {
+            const originalColor = shipPath.getAttribute('fill') || '#4a90e2';
+            shipPath.setAttribute('fill', '#ff4444');
+            setTimeout(() => {
+                shipPath.setAttribute('fill', originalColor);
+            }, 200);
+        }
+    }
+    
+    showInvincibilityEffect() {
+        // Make player ship blink during invincibility
+        let blinkInterval = setInterval(() => {
+            if (!this.player.isInvincible) {
+                clearInterval(blinkInterval);
+                this.playerShip.style.opacity = '1';
+                return;
+            }
+            
+            this.playerShip.style.opacity = this.playerShip.style.opacity === '0.4' ? '1' : '0.4';
+        }, 200);
+    }
+    
+    removeInvincibilityEffect() {
+        this.playerShip.style.opacity = '1';
+    }
+    
+    showHealthRegenEffect() {
+        // Create a brief visual flash to indicate full health
+        this.particles.createSparksEffect(this.player.x, this.player.y, {
+            colors: ['#00ff00', '#44ff44', '#88ff88'],
+            particleCount: 8
+        });
+    }
+    
+    showRespawnEffect() {
+        // Create spawn-in effect
+        this.particles.createSparksEffect(this.player.x, this.player.y, {
+            colors: ['#00ffff', '#44ffff', '#88ffff', '#ffffff'],
+            particleCount: 20
+        });
+    }
+    
+    showDeathScreen() {
+        let deathScreen = document.getElementById('death-screen');
+        if (!deathScreen) {
+            deathScreen = document.createElement('div');
+            deathScreen.id = 'death-screen';
+            deathScreen.innerHTML = `
+                <div class="death-content">
+                    <h2>SHIP DESTROYED</h2>
+                    <p>Respawning...</p>
+                </div>
+            `;
+            deathScreen.style.cssText = `
+                position: fixed;
+                top: 0; left: 0;
+                width: 100%; height: 100%;
+                background: rgba(255, 0, 0, 0.3);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 1000;
+                pointer-events: none;
+            `;
+            
+            const style = document.createElement('style');
+            style.textContent = `
+                .death-content {
+                    text-align: center;
+                    color: #ffffff;
+                    font-family: 'Courier New', monospace;
+                    text-shadow: 0 0 10px #ff0000;
+                }
+                .death-content h2 {
+                    font-size: 3em;
+                    margin: 0 0 20px 0;
+                    color: #ff4444;
+                }
+                .death-content p {
+                    font-size: 1.5em;
+                    margin: 0;
+                }
+            `;
+            document.head.appendChild(style);
+            document.body.appendChild(deathScreen);
+        }
+        
+        deathScreen.style.display = 'flex';
+    }
+    
+    hideDeathScreen() {
+        const deathScreen = document.getElementById('death-screen');
+        if (deathScreen) {
+            deathScreen.style.display = 'none';
+        }
+    }
+    
     showEnergyRechargeEffect() {
         // Create a brief visual flash on the energy bar to indicate recharge
         const energyFill = document.getElementById('energy-fill');
@@ -693,6 +910,13 @@ class MaxPixelsGame {
                     <h3>Speed</h3>
                     <div>Velocity: <span id="player-speed">0</span></div>
                 </div>
+                <div class="hud-section health">
+                    <h3>Health</h3>
+                    <div>HP: <span id="player-health">100</span>/100</div>
+                    <div class="health-bar">
+                        <div id="health-fill" class="health-fill"></div>
+                    </div>
+                </div>
                 <div class="hud-section energy">
                     <h3>Energy</h3>
                     <div>Level: <span id="player-energy">100</span>/100</div>
@@ -739,6 +963,30 @@ class MaxPixelsGame {
             this.player.velocity.x ** 2 + this.player.velocity.y ** 2
         ) * this.player.speed;
         document.getElementById('player-speed').textContent = Math.round(speed);
+        
+        // Update health display
+        const healthLevel = Math.round(this.player.health);
+        const healthPercentage = (this.player.health / PLAYER.MAX_HEALTH) * 100;
+        document.getElementById('player-health').textContent = healthLevel;
+        
+        const healthFill = document.getElementById('health-fill');
+        if (healthFill) {
+            healthFill.style.width = healthPercentage + '%';
+            // Change color based on health level
+            if (this.player.health <= PLAYER.CRITICAL_HEALTH_THRESHOLD) {
+                healthFill.style.backgroundColor = '#ff0000';
+                healthFill.style.boxShadow = '0 0 8px #ff0000'; // Critical health glow
+            } else if (this.player.health <= PLAYER.LOW_HEALTH_THRESHOLD) {
+                healthFill.style.backgroundColor = '#ff4444';
+                healthFill.style.boxShadow = '0 0 4px #ff4444'; // Low health glow
+            } else if (this.player.health < PLAYER.MAX_HEALTH * 0.5) {
+                healthFill.style.backgroundColor = '#ffaa44';
+                healthFill.style.boxShadow = '';
+            } else {
+                healthFill.style.backgroundColor = '#44ff44';
+                healthFill.style.boxShadow = '';
+            }
+        }
         
         // Update energy display
         const energyLevel = Math.round(this.player.energy);
