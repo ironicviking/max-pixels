@@ -13,8 +13,13 @@ export class AudioManager {
         this.isEnabled = true;
         this.isInitialized = false;
         
+        // Audio visualization properties
+        this.analyser = null;
+        this.visualizationCallbacks = new Set();
+        
         this.initializeAudioContext();
         this.generateSounds();
+        this.setupAudioVisualization();
     }
     
     initializeAudioContext() {
@@ -229,5 +234,79 @@ export class AudioManager {
     stopAll() {
         // Note: In a full implementation, you'd track active sounds and stop them
         // For this basic version, sounds will naturally end or can be stopped individually
+    }
+    
+    setupAudioVisualization() {
+        if (!this.audioContext) return;
+        
+        try {
+            this.analyser = this.audioContext.createAnalyser();
+            this.analyser.fftSize = 256;
+            this.analyser.smoothingTimeConstant = 0.8;
+            
+            // Connect master gain to analyser
+            if (this.masterGain) {
+                this.masterGain.connect(this.analyser);
+            }
+            
+            this.startVisualizationLoop();
+        } catch (error) {
+            console.warn('Audio visualization setup failed:', error);
+        }
+    }
+    
+    startVisualizationLoop() {
+        if (!this.analyser) return;
+        
+        const bufferLength = this.analyser.frequencyBinCount;
+        const dataArray = new Uint8Array(bufferLength);
+        
+        const updateVisualization = () => {
+            if (!this.isEnabled || !this.analyser) return;
+            
+            this.analyser.getByteFrequencyData(dataArray);
+            
+            // Notify all visualization callbacks with frequency data
+            this.visualizationCallbacks.forEach(callback => {
+                try {
+                    callback(dataArray, bufferLength);
+                } catch (error) {
+                    console.warn('Visualization callback error:', error);
+                }
+            });
+            
+            requestAnimationFrame(updateVisualization);
+        };
+        
+        updateVisualization();
+    }
+    
+    addVisualizationCallback(callback) {
+        if (typeof callback === 'function') {
+            this.visualizationCallbacks.add(callback);
+            return () => this.visualizationCallbacks.delete(callback);
+        }
+        return null;
+    }
+    
+    removeVisualizationCallback(callback) {
+        return this.visualizationCallbacks.delete(callback);
+    }
+    
+    getAudioData() {
+        if (!this.analyser) return null;
+        
+        const bufferLength = this.analyser.frequencyBinCount;
+        const frequencyData = new Uint8Array(bufferLength);
+        const waveformData = new Uint8Array(bufferLength);
+        
+        this.analyser.getByteFrequencyData(frequencyData);
+        this.analyser.getByteTimeDomainData(waveformData);
+        
+        return {
+            frequency: frequencyData,
+            waveform: waveformData,
+            bufferLength
+        };
     }
 }
