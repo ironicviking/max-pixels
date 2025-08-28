@@ -479,14 +479,32 @@ describe('Space Navigation', function() {
         if (sector.jumpGates.length > 0) {
             const gate = sector.jumpGates[0];
             
-            // Test proximity detection
-            const nearbyGate = navigation.checkJumpGateProximity(gate.x, gate.y, 100);
-            assert(nearbyGate !== null, 'Should detect nearby jump gate');
-            assertEqual(nearbyGate.id, gate.id, 'Should return correct gate');
+            // Test exact position match
+            const exactGate = navigation.checkJumpGateProximity(gate.x, gate.y, 100);
+            assert(exactGate !== null, 'Should detect gate at exact position');
+            assertEqual(exactGate.id, gate.id, 'Should return correct gate');
             
-            // Test outside range
+            // Test boundary condition - just within range
+            const withinRangeGate = navigation.checkJumpGateProximity(gate.x + 79, gate.y, 80);
+            assert(withinRangeGate !== null, 'Should detect gate just within range');
+            assertEqual(withinRangeGate.id, gate.id, 'Should return correct gate at boundary');
+            
+            // Test boundary condition - just outside range
+            const justOutsideGate = navigation.checkJumpGateProximity(gate.x + 81, gate.y, 80);
+            assertEqual(justOutsideGate, null, 'Should not detect gate just outside range');
+            
+            // Test far distance
             const farGate = navigation.checkJumpGateProximity(gate.x + 200, gate.y + 200, 50);
             assertEqual(farGate, null, 'Should not detect distant gate');
+            
+            // Test with default range parameter
+            const defaultRangeGate = navigation.checkJumpGateProximity(gate.x + 75, gate.y);
+            assert(defaultRangeGate !== null, 'Should use default range when not specified');
+            
+            // Test diagonal proximity
+            const diagonalDistance = Math.sqrt(50 * 50 + 50 * 50); // ~70.7
+            const diagonalGate = navigation.checkJumpGateProximity(gate.x + 50, gate.y + 50, 80);
+            assert(diagonalGate !== null, 'Should detect gate at diagonal distance within range');
         }
     });
 });
