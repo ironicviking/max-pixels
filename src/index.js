@@ -34,6 +34,7 @@ class MaxPixelsGame {
         this.network = new NetworkManager();
         this.initializePlayerInventory();
         this.initializeNetworking();
+        this.selectedTarget = null;
         this.isInitialized = false;
         
         this.player = {
@@ -1284,6 +1285,12 @@ class MaxPixelsGame {
                         <svg id="radar-display" width="${GRAPHICS.RADAR_DEFAULT_SIZE}" height="${GRAPHICS.RADAR_DEFAULT_SIZE}"></svg>
                     </div>
                 </div>
+                <div class="hud-section target" id="target-info" style="display: none;">
+                    <h3>Target</h3>
+                    <div>Name: <span id="target-name">None</span></div>
+                    <div>Type: <span id="target-type">None</span></div>
+                    <div>Distance: <span id="target-distance">0</span>u</div>
+                </div>
                 <div class="hud-section interaction" id="interaction-prompt" style="display: none;">
                     <h3>Station Nearby</h3>
                     <div id="interaction-text">Press F to Dock</div>
@@ -1358,8 +1365,13 @@ class MaxPixelsGame {
                 
                 const asteroidBlip = this.radarEngine.createCircle(blipX, blipY, GRAPHICS.RADAR_ASTEROID_BLIP_SIZE, {
                     fill: '#cc8800',
-                    opacity: 0.8
+                    opacity: 0.8,
+                    'stroke': this.selectedTarget === asteroid ? '#ffffff' : 'none',
+                    'stroke-width': this.selectedTarget === asteroid ? '2' : '0',
+                    'cursor': 'pointer'
                 });
+                asteroidBlip.addEventListener('click', () => this.selectTarget(asteroid, 'asteroid'));
+                asteroidBlip.setAttribute('data-target-type', 'asteroid');
                 blipsContainer.appendChild(asteroidBlip);
             }
         });
@@ -1380,8 +1392,13 @@ class MaxPixelsGame {
                 
                 const stationBlip = this.radarEngine.createCircle(blipX, blipY, GRAPHICS.RADAR_STATION_BLIP_SIZE, {
                     fill: '#00aaff',
-                    opacity: 1
+                    opacity: 1,
+                    'stroke': this.selectedTarget === station ? '#ffffff' : 'none',
+                    'stroke-width': this.selectedTarget === station ? '2' : '0',
+                    'cursor': 'pointer'
                 });
+                stationBlip.addEventListener('click', () => this.selectTarget(station, 'station'));
+                stationBlip.setAttribute('data-target-type', 'station');
                 blipsContainer.appendChild(stationBlip);
             }
         });
@@ -1402,11 +1419,55 @@ class MaxPixelsGame {
                 
                 const otherPlayerBlip = this.radarEngine.createCircle(blipX, blipY, GRAPHICS.RADAR_PLAYER_BLIP_SIZE, {
                     fill: playerData.color || '#ff6b35',
-                    opacity: 0.9
+                    opacity: 0.9,
+                    'stroke': this.selectedTarget === playerData ? '#ffffff' : 'none',
+                    'stroke-width': this.selectedTarget === playerData ? '2' : '0',
+                    'cursor': 'pointer'
                 });
+                otherPlayerBlip.addEventListener('click', () => this.selectTarget(playerData, 'player'));
+                otherPlayerBlip.setAttribute('data-target-type', 'player');
                 blipsContainer.appendChild(otherPlayerBlip);
             }
         });
+    }
+    
+    selectTarget(target, targetType) {
+        this.selectedTarget = target;
+        this.targetType = targetType;
+        
+        // Focus camera on target if it exists
+        if (target && target.x !== undefined && target.y !== undefined) {
+            this.camera.focusOnPoint(target.x, target.y, 1.5);
+        }
+        
+        // Update target information in HUD
+        this.updateTargetInfo();
+    }
+    
+    updateTargetInfo() {
+        const targetInfoElement = document.getElementById('target-info');
+        if (!targetInfoElement) return;
+        
+        if (this.selectedTarget) {
+            targetInfoElement.style.display = 'block';
+            const targetName = document.getElementById('target-name');
+            const targetDistance = document.getElementById('target-distance');
+            const targetType = document.getElementById('target-type');
+            
+            if (targetName && targetDistance && targetType) {
+                // Calculate distance to target
+                const distance = Math.sqrt(
+                    Math.pow(this.selectedTarget.x - this.player.x, 2) + 
+                    Math.pow(this.selectedTarget.y - this.player.y, 2)
+                );
+                
+                targetName.textContent = this.selectedTarget.name || 'Unknown';
+                targetDistance.textContent = Math.round(distance);
+                targetType.textContent = this.targetType || 'Unknown';
+            }
+        } else {
+            targetInfoElement.style.display = 'none';
+        }
     }
     
     updateHUD() {
@@ -1534,6 +1595,9 @@ class MaxPixelsGame {
         
         // Update radar display
         this.updateRadar();
+        
+        // Update target information
+        this.updateTargetInfo();
     }
     
     fireLaser() {

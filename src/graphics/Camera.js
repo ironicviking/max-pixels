@@ -154,6 +154,11 @@ export class Camera {
         this.updateViewBox();
     }
     
+    focusOnPoint(x, y, zoom = this.targetZoom) {
+        this.follow(x, y);
+        this.setZoom(zoom);
+    }
+    
     shake(intensity = CAMERA.SHAKE_INTENSITY, duration = CAMERA.SHAKE_DURATION) {
         const originalSmoothness = this.smoothing;
         this.smoothing = 1;
