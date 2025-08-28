@@ -1614,6 +1614,9 @@ export class GraphicsEngine {
             chargeRing.setAttribute('stroke-dasharray', chargeLevel < WEAPONS.CHARGE_INDICATOR_DASH_THRESHOLD ? '2,4' : 'none');
         }
         
+        // Handle low energy warning animation
+        this.updateLowEnergyWarning(indicator, chargeLevel);
+        
         // Handle energy core visibility
         const hasEnergyCore = indicator.children.length > 2 && indicator.children[2].tagName === 'circle' && indicator.children[2].getAttribute('fill') === '#ffffff';
         if (chargeLevel > WEAPONS.CHARGE_CORE_THRESHOLD && !hasEnergyCore) {
@@ -1679,6 +1682,40 @@ export class GraphicsEngine {
             const g = WEAPONS.CHARGE_COLOR_GREEN_FULL;
             const b = Math.floor(WEAPONS.CHARGE_COLOR_BLUE_DIM + (WEAPONS.CHARGE_COLOR_RANGE * t));
             return `rgb(${r}, ${g}, ${b})`;
+        }
+    }
+    
+    updateLowEnergyWarning(indicator, chargeLevel) {
+        if (!indicator) return;
+        
+        const isLowEnergy = chargeLevel <= WEAPONS.LOW_ENERGY_WARNING_THRESHOLD;
+        const warningRingId = 'warning-pulse-ring';
+        const existingWarning = indicator.querySelector(`#${warningRingId}`);
+        
+        if (isLowEnergy && !existingWarning) {
+            // Create warning pulse ring
+            const maxRadius = WEAPONS.CHARGE_INDICATOR_MAX_RADIUS;
+            const warningRing = this.createCircle(0, 0, maxRadius + WEAPONS.CHARGE_INDICATOR_GLOW_OFFSET, {
+                id: warningRingId,
+                fill: 'none',
+                stroke: '#ff0000',
+                'stroke-width': 2,
+                opacity: WEAPONS.LOW_ENERGY_PULSE_OPACITY_MIN
+            });
+            
+            // Add pulsing animation
+            const pulseAnimation = this.createElement('animate');
+            pulseAnimation.setAttribute('attributeName', 'opacity');
+            pulseAnimation.setAttribute('values', `${WEAPONS.LOW_ENERGY_PULSE_OPACITY_MIN};${WEAPONS.LOW_ENERGY_PULSE_OPACITY_MAX};${WEAPONS.LOW_ENERGY_PULSE_OPACITY_MIN}`);
+            pulseAnimation.setAttribute('dur', WEAPONS.LOW_ENERGY_PULSE_DURATION);
+            pulseAnimation.setAttribute('repeatCount', 'indefinite');
+            
+            warningRing.appendChild(pulseAnimation);
+            indicator.appendChild(warningRing);
+            
+        } else if (!isLowEnergy && existingWarning) {
+            // Remove warning ring when energy is no longer low
+            existingWarning.remove();
         }
     }
     

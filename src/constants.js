@@ -641,6 +641,12 @@ export const WEAPONS = {
     CHARGE_COLOR_LOW_THRESHOLD: 0.33,
     CHARGE_COLOR_MEDIUM_THRESHOLD: 0.66,
     
+    // Low energy warning animation
+    LOW_ENERGY_WARNING_THRESHOLD: 0.15, // 15% energy
+    LOW_ENERGY_PULSE_DURATION: '0.8s',
+    LOW_ENERGY_PULSE_OPACITY_MIN: 0.3,
+    LOW_ENERGY_PULSE_OPACITY_MAX: 1.0,
+    
     // Color component values for smooth transitions
     CHARGE_COLOR_RED_FULL: 255,
     CHARGE_COLOR_RED_DIM: 100,
