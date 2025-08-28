@@ -898,12 +898,66 @@ describe('Audio Manager', function() {
     test('should handle audio context resume', function() {
         const audio = new AudioManager();
         
-        // Should not throw error
-        audio.resumeAudioContext().then(() => {
+        // Should not throw error even when called multiple times
+        const promise1 = audio.resumeAudioContext();
+        const promise2 = audio.resumeAudioContext();
+        
+        // Both promises should resolve or reject gracefully
+        Promise.all([promise1, promise2]).then(() => {
             // This should complete without error
         }).catch(() => {
             // Catch is fine, some environments may not support it
         });
+    });
+    
+    test('should handle resume in play method', function() {
+        const audio = new AudioManager();
+        
+        if (audio.isEnabled && audio.audioContext) {
+            // Mock suspended state
+            const originalState = audio.audioContext.state;
+            
+            // Simulate suspended context
+            Object.defineProperty(audio.audioContext, 'state', {
+                value: 'suspended',
+                configurable: true
+            });
+            
+            // Play method should handle suspended context gracefully
+            const result = audio.play('thruster');
+            
+            // Should not crash even with suspended context
+            if (result) {
+                assert(typeof result.stop === 'function', 'Should return valid sound object');
+            }
+            
+            // Restore original state
+            Object.defineProperty(audio.audioContext, 'state', {
+                value: originalState,
+                configurable: true
+            });
+        }
+    });
+    
+    test('should handle resume with null audio context', function() {
+        const audio = new AudioManager();
+        const originalContext = audio.audioContext;
+        
+        // Temporarily set null context
+        audio.audioContext = null;
+        
+        // Should handle gracefully
+        const promise = audio.resumeAudioContext();
+        assert(promise instanceof Promise, 'Should return Promise even with null context');
+        
+        promise.then(() => {
+            // Should complete without error
+        }).catch(() => {
+            // Expected for null context
+        });
+        
+        // Restore original context
+        audio.audioContext = originalContext;
     });
 });
 
