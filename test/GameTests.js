@@ -138,6 +138,49 @@ describe('Graphics Engine', function() {
         
         TestRunner.cleanupTestDOM();
     });
+    
+    test('should validate createRect parameters', function() {
+        const testContainer = TestRunner.setupTestDOM();
+        const canvas = testContainer.querySelector('#gameCanvas');
+        const graphics = new GraphicsEngine(canvas);
+        
+        // Test valid parameters
+        const rect = graphics.createRect(10, 20, 100, 50);
+        assert(rect !== null, 'Should create rect with valid parameters');
+        assertEqual(rect.tagName, 'rect', 'Should create rect element');
+        assertEqual(rect.getAttribute('x'), '10', 'Should set x correctly');
+        assertEqual(rect.getAttribute('y'), '20', 'Should set y correctly');
+        assertEqual(rect.getAttribute('width'), '100', 'Should set width correctly');
+        assertEqual(rect.getAttribute('height'), '50', 'Should set height correctly');
+        
+        // Test invalid x parameter
+        assertThrows(() => graphics.createRect('invalid', 20, 100, 50), 'Should throw for invalid x');
+        assertThrows(() => graphics.createRect(Infinity, 20, 100, 50), 'Should throw for infinite x');
+        assertThrows(() => graphics.createRect(NaN, 20, 100, 50), 'Should throw for NaN x');
+        
+        // Test invalid y parameter
+        assertThrows(() => graphics.createRect(10, 'invalid', 100, 50), 'Should throw for invalid y');
+        assertThrows(() => graphics.createRect(10, Infinity, 100, 50), 'Should throw for infinite y');
+        assertThrows(() => graphics.createRect(10, NaN, 100, 50), 'Should throw for NaN y');
+        
+        // Test invalid width parameter
+        assertThrows(() => graphics.createRect(10, 20, 'invalid', 50), 'Should throw for invalid width');
+        assertThrows(() => graphics.createRect(10, 20, -1, 50), 'Should throw for negative width');
+        assertThrows(() => graphics.createRect(10, 20, Infinity, 50), 'Should throw for infinite width');
+        assertThrows(() => graphics.createRect(10, 20, NaN, 50), 'Should throw for NaN width');
+        
+        // Test invalid height parameter
+        assertThrows(() => graphics.createRect(10, 20, 100, 'invalid'), 'Should throw for invalid height');
+        assertThrows(() => graphics.createRect(10, 20, 100, -1), 'Should throw for negative height');
+        assertThrows(() => graphics.createRect(10, 20, 100, Infinity), 'Should throw for infinite height');
+        assertThrows(() => graphics.createRect(10, 20, 100, NaN), 'Should throw for NaN height');
+        
+        // Test invalid attributes parameter
+        assertThrows(() => graphics.createRect(10, 20, 100, 50, null), 'Should throw for null attributes');
+        assertThrows(() => graphics.createRect(10, 20, 100, 50, 'invalid'), 'Should throw for non-object attributes');
+        
+        TestRunner.cleanupTestDOM();
+    });
 });
 
 /**

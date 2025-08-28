@@ -107,6 +107,23 @@ export class GraphicsEngine {
     }
     
     createRect(x, y, width, height, attributes = {}) {
+        // Parameter validation
+        if (typeof x !== 'number' || !isFinite(x)) {
+            throw new Error('GraphicsEngine.createRect: x must be a finite number');
+        }
+        if (typeof y !== 'number' || !isFinite(y)) {
+            throw new Error('GraphicsEngine.createRect: y must be a finite number');
+        }
+        if (typeof width !== 'number' || !isFinite(width) || width < 0) {
+            throw new Error('GraphicsEngine.createRect: width must be a non-negative finite number');
+        }
+        if (typeof height !== 'number' || !isFinite(height) || height < 0) {
+            throw new Error('GraphicsEngine.createRect: height must be a non-negative finite number');
+        }
+        if (typeof attributes !== 'object' || attributes === null) {
+            throw new Error('GraphicsEngine.createRect: attributes must be an object');
+        }
+        
         const rect = this.createElement('rect');
         rect.setAttribute('x', x);
         rect.setAttribute('y', y);
