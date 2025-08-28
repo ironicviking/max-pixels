@@ -763,6 +763,85 @@ export const SOCIAL = {
     DEFAULT_MAX_SHIELD: 100
 };
 
+// Network and Multiplayer Constants
+export const NETWORK = {
+    // WebSocket connection settings
+    DEFAULT_SERVER_URL: 'ws://localhost:8080',
+    WEBSOCKET_NORMAL_CLOSE_CODE: 1000,
+    MAX_RECONNECT_ATTEMPTS: 5,
+    INITIAL_RECONNECT_DELAY: 1000, // 1 second
+    MAX_RECONNECT_DELAY: 30000, // 30 seconds
+    RECONNECT_BACKOFF_MULTIPLIER: 2,
+    
+    // Heartbeat and keep-alive
+    HEARTBEAT_INTERVAL: 5000, // 5 seconds
+    HEARTBEAT_TIMEOUT: 10000, // 10 seconds
+    CONNECTION_TIMEOUT: 30000, // 30 seconds
+    
+    // Player identification
+    PLAYER_ID_SUBSTR_START: 2,
+    PLAYER_ID_SUBSTR_LENGTH: 9,
+    PLAYER_ID_RADIX: 36, // Base36 encoding
+    
+    // Message rate limiting
+    MESSAGE_RATE_LIMIT: 50, // messages per second
+    MOVEMENT_UPDATE_RATE: 20, // updates per second
+    POSITION_SYNC_INTERVAL: 100, // milliseconds
+    
+    // Latency compensation
+    INTERPOLATION_DELAY: 100, // milliseconds
+    PREDICTION_TIME: 50, // milliseconds
+    LAG_COMPENSATION_THRESHOLD: 200, // milliseconds
+    
+    // Game state synchronization
+    FULL_STATE_SYNC_INTERVAL: 5000, // 5 seconds
+    DELTA_STATE_SYNC_INTERVAL: 100, // 100 milliseconds
+    SNAPSHOT_BUFFER_SIZE: 64,
+    
+    // Chat and communication
+    MAX_CHAT_MESSAGE_LENGTH: 256,
+    CHAT_RATE_LIMIT: 5, // messages per second
+    CHAT_HISTORY_SIZE: 100,
+    
+    // Server discovery and rooms
+    MAX_ROOM_PLAYERS: 32,
+    DEFAULT_ROOM_NAME: 'Sector-Alpha',
+    ROOM_LIST_REFRESH_INTERVAL: 30000, // 30 seconds
+    
+    // Bandwidth optimization
+    POSITION_PRECISION: 2, // decimal places for coordinates
+    ROTATION_PRECISION: 1, // decimal places for rotation
+    VELOCITY_PRECISION: 1, // decimal places for velocity
+    
+    // Message types
+    MESSAGE_TYPES: {
+        PLAYER_JOIN: 'player_join',
+        PLAYER_LEAVE: 'player_leave',
+        PLAYER_MOVE: 'player_move',
+        PLAYER_FIRE: 'player_fire',
+        PLAYER_DAMAGE: 'player_damage',
+        GAME_STATE: 'game_state',
+        CHAT_MESSAGE: 'chat_message',
+        HEARTBEAT: 'heartbeat',
+        PING: 'ping',
+        PONG: 'pong',
+        ROOM_JOIN: 'room_join',
+        ROOM_LEAVE: 'room_leave',
+        TRADE_REQUEST: 'trade_request',
+        TRADE_RESPONSE: 'trade_response',
+        ERROR: 'error'
+    },
+    
+    // Connection states
+    CONNECTION_STATES: {
+        DISCONNECTED: 'disconnected',
+        CONNECTING: 'connecting',
+        CONNECTED: 'connected',
+        RECONNECTING: 'reconnecting',
+        ERROR: 'error'
+    }
+};
+
 // World Generation Constants
 export const WORLD_GEN = {
     // Star system generation

@@ -3,15 +3,7 @@
  * Handles WebSocket connections and real-time multiplayer communication
  */
 
-// Network timing constants
-const INITIAL_RECONNECT_DELAY = 1000; // 1 second
-const WEBSOCKET_NORMAL_CLOSE = 1000; // Normal close code
-const HEARTBEAT_TIMEOUT = 10000; // 10 seconds
-const HEARTBEAT_INTERVAL = 5000; // 5 seconds
-const MAX_RECONNECT_DELAY = 30000; // 30 seconds
-const PLAYER_ID_SUBSTR_START = 2; // Start position for substring
-const PLAYER_ID_SUBSTR_LENGTH = 9; // Length of random string
-const PLAYER_ID_RADIX = 36; // Base36 encoding for player ID generation
+import { NETWORK } from '../constants.js';
 
 export class NetworkManager {
     constructor() {
@@ -21,22 +13,13 @@ export class NetworkManager {
         this.messageHandlers = new Map();
         this.connectionCallbacks = new Map();
         this.reconnectAttempts = 0;
-        this.maxReconnectAttempts = 5;
-        this.reconnectDelay = INITIAL_RECONNECT_DELAY; // Start with 1 second
+        this.maxReconnectAttempts = NETWORK.MAX_RECONNECT_ATTEMPTS;
+        this.reconnectDelay = NETWORK.INITIAL_RECONNECT_DELAY;
         this.heartbeatInterval = null;
         this.lastHeartbeat = null;
         
-        // Message types
-        this.MessageTypes = {
-            PLAYER_JOIN: 'player_join',
-            PLAYER_LEAVE: 'player_leave',
-            PLAYER_MOVE: 'player_move',
-            PLAYER_FIRE: 'player_fire',
-            GAME_STATE: 'game_state',
-            CHAT_MESSAGE: 'chat_message',
-            HEARTBEAT: 'heartbeat',
-            ERROR: 'error'
-        };
+        // Message types - use constants from NETWORK
+        this.MessageTypes = NETWORK.MESSAGE_TYPES;
         
         console.log('NetworkManager initialized');
     }
@@ -47,7 +30,7 @@ export class NetworkManager {
      * @param {string} playerId - Unique player identifier
      * @returns {Promise<boolean>} - Connection success
      */
-    async connect(serverUrl = 'ws://localhost:8080', playerId = null) {
+    async connect(serverUrl = NETWORK.DEFAULT_SERVER_URL, playerId = null) {
         if (this.isConnected) {
             console.warn('Already connected to server');
             return true;
@@ -62,7 +45,7 @@ export class NetworkManager {
                     console.log('Connected to game server');
                     this.isConnected = true;
                     this.reconnectAttempts = 0;
-                    this.reconnectDelay = INITIAL_RECONNECT_DELAY;
+                    this.reconnectDelay = NETWORK.INITIAL_RECONNECT_DELAY;
                     
                     // Start heartbeat
                     this.startHeartbeat();
@@ -287,11 +270,11 @@ export class NetworkManager {
                 
                 // Check if we haven't received a heartbeat response in too long
                 const timeSinceLastHeartbeat = Date.now() - this.lastHeartbeat;
-                if (timeSinceLastHeartbeat > HEARTBEAT_TIMEOUT) { // 10 seconds
+                if (timeSinceLastHeartbeat > NETWORK.HEARTBEAT_TIMEOUT) {
                     console.warn('Heartbeat timeout, connection may be lost');
                 }
             }
-        }, HEARTBEAT_INTERVAL); // Send heartbeat every 5 seconds
+        }, NETWORK.HEARTBEAT_INTERVAL);
     }
     
     /**
@@ -321,7 +304,7 @@ export class NetworkManager {
                 
                 if (this.reconnectAttempts < this.maxReconnectAttempts) {
                     // Exponential backoff
-                    this.reconnectDelay = Math.min(this.reconnectDelay * 2, MAX_RECONNECT_DELAY);
+                    this.reconnectDelay = Math.min(this.reconnectDelay * NETWORK.RECONNECT_BACKOFF_MULTIPLIER, NETWORK.MAX_RECONNECT_DELAY);
                     this.attemptReconnect(serverUrl);
                 } else {
                     console.error('Max reconnection attempts reached');
@@ -354,7 +337,7 @@ export class NetworkManager {
      * @returns {string} - Unique player ID
      */
     generatePlayerId() {
-        return `player_${Date.now()}_${Math.random().toString(PLAYER_ID_RADIX).substr(PLAYER_ID_SUBSTR_START, PLAYER_ID_SUBSTR_LENGTH)}`;
+        return `player_${Date.now()}_${Math.random().toString(NETWORK.PLAYER_ID_RADIX).substr(NETWORK.PLAYER_ID_SUBSTR_START, NETWORK.PLAYER_ID_SUBSTR_LENGTH)}`;
     }
     
     /**
