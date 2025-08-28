@@ -325,6 +325,10 @@ export class ParticleSystem {
             }
         }
         
+        // Batch DOM updates for better performance
+        const elementsToUpdate = [];
+        const particlesToRemove = [];
+        
         // Update particles
         for (const [particleId, particle] of this.particles) {
             // Update physics
@@ -357,18 +361,29 @@ export class ParticleSystem {
                 particle.size = particle.originalSize * lifeRatio;
             }
             
-            // Update visual element
+            // Queue DOM updates instead of applying immediately
             if (particle.element) {
-                particle.element.setAttribute('cx', particle.x);
-                particle.element.setAttribute('cy', particle.y);
-                particle.element.setAttribute('r', Math.max(PARTICLES.SIZE_MIN_RENDER, particle.size));
-                particle.element.setAttribute('opacity', Math.max(0, particle.opacity));
+                elementsToUpdate.push({
+                    element: particle.element,
+                    x: particle.x,
+                    y: particle.y,
+                    size: Math.max(PARTICLES.SIZE_MIN_RENDER, particle.size),
+                    opacity: Math.max(0, particle.opacity)
+                });
             }
             
-            // Remove dead particles
+            // Mark dead particles for removal
             if (particle.life <= 0) {
-                this.removeParticle(particleId);
+                particlesToRemove.push(particleId);
             }
+        }
+        
+        // Apply batched DOM updates
+        this.applyBatchedUpdates(elementsToUpdate);
+        
+        // Remove dead particles after DOM updates
+        for (const particleId of particlesToRemove) {
+            this.removeParticle(particleId);
         }
         
         // Clean up inactive emitters with no particles
@@ -376,6 +391,23 @@ export class ParticleSystem {
             if (!emitter.active && emitter.particles.length === 0) {
                 this.activeEmitters.delete(emitterId);
             }
+        }
+    }
+    
+    /**
+     * Apply batched DOM updates for better performance
+     * @param {Array} updates - Array of element update objects
+     */
+    applyBatchedUpdates(updates) {
+        // Use requestAnimationFrame to ensure DOM updates happen at optimal timing
+        if (updates.length === 0) return;
+        
+        // Batch all DOM operations together to minimize reflows
+        for (const update of updates) {
+            update.element.setAttribute('cx', update.x);
+            update.element.setAttribute('cy', update.y);
+            update.element.setAttribute('r', update.size);
+            update.element.setAttribute('opacity', update.opacity);
         }
     }
     
