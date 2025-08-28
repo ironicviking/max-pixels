@@ -161,6 +161,14 @@ export class GraphicsEngine {
     }
     
     createPath(d, attributes = {}) {
+        // Parameter validation
+        if (typeof d !== 'string' || d.trim() === '') {
+            throw new Error('Invalid d parameter: must be a non-empty string');
+        }
+        if (attributes !== null && (typeof attributes !== 'object' || Array.isArray(attributes))) {
+            throw new Error('Invalid attributes parameter: must be an object');
+        }
+        
         const path = this.createElement('path');
         path.setAttribute('d', d);
         

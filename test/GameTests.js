@@ -222,6 +222,38 @@ describe('Graphics Engine', function() {
         
         TestRunner.cleanupTestDOM();
     });
+    
+    test('should validate createPath parameters', function() {
+        const testContainer = TestRunner.setupTestDOM();
+        const canvas = testContainer.querySelector('#gameCanvas');
+        const graphics = new GraphicsEngine(canvas);
+        
+        // Test valid parameters
+        const path = graphics.createPath('M10,20 L30,40');
+        assert(path !== null, 'Should create path with valid parameters');
+        assertEqual(path.tagName, 'path', 'Should create path element');
+        assertEqual(path.getAttribute('d'), 'M10,20 L30,40', 'Should set d attribute correctly');
+        
+        // Test invalid d parameter - non-string values
+        assertThrows(() => graphics.createPath(null), 'Should throw for null d');
+        assertThrows(() => graphics.createPath(undefined), 'Should throw for undefined d');
+        assertThrows(() => graphics.createPath(123), 'Should throw for numeric d');
+        assertThrows(() => graphics.createPath({}), 'Should throw for object d');
+        assertThrows(() => graphics.createPath([]), 'Should throw for array d');
+        assertThrows(() => graphics.createPath(true), 'Should throw for boolean d');
+        
+        // Test invalid d parameter - empty or whitespace-only strings
+        assertThrows(() => graphics.createPath(''), 'Should throw for empty string d');
+        assertThrows(() => graphics.createPath('   '), 'Should throw for whitespace-only d');
+        assertThrows(() => graphics.createPath('\t\n'), 'Should throw for tab/newline only d');
+        
+        // Test invalid attributes parameter
+        assertThrows(() => graphics.createPath('M10,20 L30,40', null), 'Should throw for null attributes');
+        assertThrows(() => graphics.createPath('M10,20 L30,40', 'invalid'), 'Should throw for non-object attributes');
+        assertThrows(() => graphics.createPath('M10,20 L30,40', []), 'Should throw for array attributes');
+        
+        TestRunner.cleanupTestDOM();
+    });
 });
 
 /**
