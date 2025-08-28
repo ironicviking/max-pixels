@@ -78,6 +78,10 @@ class MaxPixelsGame {
         // Server synchronization
         this.lastServerUpdate = null;
         
+        // Pause/Menu system
+        this.isPaused = false;
+        this.pauseMenuElement = null;
+        
         console.log('Max-Pixels initializing...');
         this.init();
     }
@@ -523,6 +527,12 @@ class MaxPixelsGame {
 
     update(timestamp) {
         this.handleInput();
+        
+        // Skip game updates when paused (but still process input for menu control)
+        if (this.isPaused) {
+            return;
+        }
+        
         this.updatePlayer();
         this.updateEnergy();
         this.updateHealth();
@@ -535,6 +545,17 @@ class MaxPixelsGame {
     }
     
     handleInput() {
+        // Handle menu/pause toggle first
+        if (this.input.justPressed('menu')) {
+            this.togglePause();
+            return; // Don't process other inputs when toggling pause
+        }
+        
+        // Skip input processing if game is paused
+        if (this.isPaused) {
+            return;
+        }
+        
         const movement = this.input.getMovementVector();
         this.player.velocity.x = movement.x;
         this.player.velocity.y = movement.y;
@@ -874,23 +895,32 @@ class MaxPixelsGame {
     showEnergyRechargeEffect() {
         // Create a brief visual flash on the energy bar to indicate recharge
         const energyFill = document.getElementById('energy-fill');
-        if (!energyFill) return;
+        if (energyFill) {
+            // Save original styles
+            const originalBackground = energyFill.style.backgroundColor;
+            const originalBoxShadow = energyFill.style.boxShadow;
+            
+            // Apply recharge flash effect
+            energyFill.style.backgroundColor = '#00ffff';
+            energyFill.style.boxShadow = '0 0 8px #00ffff';
+            energyFill.style.transition = 'all 0.1s ease-in-out';
+            
+            // Revert to normal after brief flash
+            setTimeout(() => {
+                energyFill.style.backgroundColor = originalBackground || '#44ff44';
+                energyFill.style.boxShadow = originalBoxShadow || '';
+                energyFill.style.transition = '';
+            }, 150);
+        }
         
-        // Save original styles
-        const originalBackground = energyFill.style.backgroundColor;
-        const originalBoxShadow = energyFill.style.boxShadow;
-        
-        // Apply recharge flash effect
-        energyFill.style.backgroundColor = '#00ffff';
-        energyFill.style.boxShadow = '0 0 8px #00ffff';
-        energyFill.style.transition = 'all 0.1s ease-in-out';
-        
-        // Revert to normal after brief flash
-        setTimeout(() => {
-            energyFill.style.backgroundColor = originalBackground || '#44ff44';
-            energyFill.style.boxShadow = originalBoxShadow || '';
-            energyFill.style.transition = '';
-        }, 150);
+        // Create enhanced particle effect around the player ship
+        this.particles.createEnergyRechargeEffect(this.player.x, this.player.y, {
+            colors: ['#00ffff', '#44ffff', '#88ffff', '#aaccff', '#ffffff'],
+            particleCount: 12,
+            particleLife: 1200,
+            velocity: { min: 30, max: 60 },
+            size: { min: 2, max: 5 }
+        });
     }
     
     updateThrusterEffects() {
@@ -1992,6 +2022,213 @@ class MaxPixelsGame {
             setTimeout(() => {
                 statusElement.style.opacity = '0.7';
             }, 3000);
+        }
+    }
+    
+    togglePause() {
+        this.isPaused = !this.isPaused;
+        
+        if (this.isPaused) {
+            this.showPauseMenu();
+            console.log('Game paused');
+        } else {
+            this.hidePauseMenu();
+            console.log('Game resumed');
+        }
+    }
+    
+    showPauseMenu() {
+        if (this.pauseMenuElement) {
+            this.pauseMenuElement.style.display = 'flex';
+            return;
+        }
+        
+        this.pauseMenuElement = document.createElement('div');
+        this.pauseMenuElement.id = 'pause-menu';
+        this.pauseMenuElement.innerHTML = `
+            <div class="pause-menu-content">
+                <h2>GAME PAUSED</h2>
+                <div class="pause-menu-section">
+                    <h3>Controls</h3>
+                    <div class="controls-list">
+                        <div><span class="key">WASD / Arrow Keys</span> Move</div>
+                        <div><span class="key">Shift</span> Boost</div>
+                        <div><span class="key">Space</span> Fire Laser</div>
+                        <div><span class="key">F</span> Interact / Dock / Jump</div>
+                        <div><span class="key">Q / E</span> Zoom Out / In</div>
+                        <div><span class="key">Escape</span> Pause Menu</div>
+                    </div>
+                </div>
+                <div class="pause-menu-section">
+                    <h3>Options</h3>
+                    <div class="options-list">
+                        <button id="toggle-audio" class="menu-button">
+                            Audio: ${this.audio && this.audio.enabled ? 'ON' : 'OFF'}
+                        </button>
+                        <button id="resume-game" class="menu-button primary">Resume Game</button>
+                    </div>
+                </div>
+                <div class="pause-menu-section">
+                    <h3>Status</h3>
+                    <div class="status-info">
+                        <div>Health: <span class="status-value">${Math.round(this.player.health)}/${PLAYER.MAX_HEALTH}</span></div>
+                        <div>Energy: <span class="status-value">${Math.round(this.player.energy)}/${WEAPONS.MAX_ENERGY}</span></div>
+                        <div>Sector: <span class="status-value">${this.navigation.getCurrentSector()?.name || 'Unknown'}</span></div>
+                        <div>Network: <span class="status-value">${this.network.isConnected ? 'Connected' : 'Offline'}</span></div>
+                    </div>
+                </div>
+                <div class="pause-footer">
+                    <p>Press <span class="key">Escape</span> to resume</p>
+                </div>
+            </div>
+        `;
+        
+        this.pauseMenuElement.style.cssText = `
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0, 20, 40, 0.95);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            font-family: 'Courier New', monospace;
+            backdrop-filter: blur(10px);
+        `;
+        
+        // Add CSS styles for the pause menu
+        const style = document.createElement('style');
+        style.textContent = `
+            .pause-menu-content {
+                background: rgba(0, 50, 100, 0.9);
+                border: 2px solid #4488ff;
+                border-radius: 12px;
+                padding: 30px;
+                max-width: 500px;
+                width: 90%;
+                max-height: 80%;
+                overflow-y: auto;
+                text-align: center;
+                box-shadow: 0 0 30px rgba(68, 136, 255, 0.3);
+            }
+            
+            .pause-menu-content h2 {
+                color: #ffffff;
+                font-size: 2.5em;
+                margin: 0 0 30px 0;
+                text-shadow: 0 0 10px #4488ff;
+            }
+            
+            .pause-menu-section {
+                margin-bottom: 25px;
+                text-align: left;
+            }
+            
+            .pause-menu-section h3 {
+                color: #88ccff;
+                font-size: 1.4em;
+                margin: 0 0 15px 0;
+                border-bottom: 1px solid #4488ff;
+                padding-bottom: 5px;
+            }
+            
+            .controls-list > div, .status-info > div {
+                color: #ffffff;
+                margin: 8px 0;
+                padding: 5px 0;
+                font-size: 1.1em;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            }
+            
+            .key {
+                background: #4488ff;
+                color: #ffffff;
+                padding: 3px 8px;
+                border-radius: 4px;
+                font-weight: bold;
+                min-width: 120px;
+                text-align: center;
+                display: inline-block;
+                margin-right: 10px;
+            }
+            
+            .status-value {
+                color: #88ccff;
+                font-weight: bold;
+            }
+            
+            .menu-button {
+                background: rgba(68, 136, 255, 0.3);
+                border: 1px solid #4488ff;
+                color: #ffffff;
+                padding: 10px 20px;
+                margin: 5px;
+                border-radius: 6px;
+                font-family: 'Courier New', monospace;
+                font-size: 1em;
+                cursor: pointer;
+                transition: all 0.2s ease;
+                min-width: 150px;
+            }
+            
+            .menu-button:hover {
+                background: rgba(68, 136, 255, 0.5);
+                box-shadow: 0 0 8px rgba(68, 136, 255, 0.4);
+            }
+            
+            .menu-button.primary {
+                background: #4488ff;
+            }
+            
+            .menu-button.primary:hover {
+                background: #88ccff;
+                color: #002244;
+            }
+            
+            .options-list {
+                text-align: center;
+            }
+            
+            .pause-footer {
+                margin-top: 20px;
+                padding-top: 15px;
+                border-top: 1px solid #4488ff;
+                color: #88ccff;
+                font-size: 0.9em;
+            }
+        `;
+        
+        if (!document.querySelector('#pause-menu-styles')) {
+            style.id = 'pause-menu-styles';
+            document.head.appendChild(style);
+        }
+        
+        document.body.appendChild(this.pauseMenuElement);
+        
+        // Set up event listeners
+        const resumeButton = this.pauseMenuElement.querySelector('#resume-game');
+        const audioButton = this.pauseMenuElement.querySelector('#toggle-audio');
+        
+        resumeButton.addEventListener('click', () => {
+            this.togglePause();
+        });
+        
+        audioButton.addEventListener('click', () => {
+            if (this.audio.enabled) {
+                this.audio.disable();
+                audioButton.textContent = 'Audio: OFF';
+            } else {
+                this.audio.enable();
+                audioButton.textContent = 'Audio: ON';
+            }
+        });
+    }
+    
+    hidePauseMenu() {
+        if (this.pauseMenuElement) {
+            this.pauseMenuElement.style.display = 'none';
         }
     }
 }

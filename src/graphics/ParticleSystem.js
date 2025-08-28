@@ -202,6 +202,33 @@ export class ParticleSystem {
     }
     
     /**
+     * Create energy recharge effect around player ship
+     * @param {number} x - X position
+     * @param {number} y - Y position  
+     * @param {Object} options - Effect options
+     */
+    createEnergyRechargeEffect(x, y, options = {}) {
+        const config = {
+            particleCount: options.particleCount || PARTICLES.ENERGY_RECHARGE_COUNT,
+            particleLife: options.particleLife || PARTICLES.ENERGY_RECHARGE_LIFE,
+            spread: GRAPHICS.PI_TIMES_2, // Full circle
+            velocity: options.velocity || { min: PARTICLES.ENERGY_RECHARGE_VELOCITY_MIN, max: PARTICLES.ENERGY_RECHARGE_VELOCITY_MAX },
+            size: options.size || { min: PARTICLES.ENERGY_RECHARGE_SIZE_MIN, max: PARTICLES.ENERGY_RECHARGE_SIZE_MAX },
+            colors: options.colors || ['#00ffff', '#44ffff', '#88ffff', '#ffffff'],
+            opacity: { start: 0.9, end: 0.0 },
+            gravity: { x: 0, y: PARTICLES.ENERGY_RECHARGE_GRAVITY_Y }, // Slight upward drift
+            wind: { x: 0, y: 0 },
+            fadeOut: true,
+            shrink: true,
+            burst: true,
+            duration: 0,
+            ...options
+        };
+        
+        return this.createEmitter(x, y, config);
+    }
+    
+    /**
      * Emit particles in a burst
      */
     burstEmit(emitter) {
