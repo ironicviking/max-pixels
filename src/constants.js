@@ -101,32 +101,43 @@ export const PLAYER = {
 
 // Graphics Constants
 export const GRAPHICS = {
-    // Star field
+    // Star field generation
     STAR_COUNT: 200,
     STAR_SIZE_MIN: 1,
     STAR_SIZE_MAX: 3,
     STAR_OPACITY_MIN: 0.3,
     STAR_OPACITY_MAX: 0.9,
     
-    // Star classification system (based on real stellar types)
+    // Star classification system (based on real stellar types - ordered by temperature)
     STAR_TYPES: {
+        // Blue supergiants - hottest and rarest
         O: { color: '#9bb0ff', temperature: 30000, rarity: 0.00003, sizeMultiplier: 2.5 },
+        // Blue-white stars  
         B: { color: '#aabfff', temperature: 10000, rarity: 0.13, sizeMultiplier: 2.0 },
+        // White stars
         A: { color: '#cad7ff', temperature: 7500, rarity: 0.6, sizeMultiplier: 1.5 },
+        // Yellow-white stars
         F: { color: '#f8f7ff', temperature: 6000, rarity: 3, sizeMultiplier: 1.3 },
+        // Yellow stars (like our Sun)
         G: { color: '#fff4ea', temperature: 5200, rarity: 7.6, sizeMultiplier: 1.0 },
+        // Orange stars
         K: { color: '#ffd2a1', temperature: 3700, rarity: 12.1, sizeMultiplier: 0.8 },
+        // Red dwarfs - coolest and most common
         M: { color: '#ffad51', temperature: 2400, rarity: 76.45, sizeMultiplier: 0.5 }
     },
     
-    // Star effects
+    // Star visual effects and animations
     STAR_TWINKLE_CHANCE: 0.3,
     STAR_TWINKLE_INTENSITY: 0.4,
     STAR_TWINKLE_MIN_DURATION: 2,
     STAR_TWINKLE_MAX_DURATION: 3,
+    
+    // Binary star systems
     STAR_BINARY_CHANCE: 0.05,
     STAR_BINARY_SEPARATION: 8,
     STAR_COMPANION_SIZE_RATIO: 0.7,
+    
+    // Star generation calculations
     STAR_CUMULATIVE_RARITY: 100,
     
     // Nebula effects
