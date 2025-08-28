@@ -102,6 +102,8 @@ function setupTestEnvironment() {
                 element.appendChild = function(child) { 
                     this._children = this._children || [];
                     this._children.push(child);
+                    // Set parent-child relationship
+                    child.parentNode = this;
                     // Register child elements with tagName for querySelector
                     if (child && child.tagName) {
                         if (!this._childrenByTag) {
@@ -119,6 +121,32 @@ function setupTestEnvironment() {
                         this._elementsById[child.id] = child;
                     }
                     return child; 
+                };
+                
+                // Add removeChild method for SVG elements
+                element.removeChild = function(child) {
+                    if (!this._children) return null;
+                    const index = this._children.indexOf(child);
+                    if (index > -1) {
+                        this._children.splice(index, 1);
+                        child.parentNode = null;
+                    }
+                    // Remove from tagName lookup
+                    if (child && child.tagName && this._childrenByTag) {
+                        const tagName = child.tagName.toLowerCase();
+                        const children = this._childrenByTag.get(tagName);
+                        if (children) {
+                            const tagIndex = children.indexOf(child);
+                            if (tagIndex > -1) {
+                                children.splice(tagIndex, 1);
+                            }
+                        }
+                    }
+                    // Remove from ID lookup
+                    if (child && child.id && this._elementsById) {
+                        delete this._elementsById[child.id];
+                    }
+                    return child;
                 };
                 element.querySelector = function(selector) { 
                     // Handle ID selectors
@@ -177,6 +205,8 @@ function setupTestEnvironment() {
                         appendChild: function(child) { 
                             this._children = this._children || [];
                             this._children.push(child);
+                            // Set parent-child relationship
+                            child.parentNode = this;
                             // Register child elements with tagName for querySelector
                             if (child.tagName && !this._childrenByTag) {
                                 this._childrenByTag = new Map();
@@ -188,9 +218,47 @@ function setupTestEnvironment() {
                                 }
                                 this._childrenByTag.get(tagName).push(child);
                             }
+                            // Also register by ID
+                            if (child && child.id) {
+                                this._elementsById = this._elementsById || {};
+                                this._elementsById[child.id] = child;
+                            }
                             return child; 
                         },
+                        
+                        // Add removeChild method for gameCanvas
+                        removeChild: function(child) {
+                            if (!this._children) return null;
+                            const index = this._children.indexOf(child);
+                            if (index > -1) {
+                                this._children.splice(index, 1);
+                                child.parentNode = null;
+                            }
+                            // Remove from tagName lookup
+                            if (child && child.tagName && this._childrenByTag) {
+                                const tagName = child.tagName.toLowerCase();
+                                const children = this._childrenByTag.get(tagName);
+                                if (children) {
+                                    const tagIndex = children.indexOf(child);
+                                    if (tagIndex > -1) {
+                                        children.splice(tagIndex, 1);
+                                    }
+                                }
+                            }
+                            // Remove from ID lookup
+                            if (child && child.id && this._elementsById) {
+                                delete this._elementsById[child.id];
+                            }
+                            return child;
+                        },
                         querySelector: function(selector) { 
+                            // Handle ID selectors
+                            if (selector.startsWith('#')) {
+                                const id = selector.substring(1);
+                                if (this._elementsById && this._elementsById[id]) {
+                                    return this._elementsById[id];
+                                }
+                            }
                             // Support basic tag name queries for GraphicsEngine
                             if (selector === 'defs') {
                                 return this._children.find(child => child.tagName === 'DEFS') || null;
@@ -305,6 +373,8 @@ function setupTestEnvironment() {
                 appendChild: function(child) { 
                     this._children = this._children || [];
                     this._children.push(child);
+                    // Set parent-child relationship
+                    child.parentNode = this;
                     // Register child elements with tagName for querySelector
                     if (child && child.tagName) {
                         if (!this._childrenByTag) {
@@ -327,13 +397,22 @@ function setupTestEnvironment() {
                             this._childrenByTag.get(originalTagName).push(child);
                         }
                     }
+                    // Also register by ID
+                    if (child && child.id) {
+                        this._elementsById = this._elementsById || {};
+                        this._elementsById[child.id] = child;
+                    }
                     return child; 
                 },
                 querySelector: function(selector) { 
                     // Handle ID selectors
                     if (selector.startsWith('#')) {
                         const id = selector.substring(1);
-                        // Check direct children first
+                        // Check ID lookup table first (faster)
+                        if (this._elementsById && this._elementsById[id]) {
+                            return this._elementsById[id];
+                        }
+                        // Fallback to recursive search if not in table
                         if (this._children) {
                             for (let child of this._children) {
                                 if (child.id === id) {
@@ -393,6 +472,44 @@ function setupTestEnvironment() {
                     
                     return results; 
                 },
+                
+                // Add removeChild method
+                removeChild: function(child) {
+                    if (!this._children) return null;
+                    const index = this._children.indexOf(child);
+                    if (index > -1) {
+                        this._children.splice(index, 1);
+                        child.parentNode = null;
+                    }
+                    // Remove from tagName lookup
+                    if (child && child.tagName && this._childrenByTag) {
+                        const tagName = child.tagName.toLowerCase();
+                        const children = this._childrenByTag.get(tagName);
+                        if (children) {
+                            const tagIndex = children.indexOf(child);
+                            if (tagIndex > -1) {
+                                children.splice(tagIndex, 1);
+                            }
+                        }
+                        // Also remove from original case if different
+                        const originalTagName = child.tagName === 'ANIMATETRANSFORM' ? 'animateTransform' : tagName;
+                        if (originalTagName !== tagName) {
+                            const originalChildren = this._childrenByTag.get(originalTagName);
+                            if (originalChildren) {
+                                const originalIndex = originalChildren.indexOf(child);
+                                if (originalIndex > -1) {
+                                    originalChildren.splice(originalIndex, 1);
+                                }
+                            }
+                        }
+                    }
+                    // Remove from ID lookup
+                    if (child && child.id && this._elementsById) {
+                        delete this._elementsById[child.id];
+                    }
+                    return child;
+                },
+                
                 addEventListener: function() {},
                 removeEventListener: function() {},
                 dispatchEvent: function() { return true; }
