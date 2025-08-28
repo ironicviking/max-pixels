@@ -263,6 +263,204 @@ export class GraphicsEngine {
         return dustGroup;
     }
     
+    createSpaceDebrisField(width, height, options = {}) {
+        const {
+            debrisCount = GRAPHICS.DEBRIS_FIELD_COUNT_MIN + Math.floor(Math.random() * (GRAPHICS.DEBRIS_FIELD_COUNT_MAX - GRAPHICS.DEBRIS_FIELD_COUNT_MIN)),
+            density = GRAPHICS.DEBRIS_DENSITY_NORMAL,
+            minSize = GRAPHICS.DEBRIS_SIZE_MIN,
+            maxSize = GRAPHICS.DEBRIS_SIZE_MAX,
+            types = GRAPHICS.DEBRIS_TYPES
+        } = options;
+        
+        const debrisGroup = this.createGroup({ id: 'spaceDebrisField' });
+        const adjustedCount = Math.floor(debrisCount * density);
+        
+        // Create debris clusters for more realistic distribution
+        const clusterCount = GRAPHICS.DEBRIS_CLUSTER_COUNT_MIN + Math.floor(Math.random() * (GRAPHICS.DEBRIS_CLUSTER_COUNT_MAX - GRAPHICS.DEBRIS_CLUSTER_COUNT_MIN));
+        
+        for (let cluster = 0; cluster < clusterCount; cluster++) {
+            const clusterX = Math.random() * width;
+            const clusterY = Math.random() * height;
+            const debrisPerCluster = Math.floor(adjustedCount / clusterCount);
+            
+            for (let i = 0; i < debrisPerCluster; i++) {
+                // Position debris within cluster spread
+                const angle = Math.random() * GRAPHICS.FULL_ROTATION * GRAPHICS.FULL_CIRCLE;
+                const distance = Math.random() * GRAPHICS.DEBRIS_CLUSTER_SPREAD;
+                const x = clusterX + Math.cos(angle * Math.PI / GRAPHICS.ANGLE_180) * distance;
+                const y = clusterY + Math.sin(angle * Math.PI / GRAPHICS.ANGLE_180) * distance;
+                
+                // Ensure debris stays within bounds
+                if (x < 0 || x > width || y < 0 || y > height) {
+                    continue;
+                }
+                
+                const debrisType = types[Math.floor(Math.random() * types.length)];
+                const size = minSize + Math.random() * (maxSize - minSize);
+                const rotation = Math.random() * GRAPHICS.DEBRIS_ROTATION_MAX;
+                const opacity = GRAPHICS.DEBRIS_OPACITY_MIN + Math.random() * (GRAPHICS.DEBRIS_OPACITY_MAX - GRAPHICS.DEBRIS_OPACITY_MIN);
+                
+                const debrisElement = this.createDebrisPiece(x, y, size, debrisType, rotation, opacity);
+                debrisGroup.appendChild(debrisElement);
+            }
+        }
+        
+        return debrisGroup;
+    }
+    
+    createDebrisPiece(x, y, size, type, rotation, opacity) {
+        const debrisGroup = this.createGroup({
+            transform: `translate(${x}, ${y}) rotate(${rotation})`,
+            id: this.generateId(`debris_${type}`)
+        });
+        
+        let debrisShape;
+        const baseColor = '#666666';
+        const highlightColor = '#999999';
+        
+        switch (type) {
+        case 'hull_fragment':
+            // Irregular hull piece
+            debrisShape = this.createPath(
+                `M ${-size} ${-size * GRAPHICS.RATIO_SIZE_SMALL} L ${size * GRAPHICS.RATIO_SIZE_LARGE} ${-size} L ${size} ${size * GRAPHICS.RATIO_SIZE_SMALL} L ${-size * GRAPHICS.RATIO_SIZE_SMALL} ${size} Z`,
+                {
+                    fill: baseColor,
+                    stroke: highlightColor,
+                    'stroke-width': GRAPHICS.RATIO_SIZE_SMALL,
+                    opacity: opacity
+                }
+            );
+            break;
+                
+        case 'engine_part':
+            // Cylindrical engine component
+            debrisShape = this.createGroup();
+            const engineMain = this.createRect(-size * GRAPHICS.RATIO_SIZE_SMALL, -size, size, size * GRAPHICS.FULL_CIRCLE, {
+                fill: '#444444',
+                stroke: '#777777',
+                'stroke-width': 1,
+                opacity: opacity
+            });
+            const engineNozzle = this.createPath(
+                `M ${-size * GRAPHICS.RATIO_SIZE_MID} ${size} L ${size * GRAPHICS.RATIO_SIZE_MID} ${size} L ${size * GRAPHICS.RATIO_SIZE_LARGE} ${size * GRAPHICS.GLOW_INTENSITY} L ${-size * GRAPHICS.RATIO_SIZE_LARGE} ${size * GRAPHICS.GLOW_INTENSITY} Z`,
+                {
+                    fill: '#222222',
+                    stroke: '#555555',
+                    'stroke-width': 1,
+                    opacity: opacity
+                }
+            );
+            debrisShape.appendChild(engineMain);
+            debrisShape.appendChild(engineNozzle);
+            break;
+                
+        case 'solar_panel':
+            // Rectangular solar panel
+            debrisShape = this.createGroup();
+            const panelBase = this.createRect(-size, -size * GRAPHICS.RATIO_SIZE_SMALL, size * GRAPHICS.FULL_CIRCLE, size, {
+                fill: '#1a1a3a',
+                stroke: '#4444aa',
+                'stroke-width': 1,
+                opacity: opacity
+            });
+                // Add grid pattern to solar panel
+            for (let i = 0; i < GRAPHICS.COUNT_MEDIUM; i++) {
+                const gridLine = this.createLine(
+                    -size + (i * size * GRAPHICS.RATIO_SIZE_SMALL), -size * GRAPHICS.RATIO_SIZE_SMALL,
+                    -size + (i * size * GRAPHICS.RATIO_SIZE_SMALL), size * GRAPHICS.RATIO_SIZE_LARGE,
+                    {
+                        stroke: '#333366',
+                        'stroke-width': 0.5,
+                        opacity: opacity * GRAPHICS.RATIO_OPACITY_MID
+                    }
+                );
+                debrisShape.appendChild(gridLine);
+            }
+            debrisShape.appendChild(panelBase);
+            break;
+                
+        case 'antenna':
+            // Thin antenna structure
+            debrisShape = this.createGroup();
+            const antennaBase = this.createCircle(0, 0, size * GRAPHICS.RATIO_SIZE_SMALL, {
+                fill: baseColor,
+                stroke: highlightColor,
+                'stroke-width': 1,
+                opacity: opacity
+            });
+            const antennaRod = this.createLine(0, 0, 0, -size * GRAPHICS.FULL_CIRCLE, {
+                stroke: '#888888',
+                'stroke-width': GRAPHICS.FULL_CIRCLE,
+                opacity: opacity
+            });
+            const antennaTip = this.createCircle(0, -size * GRAPHICS.FULL_CIRCLE, size * GRAPHICS.RATIO_SIZE_SMALL * GRAPHICS.RATIO_SIZE_SMALL, {
+                fill: '#ff4444',
+                opacity: opacity
+            });
+            debrisShape.appendChild(antennaRod);
+            debrisShape.appendChild(antennaBase);
+            debrisShape.appendChild(antennaTip);
+            break;
+                
+        case 'fuel_tank':
+            // Oval fuel tank
+            debrisShape = this.createGroup();
+            const tank = this.createElement('ellipse');
+            tank.setAttribute('cx', 0);
+            tank.setAttribute('cy', 0);
+            tank.setAttribute('rx', size);
+            tank.setAttribute('ry', size * GRAPHICS.RATIO_SIZE_MID);
+            tank.setAttribute('fill', '#333333');
+            tank.setAttribute('stroke', '#666666');
+            tank.setAttribute('stroke-width', '1');
+            tank.setAttribute('opacity', opacity);
+                
+            // Add tank details
+            const tankStripe = this.createElement('ellipse');
+            tankStripe.setAttribute('cx', 0);
+            tankStripe.setAttribute('cy', 0);
+            tankStripe.setAttribute('rx', size * GRAPHICS.RATIO_OPACITY_HIGH);
+            tankStripe.setAttribute('ry', size * GRAPHICS.RATIO_SIZE_MID * GRAPHICS.RATIO_OPACITY_HIGH);
+            tankStripe.setAttribute('fill', 'none');
+            tankStripe.setAttribute('stroke', '#888888');
+            tankStripe.setAttribute('stroke-width', '0.5');
+            tankStripe.setAttribute('opacity', opacity);
+                
+            debrisShape.appendChild(tank);
+            debrisShape.appendChild(tankStripe);
+            break;
+                
+        default:
+            // Generic debris piece
+            debrisShape = this.createPath(
+                `M ${-size} 0 L ${-size * GRAPHICS.RATIO_SIZE_SMALL} ${-size} L ${size * GRAPHICS.RATIO_SIZE_MID} ${-size * GRAPHICS.RATIO_SIZE_SMALL} L ${size} ${size * GRAPHICS.RATIO_SIZE_SMALL} L 0 ${size} Z`,
+                {
+                    fill: baseColor,
+                    stroke: highlightColor,
+                    'stroke-width': 1,
+                    opacity: opacity
+                }
+            );
+        }
+        
+        debrisGroup.appendChild(debrisShape);
+        
+        // Add subtle drift animation to some debris pieces
+        if (Math.random() < GRAPHICS.DEBRIS_DRIFT_CHANCE) {
+            const driftAnimation = this.createElement('animateTransform');
+            driftAnimation.setAttribute('attributeName', 'transform');
+            driftAnimation.setAttribute('type', 'rotate');
+            driftAnimation.setAttribute('values', `${rotation};${rotation + GRAPHICS.ANGLE_90};${rotation}`);
+            driftAnimation.setAttribute('dur', `${GRAPHICS.DEBRIS_DRIFT_DURATION_MIN + Math.random() * (GRAPHICS.DEBRIS_DRIFT_DURATION_MAX - GRAPHICS.DEBRIS_DRIFT_DURATION_MIN)}s`);
+            driftAnimation.setAttribute('repeatCount', 'indefinite');
+            driftAnimation.setAttribute('begin', `${Math.random() * GRAPHICS.COUNT_LARGE}s`);
+            
+            debrisGroup.appendChild(driftAnimation);
+        }
+        
+        return debrisGroup;
+    }
+    
     createElement(type) {
         return document.createElementNS('http://www.w3.org/2000/svg', type);
     }

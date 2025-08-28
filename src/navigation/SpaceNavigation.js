@@ -27,6 +27,7 @@ export class SpaceNavigation {
             backgroundColor: '#000814',
             nebulaTypes: ['blue', 'purple'],
             dustDensity: 1.0,
+            debrisDensity: 0.3, // Light debris in peaceful sector
             stations: [
                 {
                     id: 'tradingStation',
@@ -69,6 +70,7 @@ export class SpaceNavigation {
             backgroundColor: '#1a0e0e',
             nebulaTypes: ['red', 'purple'],
             dustDensity: 1.5,
+            debrisDensity: 1.2, // Heavy debris in dangerous mining sector
             stations: [
                 {
                     id: 'miningStation',
@@ -119,6 +121,7 @@ export class SpaceNavigation {
             backgroundColor: '#0e1a0e',
             nebulaTypes: ['green', 'blue'],
             dustDensity: 0.7,
+            debrisDensity: 0.8, // Moderate debris in frontier sector
             stations: [
                 {
                     id: 'researchStation',

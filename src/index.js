@@ -198,6 +198,19 @@ class MaxPixelsGame {
             this.graphics.addToLayer('background', dustField);
         }
         
+        // Load space debris field if sector has debris density
+        if (sector.debrisDensity && sector.debrisDensity > 0) {
+            const debrisField = this.graphics.createSpaceDebrisField(
+                sector.bounds.width, 
+                sector.bounds.height, 
+                {
+                    density: sector.debrisDensity,
+                    debrisCount: 10 + Math.floor(sector.bounds.width * sector.bounds.height / 200000)
+                }
+            );
+            this.graphics.addToLayer('background', debrisField);
+        }
+        
         // Load asteroids
         this.createAsteroids(sector.asteroids, sector.bounds);
         
