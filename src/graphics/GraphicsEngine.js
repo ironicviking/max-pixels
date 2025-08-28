@@ -133,6 +133,33 @@ export class GraphicsEngine {
         return this.setAttributes(rect, attributes);
     }
     
+    createLine(x1, y1, x2, y2, attributes = {}) {
+        // Parameter validation
+        if (typeof x1 !== 'number' || !Number.isFinite(x1)) {
+            throw new Error('Invalid x1 parameter: must be a finite number');
+        }
+        if (typeof y1 !== 'number' || !Number.isFinite(y1)) {
+            throw new Error('Invalid y1 parameter: must be a finite number');
+        }
+        if (typeof x2 !== 'number' || !Number.isFinite(x2)) {
+            throw new Error('Invalid x2 parameter: must be a finite number');
+        }
+        if (typeof y2 !== 'number' || !Number.isFinite(y2)) {
+            throw new Error('Invalid y2 parameter: must be a finite number');
+        }
+        if (attributes !== null && (typeof attributes !== 'object' || Array.isArray(attributes))) {
+            throw new Error('Invalid attributes parameter: must be an object');
+        }
+        
+        const line = this.createElement('line');
+        line.setAttribute('x1', x1.toString());
+        line.setAttribute('y1', y1.toString());
+        line.setAttribute('x2', x2.toString());
+        line.setAttribute('y2', y2.toString());
+        
+        return this.setAttributes(line, attributes);
+    }
+    
     createPath(d, attributes = {}) {
         const path = this.createElement('path');
         path.setAttribute('d', d);

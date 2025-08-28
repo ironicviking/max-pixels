@@ -181,6 +181,47 @@ describe('Graphics Engine', function() {
         
         TestRunner.cleanupTestDOM();
     });
+    
+    test('should validate createLine parameters', function() {
+        const testContainer = TestRunner.setupTestDOM();
+        const canvas = testContainer.querySelector('#gameCanvas');
+        const graphics = new GraphicsEngine(canvas);
+        
+        // Test valid parameters
+        const line = graphics.createLine(10, 20, 100, 80);
+        assert(line !== null, 'Should create line with valid parameters');
+        assertEqual(line.tagName, 'line', 'Should create line element');
+        assertEqual(line.getAttribute('x1'), '10', 'Should set x1 correctly');
+        assertEqual(line.getAttribute('y1'), '20', 'Should set y1 correctly');
+        assertEqual(line.getAttribute('x2'), '100', 'Should set x2 correctly');
+        assertEqual(line.getAttribute('y2'), '80', 'Should set y2 correctly');
+        
+        // Test invalid x1 parameter
+        assertThrows(() => graphics.createLine('invalid', 20, 100, 80), 'Should throw for invalid x1');
+        assertThrows(() => graphics.createLine(Infinity, 20, 100, 80), 'Should throw for infinite x1');
+        assertThrows(() => graphics.createLine(NaN, 20, 100, 80), 'Should throw for NaN x1');
+        
+        // Test invalid y1 parameter
+        assertThrows(() => graphics.createLine(10, 'invalid', 100, 80), 'Should throw for invalid y1');
+        assertThrows(() => graphics.createLine(10, Infinity, 100, 80), 'Should throw for infinite y1');
+        assertThrows(() => graphics.createLine(10, NaN, 100, 80), 'Should throw for NaN y1');
+        
+        // Test invalid x2 parameter
+        assertThrows(() => graphics.createLine(10, 20, 'invalid', 80), 'Should throw for invalid x2');
+        assertThrows(() => graphics.createLine(10, 20, Infinity, 80), 'Should throw for infinite x2');
+        assertThrows(() => graphics.createLine(10, 20, NaN, 80), 'Should throw for NaN x2');
+        
+        // Test invalid y2 parameter
+        assertThrows(() => graphics.createLine(10, 20, 100, 'invalid'), 'Should throw for invalid y2');
+        assertThrows(() => graphics.createLine(10, 20, 100, Infinity), 'Should throw for infinite y2');
+        assertThrows(() => graphics.createLine(10, 20, 100, NaN), 'Should throw for NaN y2');
+        
+        // Test invalid attributes parameter
+        assertThrows(() => graphics.createLine(10, 20, 100, 80, null), 'Should throw for null attributes');
+        assertThrows(() => graphics.createLine(10, 20, 100, 80, 'invalid'), 'Should throw for non-object attributes');
+        
+        TestRunner.cleanupTestDOM();
+    });
 });
 
 /**
