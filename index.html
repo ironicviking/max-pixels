@@ -28,6 +28,7 @@
             width: 100%;
             height: 100%;
             display: block;
+            cursor: crosshair;
         }
 
         #ui {
@@ -416,6 +417,24 @@
         
         .game-message.fade-out {
             opacity: 0;
+        }
+        
+        /* Interactive SVG element cursors */
+        .star, .planet, .moon, .space-station, .jump-gate, .asteroid {
+            cursor: pointer;
+        }
+        
+        .star:hover, .planet:hover, .moon:hover, .space-station:hover, .jump-gate:hover {
+            opacity: 0.8;
+        }
+        
+        .asteroid:hover {
+            opacity: 0.7;
+        }
+        
+        /* Player ship cursor */
+        .player-ship {
+            cursor: move;
         }
     </style>
 </head>
