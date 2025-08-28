@@ -84,6 +84,9 @@ class MaxPixelsGame {
             this.isInitialized = true;
             console.log('Max-Pixels initialized successfully');
             
+            // Automatically connect to multiplayer server
+            await this.connectToMultiplayer();
+            
             this.hideLoadingScreen();
         } catch (error) {
             console.error('Failed to initialize Max-Pixels:', error);
