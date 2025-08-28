@@ -25,6 +25,12 @@ export class AudioManager {
     }
     
     initializeAudioContext() {
+        // Check if we're in a browser environment with AudioContext support
+        if (typeof window === 'undefined' || (!window.AudioContext && !window.webkitAudioContext)) {
+            this.isEnabled = false;
+            return;
+        }
+        
         try {
             this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
             this.masterGain = this.audioContext.createGain();
