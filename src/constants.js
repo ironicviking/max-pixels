@@ -969,6 +969,23 @@ export const WORLD_GEN = {
     // Star properties
     STAR_TEMPERATURE_REFERENCE: 5800, // Sun temperature for luminosity calculation
     
+    // Star generation variance parameters
+    STELLAR_SIZE_VARIANCE_MIN: 0.1,  // Minimum 10% size variance
+    STELLAR_SIZE_VARIANCE_MAX: 0.2,  // Maximum 20% size variance
+    STELLAR_TEMP_VARIANCE_MIN: 0.05, // Minimum 5% temperature variance  
+    STELLAR_TEMP_VARIANCE_MAX: 0.1,  // Maximum 10% temperature variance
+    STELLAR_MASS_VARIANCE_MIN: 0.1,  // Minimum 10% mass variance
+    STELLAR_MASS_VARIANCE_MAX: 0.2,  // Maximum 20% mass variance
+    
+    // Stellar physics calculations
+    STELLAR_LUMINOSITY_TEMP_EXPONENT: 4,   // Stefan-Boltzmann law temperature exponent
+    STELLAR_LIFETIME_MASS_EXPONENT: -2.5,  // Main sequence lifetime mass relationship
+    STELLAR_LIFETIME_REFERENCE_YEARS: 10,  // Sun's lifetime in billion years
+    
+    // Habitable zone calculations
+    HABITABLE_ZONE_INNER_THRESHOLD: 1.1,   // Inner edge greenhouse threshold
+    HABITABLE_ZONE_OUTER_THRESHOLD: 0.53,  // Outer edge maximum greenhouse threshold
+    
     // Moon generation
     MAX_MOONS_PER_PLANET: 3,
     MOON_BASE_DISTANCE_MULTIPLIER: 30,

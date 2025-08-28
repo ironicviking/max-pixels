@@ -117,9 +117,9 @@ export class StarSystem {
         }
         
         // Add some variance to star properties within each class
-        const sizeVariance = 0.1 + Math.random() * 0.2; // ±10-20% size variance
-        const tempVariance = 0.05 + Math.random() * 0.1; // ±5-10% temperature variance
-        const massVariance = 0.1 + Math.random() * 0.2; // ±10-20% mass variance
+        const sizeVariance = WORLD_GEN.STELLAR_SIZE_VARIANCE_MIN + Math.random() * WORLD_GEN.STELLAR_SIZE_VARIANCE_MAX;
+        const tempVariance = WORLD_GEN.STELLAR_TEMP_VARIANCE_MIN + Math.random() * WORLD_GEN.STELLAR_TEMP_VARIANCE_MAX;
+        const massVariance = WORLD_GEN.STELLAR_MASS_VARIANCE_MIN + Math.random() * WORLD_GEN.STELLAR_MASS_VARIANCE_MAX;
         
         return {
             id: IDGenerator.generate(),
@@ -132,7 +132,7 @@ export class StarSystem {
             x: 0, // Stars are at system center
             y: 0,
             luminosity: Math.pow(selectedClass.size * sizeVariance, 2) * 
-                       Math.pow(selectedClass.temperature * tempVariance / WORLD_GEN.STAR_TEMPERATURE_REFERENCE, 4), // Stefan-Boltzmann law approximation
+                       Math.pow(selectedClass.temperature * tempVariance / WORLD_GEN.STAR_TEMPERATURE_REFERENCE, WORLD_GEN.STELLAR_LUMINOSITY_TEMP_EXPONENT), // Stefan-Boltzmann law approximation
             lifespan: this.calculateStellarLifespan(selectedClass.mass * massVariance),
             habitableZoneInner: this.calculateHabitableZone(selectedClass.size * sizeVariance, selectedClass.temperature * tempVariance, true),
             habitableZoneOuter: this.calculateHabitableZone(selectedClass.size * sizeVariance, selectedClass.temperature * tempVariance, false)
@@ -142,19 +142,19 @@ export class StarSystem {
     calculateStellarLifespan(mass) {
         // Main sequence lifetime approximation: L ∝ M^-2.5 (in billions of years)
         // Sun's lifetime ≈ 10 billion years
-        return 10 * Math.pow(mass, -2.5);
+        return WORLD_GEN.STELLAR_LIFETIME_REFERENCE_YEARS * Math.pow(mass, WORLD_GEN.STELLAR_LIFETIME_MASS_EXPONENT);
     }
     
     calculateHabitableZone(size, temperature, isInner) {
         // Habitable zone calculation based on stellar luminosity
         // Inner edge: runaway greenhouse effect
         // Outer edge: maximum greenhouse effect
-        const luminosity = Math.pow(size, 2) * Math.pow(temperature / WORLD_GEN.STAR_TEMPERATURE_REFERENCE, 4);
+        const luminosity = Math.pow(size, 2) * Math.pow(temperature / WORLD_GEN.STAR_TEMPERATURE_REFERENCE, WORLD_GEN.STELLAR_LUMINOSITY_TEMP_EXPONENT);
         
         if (isInner) {
-            return Math.sqrt(luminosity / 1.1); // Inner edge in AU
+            return Math.sqrt(luminosity / WORLD_GEN.HABITABLE_ZONE_INNER_THRESHOLD); // Inner edge in AU
         } else {
-            return Math.sqrt(luminosity / 0.53); // Outer edge in AU
+            return Math.sqrt(luminosity / WORLD_GEN.HABITABLE_ZONE_OUTER_THRESHOLD); // Outer edge in AU
         }
     }
     
