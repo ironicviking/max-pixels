@@ -10,16 +10,18 @@ export class AudioManager {
         this.audioContext = null;
         this.sounds = new Map();
         this.masterVolume = 0.7;
-        this.isEnabled = true;
+        this.isEnabled = this.loadAudioPreference();
         this.isInitialized = false;
         
         // Audio visualization properties
         this.analyser = null;
         this.visualizationCallbacks = new Set();
         
-        this.initializeAudioContext();
-        this.generateSounds();
-        this.setupAudioVisualization();
+        if (this.isEnabled) {
+            this.initializeAudioContext();
+            this.generateSounds();
+            this.setupAudioVisualization();
+        }
     }
     
     initializeAudioContext() {
@@ -221,14 +223,39 @@ export class AudioManager {
         if (!this.isInitialized) {
             this.initializeAudioContext();
             this.generateSounds();
+            this.setupAudioVisualization();
         }
         // Always set enabled to true after initialization attempt
         // This ensures the enabled state reflects the user's intent, even in headless environments
         this.isEnabled = true;
+        this.saveAudioPreference();
     }
     
     disable() {
         this.isEnabled = false;
+        this.saveAudioPreference();
+    }
+    
+    get enabled() {
+        return this.isEnabled;
+    }
+    
+    loadAudioPreference() {
+        try {
+            const saved = localStorage.getItem('maxPixels.audio.enabled');
+            return saved !== null ? JSON.parse(saved) : true; // Default to enabled
+        } catch (error) {
+            console.warn('Failed to load audio preference:', error);
+            return true; // Default to enabled
+        }
+    }
+    
+    saveAudioPreference() {
+        try {
+            localStorage.setItem('maxPixels.audio.enabled', JSON.stringify(this.isEnabled));
+        } catch (error) {
+            console.warn('Failed to save audio preference:', error);
+        }
     }
     
     stopAll() {
