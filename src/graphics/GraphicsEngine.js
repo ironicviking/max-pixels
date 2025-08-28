@@ -1521,8 +1521,8 @@ export class GraphicsEngine {
     createWeaponChargeIndicator(x, y, chargeLevel, attributes = {}) {
         const {
             maxRadius = WEAPONS.CHARGE_INDICATOR_MAX_RADIUS,
-            color = '#00aaff',
-            glowColor = '#4488ff',
+            color = this.getChargeIndicatorColor(chargeLevel),
+            glowColor = this.getChargeIndicatorGlowColor(chargeLevel),
             id = this.generateId('weapon-charge')
         } = attributes;
         
@@ -1594,12 +1594,15 @@ export class GraphicsEngine {
         const maxRadius = WEAPONS.CHARGE_INDICATOR_MAX_RADIUS;
         const currentRadius = Math.max(WEAPONS.CHARGE_INDICATOR_MIN_RADIUS, maxRadius * chargeLevel);
         const opacity = Math.max(WEAPONS.CHARGE_INDICATOR_MIN_OPACITY, chargeLevel);
+        const currentColor = this.getChargeIndicatorColor(chargeLevel);
+        const currentGlowColor = this.getChargeIndicatorGlowColor(chargeLevel);
         
         // Update outer glow
         const outerGlow = indicator.firstElementChild;
         if (outerGlow) {
             outerGlow.setAttribute('r', currentRadius + WEAPONS.CHARGE_INDICATOR_GLOW_OFFSET);
             outerGlow.setAttribute('opacity', opacity * WEAPONS.CHARGE_INDICATOR_GLOW_OPACITY);
+            outerGlow.setAttribute('stroke', currentGlowColor);
         }
         
         // Update main ring
@@ -1607,6 +1610,7 @@ export class GraphicsEngine {
         if (chargeRing) {
             chargeRing.setAttribute('r', currentRadius);
             chargeRing.setAttribute('opacity', opacity);
+            chargeRing.setAttribute('stroke', currentColor);
             chargeRing.setAttribute('stroke-dasharray', chargeLevel < WEAPONS.CHARGE_INDICATOR_DASH_THRESHOLD ? '2,4' : 'none');
         }
         
@@ -1625,6 +1629,56 @@ export class GraphicsEngine {
         } else if (hasEnergyCore) {
             // Update energy core opacity
             indicator.children[2].setAttribute('opacity', (chargeLevel - WEAPONS.CHARGE_CORE_THRESHOLD) / WEAPONS.CHARGE_CORE_OPACITY_DIVISOR);
+        }
+    }
+    
+    getChargeIndicatorColor(chargeLevel) {
+        if (chargeLevel <= WEAPONS.CHARGE_COLOR_LOW_THRESHOLD) {
+            // Red to Orange transition (low energy)
+            const t = chargeLevel / WEAPONS.CHARGE_COLOR_LOW_THRESHOLD;
+            const r = WEAPONS.CHARGE_COLOR_RED_FULL;
+            const g = Math.floor(WEAPONS.CHARGE_COLOR_GREEN_DIM + (WEAPONS.CHARGE_COLOR_RANGE * t));
+            const b = 0;
+            return `rgb(${r}, ${g}, ${b})`;
+        } else if (chargeLevel <= WEAPONS.CHARGE_COLOR_MEDIUM_THRESHOLD) {
+            // Orange to Yellow transition (medium energy)  
+            const t = (chargeLevel - WEAPONS.CHARGE_COLOR_LOW_THRESHOLD) / WEAPONS.CHARGE_COLOR_LOW_THRESHOLD;
+            const r = WEAPONS.CHARGE_COLOR_RED_FULL;
+            const g = WEAPONS.CHARGE_COLOR_GREEN_FULL;
+            const b = Math.floor(WEAPONS.CHARGE_COLOR_BLUE_DIM * t);
+            return `rgb(${r}, ${g}, ${b})`;
+        } else {
+            // Yellow to Green transition (high energy)
+            const t = (chargeLevel - WEAPONS.CHARGE_COLOR_MEDIUM_THRESHOLD) / WEAPONS.CHARGE_COLOR_HIGH_ENERGY_FRACTION;
+            const r = Math.floor(WEAPONS.CHARGE_COLOR_RED_FULL - (WEAPONS.CHARGE_COLOR_RANGE * t));
+            const g = WEAPONS.CHARGE_COLOR_GREEN_FULL;
+            const b = Math.floor(WEAPONS.CHARGE_COLOR_BLUE_DIM + (WEAPONS.CHARGE_COLOR_RANGE * t));
+            return `rgb(${r}, ${g}, ${b})`;
+        }
+    }
+    
+    getChargeIndicatorGlowColor(chargeLevel) {
+        if (chargeLevel <= WEAPONS.CHARGE_COLOR_LOW_THRESHOLD) {
+            // Red glow for low energy
+            const t = chargeLevel / WEAPONS.CHARGE_COLOR_LOW_THRESHOLD;
+            const r = WEAPONS.CHARGE_COLOR_RED_FULL;
+            const g = Math.floor(WEAPONS.CHARGE_COLOR_GLOW_DIM + (WEAPONS.CHARGE_COLOR_GREEN_DIM * t));
+            const b = Math.floor(WEAPONS.CHARGE_COLOR_GLOW_DIM * t);
+            return `rgb(${r}, ${g}, ${b})`;
+        } else if (chargeLevel <= WEAPONS.CHARGE_COLOR_MEDIUM_THRESHOLD) {
+            // Orange/Yellow glow for medium energy
+            const t = (chargeLevel - WEAPONS.CHARGE_COLOR_LOW_THRESHOLD) / WEAPONS.CHARGE_COLOR_LOW_THRESHOLD;
+            const r = WEAPONS.CHARGE_COLOR_RED_FULL;
+            const g = Math.floor(WEAPONS.CHARGE_COLOR_GLOW_MED + (WEAPONS.CHARGE_COLOR_GLOW_RANGE_LARGE * t));
+            const b = Math.floor(WEAPONS.CHARGE_COLOR_GLOW_DIM + (WEAPONS.CHARGE_COLOR_GLOW_RANGE_SMALL * t));
+            return `rgb(${r}, ${g}, ${b})`;
+        } else {
+            // Green/Blue glow for high energy
+            const t = (chargeLevel - WEAPONS.CHARGE_COLOR_MEDIUM_THRESHOLD) / WEAPONS.CHARGE_COLOR_HIGH_ENERGY_FRACTION;
+            const r = Math.floor(WEAPONS.CHARGE_COLOR_RED_FULL - (WEAPONS.CHARGE_COLOR_RANGE * t));
+            const g = WEAPONS.CHARGE_COLOR_GREEN_FULL;
+            const b = Math.floor(WEAPONS.CHARGE_COLOR_BLUE_DIM + (WEAPONS.CHARGE_COLOR_RANGE * t));
+            return `rgb(${r}, ${g}, ${b})`;
         }
     }
     
