@@ -88,13 +88,16 @@ export class ParticleSystem {
      * @param {Object} options - Effect options
      */
     createExplosionEffect(x, y, options = {}) {
+        // Use explosion colors from GraphicsEngine constants for consistency
+        const explosionColors = options.colors || ['#ff4444', '#ff8800', '#ffff00', '#ffffff'];
+        
         const config = {
             particleCount: PARTICLES.EXPLOSION_PARTICLE_COUNT,
             particleLife: PARTICLES.EXPLOSION_LIFE,
             spread: GRAPHICS.PI_TIMES_2,
             velocity: { min: PARTICLES.EXPLOSION_VELOCITY_MIN, max: PARTICLES.EXPLOSION_VELOCITY_MAX },
             size: { min: PARTICLES.EXPLOSION_SIZE_MIN, max: PARTICLES.EXPLOSION_SIZE_MAX },
-            color: '#ff6600',
+            colors: explosionColors, // Use colors array instead of single color
             opacity: { start: PARTICLES.EXPLOSION_OPACITY_START, end: 0.0 },
             gravity: { x: 0, y: PARTICLES.EXPLOSION_GRAVITY_Y },
             fadeOut: true,
@@ -211,6 +214,11 @@ export class ParticleSystem {
         // Calculate size
         const size = config.size.min + Math.random() * (config.size.max - config.size.min);
         
+        // Select random color from colors array, or use single color
+        const particleColor = config.colors 
+            ? config.colors[Math.floor(Math.random() * config.colors.length)]
+            : config.color;
+        
         const particle = {
             id: particleId,
             x: emitter.x + (Math.random() - PARTICLES.RANDOM_OFFSET_RANGE) * PARTICLES.POSITION_OFFSET, // small random offset
@@ -219,7 +227,7 @@ export class ParticleSystem {
             velY: velY,
             size: size,
             originalSize: size,
-            color: config.color,
+            color: particleColor,
             opacity: config.opacity.start,
             life: config.particleLife,
             maxLife: config.particleLife,
