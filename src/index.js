@@ -67,6 +67,9 @@ class MaxPixelsGame {
         this.lastFireTime = 0;
         this.lastEnergyRechargeSound = 0;
         
+        // Server synchronization
+        this.lastServerUpdate = null;
+        
         console.log('Max-Pixels initializing...');
         this.init();
     }
@@ -1307,8 +1310,83 @@ class MaxPixelsGame {
     }
     
     handleGameState(data) {
-        // TODO: Update game state with server data
+        if (!data || typeof data !== 'object') {
+            console.warn('Invalid game state data received:', data);
+            return;
+        }
+        
         console.log('Received game state update:', data);
+        
+        // Update other players if provided
+        if (data.players && typeof data.players === 'object') {
+            this.updateOtherPlayersFromState(data.players);
+        }
+        
+        // Update game objects (asteroids, stations, etc.) if provided
+        if (data.gameObjects && Array.isArray(data.gameObjects)) {
+            this.updateGameObjectsFromState(data.gameObjects);
+        }
+        
+        // Track last server update time for synchronization
+        if (data.lastUpdate) {
+            this.lastServerUpdate = data.lastUpdate;
+            console.log(`Game state synced with server (timestamp: ${data.lastUpdate})`);
+        }
+    }
+    
+    updateOtherPlayersFromState(serverPlayers) {
+        // Convert server players object/map to usable format
+        let players;
+        if (serverPlayers instanceof Map) {
+            players = serverPlayers;
+        } else if (typeof serverPlayers === 'object') {
+            // Handle plain object format
+            players = new Map(Object.entries(serverPlayers));
+        } else {
+            console.warn('Invalid players data format:', serverPlayers);
+            return;
+        }
+        
+        // Remove players who are no longer on the server
+        for (const [playerId, playerData] of this.otherPlayers.entries()) {
+            if (!players.has(playerId)) {
+                this.handlePlayerLeave({ playerId });
+            }
+        }
+        
+        // Add or update players from server state
+        for (const [playerId, serverPlayer] of players.entries()) {
+            // Skip our own player
+            if (playerId === this.network.playerId) {
+                continue;
+            }
+            
+            const existingPlayer = this.otherPlayers.get(playerId);
+            if (existingPlayer) {
+                // Update existing player
+                this.handlePlayerMove({
+                    playerId,
+                    position: serverPlayer.position || { x: serverPlayer.x, y: serverPlayer.y },
+                    rotation: serverPlayer.rotation || 0
+                });
+            } else {
+                // Add new player
+                this.handlePlayerJoin({
+                    playerId,
+                    position: serverPlayer.position || { x: serverPlayer.x, y: serverPlayer.y },
+                    rotation: serverPlayer.rotation || 0
+                });
+            }
+        }
+    }
+    
+    updateGameObjectsFromState(gameObjects) {
+        // This method can be expanded to sync game objects like asteroids, stations
+        // For now, just log the received objects for debugging
+        console.log(`Received ${gameObjects.length} game objects from server:`, gameObjects);
+        
+        // TODO: Implement synchronization of asteroids, stations, and other game objects
+        // This would be useful for ensuring all players see the same world state
     }
     
     showNetworkStatus(message, type = 'info') {
