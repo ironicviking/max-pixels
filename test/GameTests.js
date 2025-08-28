@@ -1024,7 +1024,7 @@ describe('Trading System', function() {
  * Weapon System Tests
  */
 describe('Weapon System', function() {
-    test('should have weapon recharge constants defined', function() {
+    test('should have weapon recharge constants defined', async function() {
         const { WEAPONS, AUDIO } = await import('../src/constants.js');
         
         assert(typeof WEAPONS.ENERGY_RECHARGE_SOUND_THRESHOLD === 'number', 'Should have recharge sound threshold');
