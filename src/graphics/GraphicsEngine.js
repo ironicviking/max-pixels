@@ -1592,23 +1592,28 @@ export class GraphicsEngine {
             sweepLine.appendChild(sweepAnimation);
             radarGroup.appendChild(sweepLine);
             
-            // Create sweep trail effect with precise 60-degree arc calculations
-            const DEGREES_60_IN_RADIANS = Math.PI / 3; // 60 degrees for radar sweep trail arc
-            const trailArcEndX = radius * Math.sin(DEGREES_60_IN_RADIANS); // sin(60°) = √3/2
-            const trailArcEndY = -radius * Math.cos(DEGREES_60_IN_RADIANS); // cos(60°) = 1/2
-            const sweepTrail = this.createPath(`M 0,0 L 0,${-radius} A ${radius},${radius} 0 0,1 ${trailArcEndX},${trailArcEndY}`, {
+            // Create sweep trail effect with configurable arc calculations
+            const trailArcDegrees = GRAPHICS.RADAR_TRAIL_ARC_DEGREES;
+            const trailArcRadians = trailArcDegrees * GRAPHICS.DEGREES_TO_RADIANS_FACTOR;
+            const trailArcEndX = radius * Math.sin(trailArcRadians);
+            const trailArcEndY = -radius * Math.cos(trailArcRadians);
+            
+            // Use large-arc-flag when arc is greater than threshold
+            const largeArcFlag = trailArcDegrees > GRAPHICS.LARGE_ARC_THRESHOLD_DEGREES ? 1 : 0;
+            
+            const sweepTrail = this.createPath(`M 0,0 L 0,${-radius} A ${radius},${radius} 0 ${largeArcFlag},1 ${trailArcEndX},${trailArcEndY}`, {
                 fill: scanlineColor,
-                opacity: 0.1,
+                opacity: GRAPHICS.RADAR_TRAIL_OPACITY,
                 id: `${id}_trail`
             });
             
-            // Add rotation animation to trail (slightly delayed)
+            // Add rotation animation to trail with configurable delay
             const trailAnimation = this.createElement('animateTransform');
             trailAnimation.setAttribute('attributeName', 'transform');
             trailAnimation.setAttribute('type', 'rotate');
             trailAnimation.setAttribute('values', '0;360;0');
-            trailAnimation.setAttribute('dur', '4s');
-            trailAnimation.setAttribute('begin', '0.2s');
+            trailAnimation.setAttribute('dur', GRAPHICS.RADAR_SWEEP_DURATION);
+            trailAnimation.setAttribute('begin', `${GRAPHICS.RADAR_TRAIL_ANIMATION_DELAY}s`);
             trailAnimation.setAttribute('repeatCount', 'indefinite');
             
             sweepTrail.appendChild(trailAnimation);
