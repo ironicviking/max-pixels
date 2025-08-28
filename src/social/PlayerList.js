@@ -3,6 +3,8 @@
  * Manages connected players and basic social features
  */
 
+import { SOCIAL } from '../constants.js';
+
 export class PlayerList {
     constructor() {
         this.players = new Map(); // playerId -> player data
@@ -136,7 +138,7 @@ export class PlayerList {
      */
     getRecentPlayers() {
         const recent = [];
-        const cutoffTime = Date.now() - (5 * 60 * 1000); // 5 minutes ago
+        const cutoffTime = Date.now() - (SOCIAL.RECENT_PLAYER_CUTOFF_MINUTES * SOCIAL.SECONDS_PER_MINUTE * SOCIAL.MILLISECONDS_PER_SECOND); // 5 minutes ago
         
         for (const [playerId, playerData] of this.players) {
             if (!playerData.isOnline && 
@@ -197,8 +199,8 @@ export class PlayerList {
             html += `<div style="color: #4a90e2; font-weight: bold; margin-bottom: 5px;">Online (${onlinePlayers.length})</div>`;
             
             onlinePlayers.forEach(player => {
-                const healthPercent = ((player.health || 0) / (player.maxHealth || 100)) * 100;
-                const shieldPercent = ((player.shield || 0) / (player.maxShield || 100)) * 100;
+                const healthPercent = ((player.health || 0) / (player.maxHealth || SOCIAL.DEFAULT_MAX_HEALTH)) * SOCIAL.DEFAULT_MAX_HEALTH;
+                const shieldPercent = ((player.shield || 0) / (player.maxShield || SOCIAL.DEFAULT_MAX_SHIELD)) * SOCIAL.DEFAULT_MAX_SHIELD;
                 
                 html += `
                     <div style="margin: 5px 0; padding: 8px; background: rgba(74, 144, 226, 0.1); border-radius: 4px; cursor: pointer;"
@@ -263,12 +265,12 @@ export class PlayerList {
      * Format time since last seen
      */
     formatTimeSince(timestamp) {
-        const seconds = Math.floor((Date.now() - timestamp) / 1000);
+        const seconds = Math.floor((Date.now() - timestamp) / SOCIAL.MILLISECONDS_PER_SECOND);
         
-        if (seconds < 60) return `${seconds}s`;
-        if (seconds < 3600) return `${Math.floor(seconds / 60)}m`;
-        if (seconds < 86400) return `${Math.floor(seconds / 3600)}h`;
-        return `${Math.floor(seconds / 86400)}d`;
+        if (seconds < SOCIAL.SECONDS_PER_MINUTE) return `${seconds}s`;
+        if (seconds < SOCIAL.SECONDS_PER_HOUR) return `${Math.floor(seconds / SOCIAL.SECONDS_PER_MINUTE)}m`;
+        if (seconds < SOCIAL.SECONDS_PER_DAY) return `${Math.floor(seconds / SOCIAL.SECONDS_PER_HOUR)}h`;
+        return `${Math.floor(seconds / SOCIAL.SECONDS_PER_DAY)}d`;
     }
     
     /**
@@ -306,7 +308,7 @@ export class PlayerList {
      * Clean up old player data
      */
     cleanup() {
-        const cutoffTime = Date.now() - (30 * 60 * 1000); // 30 minutes ago
+        const cutoffTime = Date.now() - (SOCIAL.PLAYER_CLEANUP_CUTOFF_MINUTES * SOCIAL.SECONDS_PER_MINUTE * SOCIAL.MILLISECONDS_PER_SECOND); // 30 minutes ago
         
         for (const [playerId, playerData] of this.players) {
             if (!playerData.isOnline && playerData.lastSeen < cutoffTime) {

@@ -746,6 +746,23 @@ export const ASTEROID_DAMAGE = {
     ANIMATION_DELAY_MULTIPLIER: 1000
 };
 
+// Social System Constants
+export const SOCIAL = {
+    // Player list timing
+    RECENT_PLAYER_CUTOFF_MINUTES: 5,
+    PLAYER_CLEANUP_CUTOFF_MINUTES: 30,
+    
+    // Time constants
+    SECONDS_PER_MINUTE: 60,
+    SECONDS_PER_HOUR: 3600,
+    SECONDS_PER_DAY: 86400,
+    MILLISECONDS_PER_SECOND: 1000,
+    
+    // Default max values for percentage calculations
+    DEFAULT_MAX_HEALTH: 100,
+    DEFAULT_MAX_SHIELD: 100
+};
+
 // World Generation Constants
 export const WORLD_GEN = {
     // Star system generation
