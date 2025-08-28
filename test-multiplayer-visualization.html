@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Max-Pixels - Multiplayer Player Visualization Test</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            background: #111;
+            color: #fff;
+            font-family: monospace;
+        }
+        
+        #gameCanvas {
+            border: 2px solid #333;
+            background: linear-gradient(135deg, #001122, #003344);
+            width: 800px;
+            height: 600px;
+            margin: 20px 0;
+        }
+        
+        .controls {
+            background: #222;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        
+        button {
+            background: #4a90e2;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            margin: 5px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-family: monospace;
+        }
+        
+        button:hover {
+            background: #5ba0f2;
+        }
+        
+        .player-info {
+            background: #333;
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🚀 Max-Pixels Multiplayer Player Test</h1>
+    <p>Test the visual representation of other multiplayer players</p>
+    
+    <div class="controls">
+        <h3>Test Controls</h3>
+        <button onclick="addTestPlayer()">Add Random Player</button>
+        <button onclick="moveAllPlayers()">Move All Players</button>
+        <button onclick="fireAllPlayers()">Fire All Players</button>
+        <button onclick="removeAllPlayers()">Remove All Players</button>
+        <button onclick="addManyPlayers()">Add 5 Players</button>
+    </div>
+    
+    <svg id="gameCanvas" viewBox="0 0 800 600">
+        <defs></defs>
+    </svg>
+    
+    <div id="playerList">
+        <h3>Active Players:</h3>
+    </div>
+    
+    <script type="module">
+        import { GraphicsEngine } from './src/graphics/GraphicsEngine.js';
+        
+        // Initialize graphics engine
+        const canvas = document.getElementById('gameCanvas');
+        const graphics = new GraphicsEngine(canvas);
+        const gameLayer = graphics.createLayer('game', 5);
+        
+        // Test players tracking
+        const testPlayers = new Map();
+        let playerCounter = 0;
+        
+        // Add a test player
+        window.addTestPlayer = function() {
+            const playerId = `TestPlayer${++playerCounter}`;
+            const colors = ['#ff6b35', '#f7931e', '#ffd700', '#32cd32', '#00ced1', '#9370db', '#ff69b4'];
+            const color = colors[Math.floor(Math.random() * colors.length)];
+            
+            const x = Math.random() * 700 + 50;
+            const y = Math.random() * 500 + 50;
+            const rotation = Math.random() * 360;
+            
+            // Create player ship
+            const playerShip = graphics.createOtherPlayerShip(x, y, playerId, color);
+            playerShip.setAttribute('transform', `translate(${x}, ${y}) rotate(${rotation})`);
+            graphics.addToLayer('game', playerShip);
+            
+            // Store player data
+            testPlayers.set(playerId, { x, y, rotation, color });
+            
+            updatePlayerList();
+            console.log(`Added test player: ${playerId}`);
+        };
+        
+        // Move all players randomly
+        window.moveAllPlayers = function() {
+            testPlayers.forEach((player, playerId) => {
+                player.x = Math.random() * 700 + 50;
+                player.y = Math.random() * 500 + 50;
+                player.rotation = Math.random() * 360;
+                
+                const playerElement = canvas.querySelector(`#otherPlayer_${playerId}`);
+                if (playerElement) {
+                    playerElement.setAttribute('transform', 
+                        `translate(${player.x}, ${player.y}) rotate(${player.rotation})`);
+                }
+            });
+            console.log('Moved all players to random positions');
+        };
+        
+        // Fire lasers from all players
+        window.fireAllPlayers = function() {
+            testPlayers.forEach((player, playerId) => {
+                const rotationRad = player.rotation * Math.PI / 180;
+                const laserStartX = player.x + Math.sin(rotationRad) * 20;
+                const laserStartY = player.y - Math.cos(rotationRad) * 20;
+                const laserEndX = player.x + Math.sin(rotationRad) * 300;
+                const laserEndY = player.y - Math.cos(rotationRad) * 300;
+                
+                const laser = graphics.createLaserBeam(
+                    laserStartX, laserStartY,
+                    laserEndX, laserEndY,
+                    {
+                        color: '#00ff88',
+                        glowColor: '#88ffaa',
+                        width: 3,
+                        duration: 300
+                    }
+                );
+                
+                graphics.addToLayer('game', laser);
+            });
+            console.log('All players fired lasers');
+        };
+        
+        // Remove all players
+        window.removeAllPlayers = function() {
+            testPlayers.forEach((player, playerId) => {
+                const playerElement = canvas.querySelector(`#otherPlayer_${playerId}`);
+                if (playerElement) {
+                    graphics.remove(playerElement);
+                }
+            });
+            testPlayers.clear();
+            updatePlayerList();
+            console.log('Removed all test players');
+        };
+        
+        // Add many players for stress testing
+        window.addManyPlayers = function() {
+            for (let i = 0; i < 5; i++) {
+                setTimeout(() => addTestPlayer(), i * 200);
+            }
+        };
+        
+        function updatePlayerList() {
+            const listElement = document.getElementById('playerList');
+            let html = '<h3>Active Players:</h3>';
+            
+            testPlayers.forEach((player, playerId) => {
+                html += `<div class="player-info">
+                    <strong>${playerId}</strong> - 
+                    Position: (${Math.round(player.x)}, ${Math.round(player.y)}) - 
+                    Color: <span style="color: ${player.color}">${player.color}</span>
+                </div>`;
+            });
+            
+            if (testPlayers.size === 0) {
+                html += '<p><em>No active players</em></p>';
+            }
+            
+            listElement.innerHTML = html;
+        }
+        
+        // Initialize with empty player list
+        updatePlayerList();
+        
+        console.log('Multiplayer player visualization test loaded');
+        console.log('Use the buttons above to test player visualization features');
+    </script>
+</body>
+</html>

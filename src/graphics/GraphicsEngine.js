@@ -16,6 +16,7 @@ export class GraphicsEngine {
     createDefs() {
         const defs = this.createElement('defs');
         this.svg.appendChild(defs);
+        this.defs = defs; // Set this.defs before calling createProximityGlowFilter
         this.createProximityGlowFilter();
         return defs;
     }

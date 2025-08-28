@@ -65,7 +65,14 @@ function setupTestEnvironment() {
                         // Check innerHTML-created elements
                         if (this.innerHTML.includes(`id="${id}"`)) {
                             if (id === 'gameCanvas') {
-                                return global.document.getElementById('gameCanvas');
+                                // Cache and return properly enhanced SVG element
+                                if (!this._cachedGameCanvas) {
+                                    this._cachedGameCanvas = global.document.createElement('svg');
+                                    this._cachedGameCanvas.id = 'gameCanvas';
+                                    this._cachedGameCanvas.setAttribute('width', '1920');
+                                    this._cachedGameCanvas.setAttribute('height', '1080');
+                                }
+                                return this._cachedGameCanvas;
                             }
                             if (id === 'ui') {
                                 return global.document.getElementById('ui');
@@ -86,8 +93,48 @@ function setupTestEnvironment() {
                     tagName: svgTag.toUpperCase(),
                     setAttribute: function(name, value) { this[name] = value; },
                     getAttribute: function(name) { return this[name]; },
-                    appendChild: function(child) { return child; }
+                    appendChild: function(child) { return child; },
+                    _children: []
                 });
+                
+                // Enhance SVG elements with proper querySelector support
+                element._childrenByTag = new Map();
+                element.appendChild = function(child) { 
+                    this._children = this._children || [];
+                    this._children.push(child);
+                    // Register child elements with tagName for querySelector
+                    if (child && child.tagName) {
+                        if (!this._childrenByTag) {
+                            this._childrenByTag = new Map();
+                        }
+                        const tagName = child.tagName.toLowerCase();
+                        if (!this._childrenByTag.has(tagName)) {
+                            this._childrenByTag.set(tagName, []);
+                        }
+                        this._childrenByTag.get(tagName).push(child);
+                    }
+                    // Also register by ID
+                    if (child && child.id) {
+                        this._elementsById = this._elementsById || {};
+                        this._elementsById[child.id] = child;
+                    }
+                    return child; 
+                };
+                element.querySelector = function(selector) { 
+                    // Handle ID selectors
+                    if (selector.startsWith('#')) {
+                        const id = selector.substring(1);
+                        if (this._elementsById && this._elementsById[id]) {
+                            return this._elementsById[id];
+                        }
+                    }
+                    // Handle tag selectors  
+                    if (this._childrenByTag && this._childrenByTag.has(selector)) {
+                        const children = this._childrenByTag.get(selector);
+                        return children.length > 0 ? children[0] : null;
+                    }
+                    return null; 
+                };
             }
             
             return element;
@@ -130,6 +177,17 @@ function setupTestEnvironment() {
                         appendChild: function(child) { 
                             this._children = this._children || [];
                             this._children.push(child);
+                            // Register child elements with tagName for querySelector
+                            if (child.tagName && !this._childrenByTag) {
+                                this._childrenByTag = new Map();
+                            }
+                            if (child.tagName && this._childrenByTag) {
+                                const tagName = child.tagName.toLowerCase();
+                                if (!this._childrenByTag.has(tagName)) {
+                                    this._childrenByTag.set(tagName, []);
+                                }
+                                this._childrenByTag.get(tagName).push(child);
+                            }
                             return child; 
                         },
                         querySelector: function(selector) { 
@@ -137,10 +195,22 @@ function setupTestEnvironment() {
                             if (selector === 'defs') {
                                 return this._children.find(child => child.tagName === 'DEFS') || null;
                             }
+                            if (this._childrenByTag) {
+                                const children = this._childrenByTag.get(selector);
+                                if (children && children.length > 0) {
+                                    return children[0];
+                                }
+                            }
                             return null; 
                         },
-                        querySelectorAll: function() { return []; },
-                        style: {}
+                        querySelectorAll: function(selector) { 
+                            if (this._childrenByTag) {
+                                return this._childrenByTag.get(selector) || [];
+                            }
+                            return []; 
+                        },
+                        style: {},
+                        _childrenByTag: new Map()
                     },
                     ui: {
                         tagName: 'div',
@@ -225,19 +295,46 @@ function setupTestEnvironment() {
                 style: {},
                 innerHTML: '',
                 textContent: '',
-                setAttribute: function(name, value) { this[name] = value; },
+                _children: [],
+                _childrenByTag: new Map(),
+                setAttribute: function(name, value) { 
+                    this[name] = value;
+                    if (name === 'id') this.id = value;
+                },
                 getAttribute: function(name) { return this[name]; },
                 appendChild: function(child) { 
                     this._children = this._children || [];
                     this._children.push(child);
+                    // Register child elements with tagName for querySelector
+                    if (child && child.tagName) {
+                        if (!this._childrenByTag) {
+                            this._childrenByTag = new Map();
+                        }
+                        const tagName = child.tagName.toLowerCase();
+                        if (!this._childrenByTag.has(tagName)) {
+                            this._childrenByTag.set(tagName, []);
+                        }
+                        this._childrenByTag.get(tagName).push(child);
+                    }
                     return child; 
                 },
-                querySelector: function() { return null; },
-                querySelectorAll: function() { return []; },
+                querySelector: function(selector) { 
+                    // Handle tag selectors
+                    if (this._childrenByTag && this._childrenByTag.has(selector)) {
+                        const children = this._childrenByTag.get(selector);
+                        return children.length > 0 ? children[0] : null;
+                    }
+                    return null; 
+                },
+                querySelectorAll: function(selector) { 
+                    if (this._childrenByTag && this._childrenByTag.has(selector)) {
+                        return this._childrenByTag.get(selector) || [];
+                    }
+                    return []; 
+                },
                 addEventListener: function() {},
                 removeEventListener: function() {},
-                dispatchEvent: function() { return true; },
-                _children: []
+                dispatchEvent: function() { return true; }
             };
             return element;
         }
