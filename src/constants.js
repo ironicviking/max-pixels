@@ -106,7 +106,17 @@ export const PLAYER = {
     SHIELD_ACTIVATION_KEY: 'KeyG', // Key to manually toggle shields
     SHIELD_AUTO_ACTIVATE: true, // Auto-activate shields when taking damage
     SHIELD_RECHARGE_COMPLETE_THRESHOLD: 40, // Above this, play shield online sound
-    LOW_SHIELD_THRESHOLD: 15 // Below this, visual warning appears
+    LOW_SHIELD_THRESHOLD: 15, // Below this, visual warning appears
+    
+    // Ship Upgrade Multipliers
+    ENGINE_EFFICIENCY_UPGRADE: 1.2,
+    ENGINE_SPEED_UPGRADE: 1.1,
+    WEAPON_DAMAGE_UPGRADE: 1.3,
+    ARMOR_RATING_UPGRADE: 1.25,
+    HEALTH_UPGRADE_MULTIPLIER: 1.15,
+    SHIELD_UPGRADE_MULTIPLIER: 1.2,
+    CARGO_UPGRADE_MULTIPLIER: 1.3,
+    ENERGY_UPGRADE_MULTIPLIER: 1.15
 };
 
 // Graphics Constants
