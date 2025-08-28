@@ -1265,6 +1265,24 @@ describe('Trading System', function() {
         assertEqual(totalValue, expectedValue, 'Should calculate correct total value');
     });
     
+    test('should validate updatePrices parameters - invalid stationId', function() {
+        const trading = new TradingSystem();
+        
+        // Test invalid stationId types and values
+        const invalidStationIds = [null, undefined, '', '   ', 123, {}, [], true];
+        
+        invalidStationIds.forEach(invalidId => {
+            let errorThrown = false;
+            try {
+                trading.updatePrices(invalidId, 'ore-iron', 'buy', 1);
+            } catch (error) {
+                errorThrown = true;
+                assert(error.message.includes('Invalid stationId'), 'Should throw stationId validation error');
+            }
+            assert(errorThrown, `Should throw error for invalid stationId: ${invalidId}`);
+        });
+    });
+    
     test('should validate updatePrices parameters - invalid itemId', function() {
         const trading = new TradingSystem();
         
@@ -1274,7 +1292,7 @@ describe('Trading System', function() {
         invalidItemIds.forEach(invalidId => {
             let errorThrown = false;
             try {
-                trading.updatePrices(invalidId, 'buy', 1);
+                trading.updatePrices('tradingStation', invalidId, 'buy', 1);
             } catch (error) {
                 errorThrown = true;
                 assert(error.message.includes('Invalid itemId'), 'Should throw itemId validation error');
@@ -1292,7 +1310,7 @@ describe('Trading System', function() {
         invalidActions.forEach(invalidAction => {
             let errorThrown = false;
             try {
-                trading.updatePrices('ore-iron', invalidAction, 1);
+                trading.updatePrices('tradingStation', 'ore-iron', invalidAction, 1);
             } catch (error) {
                 errorThrown = true;
                 assert(error.message.includes('Invalid action'), 'Should throw action validation error');
@@ -1310,7 +1328,7 @@ describe('Trading System', function() {
         invalidQuantities.forEach(invalidQuantity => {
             let errorThrown = false;
             try {
-                trading.updatePrices('ore-iron', 'buy', invalidQuantity);
+                trading.updatePrices('tradingStation', 'ore-iron', 'buy', invalidQuantity);
             } catch (error) {
                 errorThrown = true;
                 assert(error.message.includes('Invalid quantity'), 'Should throw quantity validation error');
@@ -1324,9 +1342,9 @@ describe('Trading System', function() {
         
         // These should not throw errors
         try {
-            trading.updatePrices('ore-iron', 'buy', 1);
-            trading.updatePrices('ore-copper', 'sell', 5.5);
-            trading.updatePrices('fuel-hydrogen', 'buy', 0.1);
+            trading.updatePrices('tradingStation', 'ore-iron', 'buy', 1);
+            trading.updatePrices('tradingStation', 'ore-copper', 'sell', 5.5);
+            trading.updatePrices('tradingStation', 'fuel-hydrogen', 'buy', 0.1);
         } catch (error) {
             assert(false, `Valid parameters should not throw errors: ${error.message}`);
         }

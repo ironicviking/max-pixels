@@ -178,7 +178,7 @@ export class TradingSystem {
         this.playerInventory.set(itemId, currentPlayerQuantity + quantity);
         
         // Update prices based on supply/demand
-        this.updatePrices(itemId, 'buy', quantity);
+        this.updatePrices(stationId, itemId, 'buy', quantity);
         
         return {
             success: true,
@@ -208,7 +208,7 @@ export class TradingSystem {
         }
         
         // Update prices based on supply/demand
-        this.updatePrices(itemId, 'sell', quantity);
+        this.updatePrices(stationId, itemId, 'sell', quantity);
         
         return {
             success: true,
@@ -218,8 +218,12 @@ export class TradingSystem {
         };
     }
     
-    updatePrices(itemId, action, quantity) {
+    updatePrices(stationId, itemId, action, quantity) {
         // Parameter validation
+        if (typeof stationId !== 'string' || stationId.trim() === '') {
+            throw new Error('Invalid stationId: must be a non-empty string');
+        }
+        
         if (typeof itemId !== 'string' || itemId.trim() === '') {
             throw new Error('Invalid itemId: must be a non-empty string');
         }
@@ -232,9 +236,9 @@ export class TradingSystem {
             throw new Error('Invalid quantity: must be a positive finite number');
         }
         
-        const stationData = this.stationInventories.get('tradingStation');
+        const stationData = this.stationInventories.get(stationId);
         if (!stationData) {
-            throw new Error('Trading station not found');
+            throw new Error(`Trading station '${stationId}' not found`);
         }
         
         const stationItem = stationData.inventory.get(itemId);
