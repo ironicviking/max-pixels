@@ -161,6 +161,108 @@ export class GraphicsEngine {
         return nebulaGroup;
     }
     
+    createCosmicDustField(width, height, options = {}) {
+        const {
+            particleCount = GRAPHICS.DUST_PARTICLE_COUNT_MIN + Math.floor(Math.random() * (GRAPHICS.DUST_PARTICLE_COUNT_MAX - GRAPHICS.DUST_PARTICLE_COUNT_MIN)),
+            minSize = GRAPHICS.DUST_SIZE_MIN,
+            maxSize = GRAPHICS.DUST_SIZE_MAX,
+            minOpacity = GRAPHICS.DUST_OPACITY_MIN,
+            maxOpacity = GRAPHICS.DUST_OPACITY_MAX,
+            colors = ['#888899', '#aabbcc', '#667788', '#99aacc'],
+            density = GRAPHICS.DUST_DENSITY_NORMAL
+        } = options;
+        
+        const dustGroup = this.createGroup({ id: 'cosmicDustField' });
+        const adjustedCount = Math.floor(particleCount * density);
+        
+        // Create dust particle pattern for repetition
+        const patternId = this.generateId('dustPattern');
+        const pattern = this.createElement('pattern');
+        pattern.setAttribute('id', patternId);
+        pattern.setAttribute('x', '0');
+        pattern.setAttribute('y', '0');
+        pattern.setAttribute('width', GRAPHICS.NEBULA_BASE_SIZE);
+        pattern.setAttribute('height', GRAPHICS.NEBULA_BASE_SIZE);
+        pattern.setAttribute('patternUnits', 'userSpaceOnUse');
+        
+        // Create micro dust particles in pattern
+        const patternParticles = Math.floor(GRAPHICS.DUST_CLOUD_COUNT_MIN * GRAPHICS.COUNT_MEDIUM);
+        for (let i = 0; i < patternParticles; i++) {
+            const dustParticle = this.createElement('circle');
+            const x = Math.random() * GRAPHICS.NEBULA_BASE_SIZE;
+            const y = Math.random() * GRAPHICS.NEBULA_BASE_SIZE;
+            const size = minSize + Math.random() * (maxSize - minSize);
+            const opacity = minOpacity + Math.random() * (maxOpacity - minOpacity);
+            const color = colors[Math.floor(Math.random() * colors.length)];
+            
+            dustParticle.setAttribute('cx', x);
+            dustParticle.setAttribute('cy', y);
+            dustParticle.setAttribute('r', size);
+            dustParticle.setAttribute('fill', color);
+            dustParticle.setAttribute('opacity', opacity);
+            
+            pattern.appendChild(dustParticle);
+        }
+        
+        this.defs.appendChild(pattern);
+        
+        // Create larger dust cloud formations
+        const cloudCount = Math.max(GRAPHICS.DUST_CLOUD_COUNT_MIN, adjustedCount / (GRAPHICS.DUST_CLOUD_COUNT_MAX * GRAPHICS.COUNT_MEDIUM / GRAPHICS.COUNT_MINIMUM));
+        for (let i = 0; i < cloudCount; i++) {
+            const cloudRect = this.createElement('rect');
+            const cloudWidth = GRAPHICS.SIZE_LARGE * GRAPHICS.COUNT_LARGE + Math.random() * (GRAPHICS.SIZE_LARGE * GRAPHICS.COUNT_MAXIMUM);
+            const cloudHeight = GRAPHICS.NEBULA_BASE_SIZE + Math.random() * (GRAPHICS.SIZE_LARGE * GRAPHICS.COUNT_LARGE);
+            const x = Math.random() * (width - cloudWidth);
+            const y = Math.random() * (height - cloudHeight);
+            const rotation = Math.random() * GRAPHICS.FULL_ROTATION * GRAPHICS.FULL_CIRCLE;
+            
+            cloudRect.setAttribute('x', x);
+            cloudRect.setAttribute('y', y);
+            cloudRect.setAttribute('width', cloudWidth);
+            cloudRect.setAttribute('height', cloudHeight);
+            cloudRect.setAttribute('fill', `url(#${patternId})`);
+            cloudRect.setAttribute('opacity', GRAPHICS.RATIO_OPACITY_LOW + Math.random() * GRAPHICS.RATIO_SIZE_SMALL);
+            cloudRect.setAttribute('transform', `rotate(${rotation} ${x + cloudWidth / GRAPHICS.FULL_CIRCLE} ${y + cloudHeight / GRAPHICS.FULL_CIRCLE})`);
+            
+            dustGroup.appendChild(cloudRect);
+        }
+        
+        // Add scattered individual dust particles for variety
+        const scatteredCount = Math.floor(adjustedCount * GRAPHICS.RATIO_OPACITY_LOW);
+        for (let i = 0; i < scatteredCount; i++) {
+            const dustSpeck = this.createElement('circle');
+            const x = Math.random() * width;
+            const y = Math.random() * height;
+            const sizeVariance = GRAPHICS.RATIO_SIZE_LARGE + Math.random() * (maxSize * (GRAPHICS.GLOW_INTENSITY + GRAPHICS.RATIO_SIZE_SMALL) - minSize * GRAPHICS.RATIO_SIZE_LARGE);
+            const size = minSize * GRAPHICS.RATIO_SIZE_LARGE + Math.random() * sizeVariance;
+            const opacityRange = maxOpacity * GRAPHICS.RATIO_SIZE_LARGE - minOpacity * GRAPHICS.RATIO_OPACITY_MID;
+            const opacity = minOpacity * GRAPHICS.RATIO_OPACITY_MID + Math.random() * opacityRange;
+            const color = colors[Math.floor(Math.random() * colors.length)];
+            
+            dustSpeck.setAttribute('cx', x);
+            dustSpeck.setAttribute('cy', y);
+            dustSpeck.setAttribute('r', size);
+            dustSpeck.setAttribute('fill', color);
+            dustSpeck.setAttribute('opacity', opacity);
+            
+            // Add subtle animation to some particles
+            if (Math.random() < GRAPHICS.DUST_ANIMATION_CHANCE) {
+                const animateOpacity = this.createElement('animate');
+                animateOpacity.setAttribute('attributeName', 'opacity');
+                animateOpacity.setAttribute('values', `${opacity};${opacity * GRAPHICS.RATIO_OPACITY_LOW};${opacity}`);
+                animateOpacity.setAttribute('dur', `${GRAPHICS.DUST_ANIMATION_DURATION_MIN + Math.random() * (GRAPHICS.DUST_ANIMATION_DURATION_MAX - GRAPHICS.DUST_ANIMATION_DURATION_MIN)}s`);
+                animateOpacity.setAttribute('repeatCount', 'indefinite');
+                animateOpacity.setAttribute('begin', `${Math.random() * GRAPHICS.COUNT_LARGE + GRAPHICS.FULL_CIRCLE}s`);
+                
+                dustSpeck.appendChild(animateOpacity);
+            }
+            
+            dustGroup.appendChild(dustSpeck);
+        }
+        
+        return dustGroup;
+    }
+    
     createElement(type) {
         return document.createElementNS('http://www.w3.org/2000/svg', type);
     }

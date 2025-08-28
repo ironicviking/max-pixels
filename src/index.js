@@ -185,6 +185,19 @@ class MaxPixelsGame {
         const stars = this.graphics.createStarField(200);
         this.graphics.addToLayer('background', stars);
         
+        // Load cosmic dust field if sector has dust density
+        if (sector.dustDensity && sector.dustDensity > 0) {
+            const dustField = this.graphics.createCosmicDustField(
+                sector.bounds.width, 
+                sector.bounds.height, 
+                {
+                    density: sector.dustDensity,
+                    particleCount: 120
+                }
+            );
+            this.graphics.addToLayer('background', dustField);
+        }
+        
         // Load asteroids
         this.createAsteroids(sector.asteroids, sector.bounds);
         

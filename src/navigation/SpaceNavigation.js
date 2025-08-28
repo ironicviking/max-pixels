@@ -26,6 +26,7 @@ export class SpaceNavigation {
             description: 'A peaceful trading hub with abundant resources',
             backgroundColor: '#000814',
             nebulaTypes: ['blue', 'purple'],
+            dustDensity: 1.0,
             stations: [
                 {
                     id: 'tradingStation',
@@ -67,6 +68,7 @@ export class SpaceNavigation {
             description: 'Rich mining sector with dangerous asteroid fields',
             backgroundColor: '#1a0e0e',
             nebulaTypes: ['red', 'purple'],
+            dustDensity: 1.5,
             stations: [
                 {
                     id: 'miningStation',
@@ -116,6 +118,7 @@ export class SpaceNavigation {
             description: 'Frontier sector with unknown dangers and opportunities',
             backgroundColor: '#0e1a0e',
             nebulaTypes: ['green', 'blue'],
+            dustDensity: 0.7,
             stations: [
                 {
                     id: 'researchStation',
