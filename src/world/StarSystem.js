@@ -350,12 +350,18 @@ export class StarSystem {
         // Update asteroid belt positions
         this.asteroidBelts.forEach(belt => {
             belt.asteroids.forEach(asteroid => {
-                const currentAngle = Math.atan2(asteroid.y, asteroid.x);
-                const distance = Math.sqrt(asteroid.x * asteroid.x + asteroid.y * asteroid.y);
-                const newAngle = currentAngle + asteroid.orbitSpeed * deltaTime;
+                // Cache orbital distance if not already cached
+                if (asteroid.cachedDistance === undefined) {
+                    asteroid.cachedDistance = Math.sqrt(asteroid.x * asteroid.x + asteroid.y * asteroid.y);
+                    asteroid.currentAngle = Math.atan2(asteroid.y, asteroid.x);
+                }
                 
-                asteroid.x = Math.cos(newAngle) * distance;
-                asteroid.y = Math.sin(newAngle) * distance;
+                // Update angle more efficiently using cached values
+                asteroid.currentAngle += asteroid.orbitSpeed * deltaTime;
+                
+                // Update position using cached distance
+                asteroid.x = Math.cos(asteroid.currentAngle) * asteroid.cachedDistance;
+                asteroid.y = Math.sin(asteroid.currentAngle) * asteroid.cachedDistance;
                 asteroid.rotation += asteroid.rotationSpeed * deltaTime;
             });
         });
