@@ -9,6 +9,7 @@ import { TestRunner } from './TestFramework.js';
 // Import all test suites
 import './GameTests.js';
 import './IntegrationTests.js';
+import './PerformanceTests.js';
 
 // Export the configured test runner
 export { TestRunner };

@@ -111,6 +111,149 @@ export class TestFramework {
     }
 
     /**
+     * Performance benchmark utility for measuring operation speed
+     * @param {string} testName - Name of the performance test
+     * @param {Function} operation - Function to benchmark
+     * @param {Object} options - Benchmark options
+     * @returns {Object} Performance results
+     */
+    async benchmark(testName, operation, options = {}) {
+        const {
+            iterations = 1000,
+            warmupIterations = 100,
+            maxDuration = 5000,
+            memoryTracking = false
+        } = options;
+
+        // Warmup phase to eliminate JIT compilation effects
+        for (let i = 0; i < warmupIterations; i++) {
+            if (typeof operation === 'function') {
+                await operation();
+            }
+        }
+
+        const results = {
+            testName,
+            iterations: 0,
+            totalTime: 0,
+            averageTime: 0,
+            minTime: Infinity,
+            maxTime: 0,
+            operationsPerSecond: 0,
+            memoryUsage: null
+        };
+
+        const startMemory = memoryTracking && performance.memory ? 
+            performance.memory.usedJSHeapSize : null;
+        
+        const benchmarkStart = performance.now();
+        let iterationCount = 0;
+
+        // Run benchmark iterations
+        for (let i = 0; i < iterations; i++) {
+            const iterStart = performance.now();
+            
+            if (typeof operation === 'function') {
+                await operation();
+            }
+            
+            const iterEnd = performance.now();
+            const iterDuration = iterEnd - iterStart;
+            
+            results.totalTime += iterDuration;
+            results.minTime = Math.min(results.minTime, iterDuration);
+            results.maxTime = Math.max(results.maxTime, iterDuration);
+            iterationCount++;
+
+            // Stop if max duration exceeded
+            if (performance.now() - benchmarkStart > maxDuration) {
+                break;
+            }
+        }
+
+        results.iterations = iterationCount;
+        results.averageTime = results.totalTime / iterationCount;
+        results.operationsPerSecond = 1000 / results.averageTime;
+
+        if (memoryTracking && performance.memory) {
+            const endMemory = performance.memory.usedJSHeapSize;
+            results.memoryUsage = {
+                start: startMemory,
+                end: endMemory,
+                delta: endMemory - startMemory
+            };
+        }
+
+        return results;
+    }
+
+    /**
+     * Assert that operation completes within time threshold
+     * @param {Function} operation - Operation to test
+     * @param {number} maxTime - Maximum allowed time in ms
+     * @param {string} message - Error message if assertion fails
+     */
+    async assertPerformance(operation, maxTime, message) {
+        const startTime = performance.now();
+        
+        if (typeof operation === 'function') {
+            await operation();
+        }
+        
+        const duration = performance.now() - startTime;
+        
+        if (duration > maxTime) {
+            throw new Error(message || 
+                `Performance assertion failed: operation took ${duration.toFixed(2)}ms, expected < ${maxTime}ms`);
+        }
+        
+        return duration;
+    }
+
+    /**
+     * Memory usage snapshot utility
+     * @returns {Object|null} Memory usage information
+     */
+    getMemorySnapshot() {
+        if (performance.memory) {
+            return {
+                used: performance.memory.usedJSHeapSize,
+                total: performance.memory.totalJSHeapSize,
+                limit: performance.memory.jsHeapSizeLimit,
+                timestamp: Date.now()
+            };
+        }
+        return null;
+    }
+
+    /**
+     * Performance profiler for measuring multiple metrics
+     * @param {Function} operation - Operation to profile
+     * @returns {Object} Comprehensive performance metrics
+     */
+    async profileOperation(operation) {
+        const profile = {
+            startTime: performance.now(),
+            startMemory: this.getMemorySnapshot()
+        };
+
+        // Measure operation
+        if (typeof operation === 'function') {
+            await operation();
+        }
+
+        profile.endTime = performance.now();
+        profile.endMemory = this.getMemorySnapshot();
+        profile.duration = profile.endTime - profile.startTime;
+        
+        if (profile.startMemory && profile.endMemory) {
+            profile.memoryDelta = profile.endMemory.used - profile.startMemory.used;
+        }
+
+        return profile;
+    }
+
+    /**
      * Create a mock DOM element for testing
      * @param {string} tagName - Element tag name
      * @param {Object} attributes - Element attributes
@@ -259,3 +402,6 @@ export const assertEqual = (actual, expected, message) => TestRunner.assertEqual
 export const assertApproxEqual = (actual, expected, tolerance, message) => TestRunner.assertApproxEqual(actual, expected, tolerance, message);
 export const assertThrows = (func, message) => TestRunner.assertThrows(func, message);
 export const waitFor = (condition, timeout, interval) => TestRunner.waitFor(condition, timeout, interval);
+export const benchmark = (name, operation, options) => TestRunner.benchmark(name, operation, options);
+export const assertPerformance = (operation, maxTime, message) => TestRunner.assertPerformance(operation, maxTime, message);
+export const profileOperation = (operation) => TestRunner.profileOperation(operation);
