@@ -182,6 +182,29 @@ export class GraphicsEngine {
         return this.setAttributes(group, attributes);
     }
     
+    createText(content, x = 0, y = 0, attributes = {}) {
+        // Parameter validation
+        if (typeof content !== 'string') {
+            throw new Error('GraphicsEngine.createText: content must be a string');
+        }
+        if (typeof x !== 'number' || !isFinite(x)) {
+            throw new Error('GraphicsEngine.createText: x must be a finite number');
+        }
+        if (typeof y !== 'number' || !isFinite(y)) {
+            throw new Error('GraphicsEngine.createText: y must be a finite number');
+        }
+        if (typeof attributes !== 'object' || attributes === null) {
+            throw new Error('GraphicsEngine.createText: attributes must be an object');
+        }
+        
+        const text = this.createElement('text');
+        text.setAttribute('x', x);
+        text.setAttribute('y', y);
+        text.textContent = content;
+        
+        return this.setAttributes(text, attributes);
+    }
+    
     createGradient(type, stops, attributes = {}) {
         const gradientId = this.generateId('gradient');
         const gradient = this.createElement(type === 'radial' ? 'radialGradient' : 'linearGradient');
