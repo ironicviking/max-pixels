@@ -4,25 +4,60 @@ This document explains how to use Docker Compose for Max-Pixels development.
 
 ## Quick Start
 
-1. **Start the development environment:**
+1. **Configure environment variables:**
+   ```bash
+   cp .env.example .env
+   # Edit .env with your configuration
+   ```
+
+2. **Start the development environment:**
    ```bash
    docker compose up -d
    ```
 
-2. **View logs:**
+3. **View logs:**
    ```bash
    docker compose logs -f web
    ```
 
-3. **Access the application:**
+4. **Access the application:**
    - Web app: http://localhost:3000
    - PostgreSQL: localhost:5432
    - Redis: localhost:6379
 
-4. **Stop the environment:**
+5. **Stop the environment:**
    ```bash
    docker compose down
    ```
+
+## Environment Configuration
+
+Max-Pixels uses environment variables for configuration. The `.env.example` file provides templates for all available settings:
+
+### Required Configuration
+- **Database Settings**: PostgreSQL connection details
+- **Cache Settings**: Redis connection configuration 
+- **Security**: JWT and session secrets (change in production!)
+
+### Optional Configuration
+- **Game Settings**: Player limits, tick rates, update intervals
+- **Development**: Debug logging, development tools
+
+### Environment Variables
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `NODE_ENV` | Application environment | `development` |
+| `APP_PORT` | Application port | `3000` |
+| `DATABASE_URL` | PostgreSQL connection string | Auto-generated |
+| `REDIS_URL` | Redis connection string | `redis://redis:6379` |
+| `JWT_SECRET` | JWT signing secret | `dev-jwt-secret` |
+| `SESSION_SECRET` | Session signing secret | `dev-session-secret` |
+| `MAX_PLAYERS_PER_SECTOR` | Maximum players per game sector | `50` |
+| `GAME_TICK_RATE` | Game update frequency (Hz) | `60` |
+| `ENABLE_DEBUG_LOGGING` | Enable detailed logging | `true` |
+
+**Security Note**: Always change `JWT_SECRET` and `SESSION_SECRET` in production environments!
 
 ## Services
 
