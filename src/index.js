@@ -1074,6 +1074,10 @@ class MaxPixelsGame {
                     <div>Iron: <span id="inventory-iron">0</span></div>
                     <div>Copper: <span id="inventory-copper">0</span></div>
                 </div>
+                <div class="hud-section navigation">
+                    <h3>Navigation</h3>
+                    <div>Sector: <span id="current-sector">Unknown</span></div>
+                </div>
                 <div class="hud-section controls">
                     <h3>Controls</h3>
                     <div>WASD / Arrow Keys: Move</div>
@@ -1314,6 +1318,13 @@ class MaxPixelsGame {
         const copperQuantity = this.trading.getPlayerItemQuantity('ore-copper');
         document.getElementById('inventory-iron').textContent = ironQuantity;
         document.getElementById('inventory-copper').textContent = copperQuantity;
+        
+        // Update navigation display
+        const currentSector = this.navigation.getCurrentSector();
+        const sectorElement = document.getElementById('current-sector');
+        if (sectorElement) {
+            sectorElement.textContent = currentSector ? currentSector.name : 'Unknown';
+        }
         
         // Update radar display
         this.updateRadar();
