@@ -256,7 +256,7 @@ class MaxPixelsGame {
         // Create explosion particle effect at collision point
         this.particles.createExplosionEffect(asteroid.x, asteroid.y, {
             particleCount: 30,
-            color: '#ff4444',
+            colors: ['#ff4444', '#ff8800', '#ffff00', '#ffffff', '#ffaa44'],
             velocity: { min: 60, max: 120 }
         });
         
@@ -842,7 +842,7 @@ class MaxPixelsGame {
                 // Create explosion particle effect
                 this.particles.createExplosionEffect(asteroid.x, asteroid.y, {
                     particleCount: WEAPONS.HIT_PARTICLE_COUNT,
-                    color: WEAPONS.HIT_COLOR,
+                    colors: ['#ff8800', '#ffff00', '#ff4444', '#ffffff', '#ffcc00', '#ff6600'],
                     velocity: { min: WEAPONS.HIT_VELOCITY_MIN, max: WEAPONS.HIT_VELOCITY_MAX }
                 });
                 
