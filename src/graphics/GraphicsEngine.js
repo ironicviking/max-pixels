@@ -1634,6 +1634,27 @@ export class GraphicsEngine {
             chargeIndicator.appendChild(pulseRing);
         }
         
+        // Low energy warning pulse when energy is critically low
+        if (chargeLevel <= WEAPONS.LOW_ENERGY_WARNING_THRESHOLD) {
+            const warningRing = this.createCircle(0, 0, maxRadius + WEAPONS.CHARGE_INDICATOR_GLOW_OFFSET, {
+                id: 'warning-pulse-ring',
+                fill: 'none',
+                stroke: '#ff0000',
+                'stroke-width': 2,
+                opacity: WEAPONS.LOW_ENERGY_PULSE_OPACITY_MIN
+            });
+            
+            // Warning pulse animation
+            const warningAnimation = this.createElement('animate');
+            warningAnimation.setAttribute('attributeName', 'opacity');
+            warningAnimation.setAttribute('values', `${WEAPONS.LOW_ENERGY_PULSE_OPACITY_MIN};${WEAPONS.LOW_ENERGY_PULSE_OPACITY_MAX};${WEAPONS.LOW_ENERGY_PULSE_OPACITY_MIN}`);
+            warningAnimation.setAttribute('dur', WEAPONS.LOW_ENERGY_PULSE_DURATION);
+            warningAnimation.setAttribute('repeatCount', 'indefinite');
+            
+            warningRing.appendChild(warningAnimation);
+            chargeIndicator.appendChild(warningRing);
+        }
+        
         chargeIndicator.appendChild(outerGlow);
         chargeIndicator.appendChild(chargeRing);
         
@@ -1649,16 +1670,16 @@ export class GraphicsEngine {
         const currentColor = this.getChargeIndicatorColor(chargeLevel);
         const currentGlowColor = this.getChargeIndicatorGlowColor(chargeLevel);
         
-        // Update outer glow
-        const outerGlow = indicator.firstElementChild;
+        // Update outer glow (find by blur filter)
+        const outerGlow = indicator.querySelector('circle[filter="blur(2px)"]');
         if (outerGlow) {
             outerGlow.setAttribute('r', currentRadius + WEAPONS.CHARGE_INDICATOR_GLOW_OFFSET);
             outerGlow.setAttribute('opacity', opacity * WEAPONS.CHARGE_INDICATOR_GLOW_OPACITY);
             outerGlow.setAttribute('stroke', currentGlowColor);
         }
         
-        // Update main ring
-        const chargeRing = indicator.children[1];
+        // Update main ring (find by stroke-width 1.5)
+        const chargeRing = indicator.querySelector('circle[stroke-width="1.5"]');
         if (chargeRing) {
             chargeRing.setAttribute('r', currentRadius);
             chargeRing.setAttribute('opacity', opacity);
@@ -1669,21 +1690,24 @@ export class GraphicsEngine {
         // Handle low energy warning animation
         this.updateLowEnergyWarning(indicator, chargeLevel);
         
-        // Handle energy core visibility
-        const hasEnergyCore = indicator.children.length > 2 && indicator.children[2].tagName === 'circle' && indicator.children[2].getAttribute('fill') === '#ffffff';
+        // Handle energy core visibility (find by white fill)
+        const energyCore = indicator.querySelector('circle[fill="#ffffff"]');
+        const hasEnergyCore = energyCore !== null;
         if (chargeLevel > WEAPONS.CHARGE_CORE_THRESHOLD && !hasEnergyCore) {
             // Add energy core
-            const energyCore = this.createCircle(0, 0, WEAPONS.CHARGE_INDICATOR_MIN_RADIUS, {
+            const newEnergyCore = this.createCircle(0, 0, WEAPONS.CHARGE_INDICATOR_MIN_RADIUS, {
                 fill: '#ffffff',
                 opacity: (chargeLevel - WEAPONS.CHARGE_CORE_THRESHOLD) / WEAPONS.CHARGE_CORE_OPACITY_DIVISOR
             });
-            indicator.appendChild(energyCore);
+            indicator.appendChild(newEnergyCore);
         } else if (chargeLevel <= WEAPONS.CHARGE_CORE_THRESHOLD && hasEnergyCore) {
             // Remove energy core
-            indicator.children[2].remove();
+            if (energyCore.parentNode) {
+                energyCore.parentNode.removeChild(energyCore);
+            }
         } else if (hasEnergyCore) {
             // Update energy core opacity
-            indicator.children[2].setAttribute('opacity', (chargeLevel - WEAPONS.CHARGE_CORE_THRESHOLD) / WEAPONS.CHARGE_CORE_OPACITY_DIVISOR);
+            energyCore.setAttribute('opacity', (chargeLevel - WEAPONS.CHARGE_CORE_THRESHOLD) / WEAPONS.CHARGE_CORE_OPACITY_DIVISOR);
         }
     }
     
@@ -1767,7 +1791,9 @@ export class GraphicsEngine {
             
         } else if (!isLowEnergy && existingWarning) {
             // Remove warning ring when energy is no longer low
-            existingWarning.remove();
+            if (existingWarning.parentNode) {
+                existingWarning.parentNode.removeChild(existingWarning);
+            }
         }
     }
     
