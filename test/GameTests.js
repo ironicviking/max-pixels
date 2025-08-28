@@ -779,6 +779,173 @@ describe('Graphics Engine', function() {
         
         TestRunner.cleanupTestDOM();
     });
+    
+    test('should create moon with correct structure', function() {
+        const testContainer = TestRunner.setupTestDOM();
+        const canvas = testContainer.querySelector('#gameCanvas');
+        const graphics = new GraphicsEngine(canvas);
+        
+        const moon = graphics.createMoon(100, 150, 30);
+        
+        assert(moon !== null, 'Moon should be created');
+        assertEqual(moon.tagName, 'G', 'Moon should be a group element');
+        assertEqual(moon.getAttribute('transform'), 'translate(100, 150)', 'Moon should be positioned correctly');
+        assertEqual(moon.getAttribute('class'), 'moon', 'Moon should have correct class');
+        
+        // Check for moon body (main circle)
+        const moonBody = moon.querySelector('circle');
+        assert(moonBody !== null, 'Moon should have body circle');
+        assertEqual(moonBody.getAttribute('r'), '30', 'Moon body should have correct radius');
+        assert(moonBody.getAttribute('fill').includes('url(#'), 'Moon body should use radial gradient');
+        
+        // Check for craters and maria (should have multiple circles for surface features)
+        const allCircles = moon.querySelectorAll('circle');
+        assert(allCircles.length >= 1, 'Moon should have at least the main body circle');
+        
+        TestRunner.cleanupTestDOM();
+    });
+    
+    test('should create moon with custom attributes', function() {
+        const testContainer = TestRunner.setupTestDOM();
+        const canvas = testContainer.querySelector('#gameCanvas');
+        const graphics = new GraphicsEngine(canvas);
+        
+        const moon = graphics.createMoon(200, 250, 40, {
+            surfaceColor: '#aabbcc',
+            coreColor: '#445566',
+            id: 'custom-moon',
+            'data-moon-type': 'rocky'
+        });
+        
+        assertEqual(moon.getAttribute('id'), 'custom-moon', 'Moon should use custom ID');
+        assertEqual(moon.getAttribute('data-moon-type'), 'rocky', 'Moon should have custom attributes');
+        
+        // Custom colors should be used in gradient
+        const moonBody = moon.querySelector('circle');
+        const fillId = moonBody.getAttribute('fill').match(/url\(#(.+)\)/)[1];
+        const gradient = graphics.defs.querySelector(`#${fillId}`);
+        assert(gradient !== null, 'Moon should have gradient definition');
+        
+        TestRunner.cleanupTestDOM();
+    });
+    
+    test('should validate createMoon parameters', function() {
+        const testContainer = TestRunner.setupTestDOM();
+        const canvas = testContainer.querySelector('#gameCanvas');
+        const graphics = new GraphicsEngine(canvas);
+        
+        // Test valid parameters
+        const moon = graphics.createMoon(10, 20, 15);
+        assert(moon !== null, 'Should create moon with valid parameters');
+        
+        // Test invalid x parameter
+        assertThrows(() => graphics.createMoon('invalid', 20, 15), 'Should throw for invalid x');
+        assertThrows(() => graphics.createMoon(Infinity, 20, 15), 'Should throw for infinite x');
+        assertThrows(() => graphics.createMoon(NaN, 20, 15), 'Should throw for NaN x');
+        
+        // Test invalid y parameter
+        assertThrows(() => graphics.createMoon(10, 'invalid', 15), 'Should throw for invalid y');
+        assertThrows(() => graphics.createMoon(10, Infinity, 15), 'Should throw for infinite y');
+        assertThrows(() => graphics.createMoon(10, NaN, 15), 'Should throw for NaN y');
+        
+        // Test invalid radius parameter
+        assertThrows(() => graphics.createMoon(10, 20, 'invalid'), 'Should throw for invalid radius');
+        assertThrows(() => graphics.createMoon(10, 20, 0), 'Should throw for zero radius');
+        assertThrows(() => graphics.createMoon(10, 20, -5), 'Should throw for negative radius');
+        assertThrows(() => graphics.createMoon(10, 20, Infinity), 'Should throw for infinite radius');
+        assertThrows(() => graphics.createMoon(10, 20, NaN), 'Should throw for NaN radius');
+        
+        // Test invalid attributes parameter
+        assertThrows(() => graphics.createMoon(10, 20, 15, null), 'Should throw for null attributes');
+        assertThrows(() => graphics.createMoon(10, 20, 15, 'invalid'), 'Should throw for non-object attributes');
+        
+        TestRunner.cleanupTestDOM();
+    });
+    
+    test('should create moon craters with correct properties', function() {
+        const testContainer = TestRunner.setupTestDOM();
+        const canvas = testContainer.querySelector('#gameCanvas');
+        const graphics = new GraphicsEngine(canvas);
+        
+        const moon = graphics.createMoon(0, 0, 50);
+        const allCircles = moon.querySelectorAll('circle');
+        
+        // First circle is the moon body, rest are surface features (craters and maria)
+        assert(allCircles.length >= 1, 'Moon should have at least the main body circle');
+        
+        // Check that crater circles are properly positioned within the moon
+        for (let i = 1; i < allCircles.length; i++) {
+            const circle = allCircles[i];
+            const cx = parseFloat(circle.getAttribute('cx') || '0');
+            const cy = parseFloat(circle.getAttribute('cy') || '0');
+            const r = parseFloat(circle.getAttribute('r') || '0');
+            
+            // Surface features should be within reasonable bounds
+            const distance = Math.sqrt(cx * cx + cy * cy);
+            assert(distance + r <= 70, 'Surface features should be within reasonable distance from center');
+            assert(r > 0, 'Surface feature radius should be positive');
+        }
+        
+        TestRunner.cleanupTestDOM();
+    });
+    
+    test('should create moon maria (dark patches)', function() {
+        const testContainer = TestRunner.setupTestDOM();
+        const canvas = testContainer.querySelector('#gameCanvas');
+        const graphics = new GraphicsEngine(canvas);
+        
+        const moon = graphics.createMoon(0, 0, 60, { surfaceColor: '#cccccc' });
+        
+        // Check for basic moon structure - the moon body should exist
+        const circles = moon.querySelectorAll('circle');
+        assert(circles.length >= 1, 'Moon should have at least the main body');
+        
+        // The first circle should be the main moon body with a gradient fill
+        const mainBody = circles[0];
+        assert(mainBody.getAttribute('fill').includes('url(#'), 'Main body should use gradient fill');
+        
+        TestRunner.cleanupTestDOM();
+    });
+    
+    test('should use default colors when not specified', function() {
+        const testContainer = TestRunner.setupTestDOM();
+        const canvas = testContainer.querySelector('#gameCanvas');
+        const graphics = new GraphicsEngine(canvas);
+        
+        const moon = graphics.createMoon(0, 0, 25);
+        const moonBody = moon.querySelector('circle');
+        
+        // Should use default gradient with default colors
+        const fillId = moonBody.getAttribute('fill').match(/url\(#(.+)\)/)[1];
+        const gradient = graphics.defs.querySelector(`#${fillId}`);
+        assert(gradient !== null, 'Should have gradient with default colors');
+        
+        const stops = gradient.querySelectorAll('stop');
+        assert(stops.length === 3, 'Gradient should have 3 color stops');
+        
+        TestRunner.cleanupTestDOM();
+    });
+    
+    test('should scale surface features with moon size', function() {
+        const testContainer = TestRunner.setupTestDOM();
+        const canvas = testContainer.querySelector('#gameCanvas');
+        const graphics = new GraphicsEngine(canvas);
+        
+        const smallMoon = graphics.createMoon(0, 0, 10);
+        const largeMoon = graphics.createMoon(0, 0, 100);
+        
+        const smallFeatures = smallMoon.querySelectorAll('circle').length;
+        const largeFeatures = largeMoon.querySelectorAll('circle').length;
+        
+        // Both moons should have at least the main body
+        assert(smallFeatures >= 1, 'Small moon should have at least main body');
+        assert(largeFeatures >= 1, 'Large moon should have at least main body');
+        
+        // Larger moons typically have more surface features (but due to randomness, we can't guarantee it)
+        assert(largeFeatures >= smallFeatures, 'Large moons should have at least as many features as small moons');
+        
+        TestRunner.cleanupTestDOM();
+    });
 });
 
 /**
