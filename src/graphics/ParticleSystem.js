@@ -28,7 +28,7 @@ export class ParticleSystem {
         this.particles = new Map();
         this.activeEmitters = new Map();
         this.idCounter = 0;
-        this.updateInterval = null;
+        this.animationFrameId = null;
         
         this.startUpdateLoop();
     }
@@ -468,20 +468,23 @@ export class ParticleSystem {
      * Start the update loop
      */
     startUpdateLoop() {
-        if (this.updateInterval) return;
+        if (this.animationFrameId) return;
         
-        this.updateInterval = setInterval(() => {
+        const updateLoop = () => {
             this.update();
-        }, PARTICLES.FRAME_TIME); // ~60fps
+            this.animationFrameId = requestAnimationFrame(updateLoop);
+        };
+        
+        this.animationFrameId = requestAnimationFrame(updateLoop);
     }
     
     /**
      * Stop the update loop
      */
     stopUpdateLoop() {
-        if (this.updateInterval) {
-            clearInterval(this.updateInterval);
-            this.updateInterval = null;
+        if (this.animationFrameId) {
+            cancelAnimationFrame(this.animationFrameId);
+            this.animationFrameId = null;
         }
     }
     
