@@ -578,6 +578,164 @@ describe('Trading System', function() {
         const rationItem = items.find(item => item.id === 'food-rations');
         assertEqual(rationItem.quantity, 1, 'Should have remaining quantity');
     });
+    
+    test('should check if player can buy from station', function() {
+        const trading = new TradingSystem();
+        
+        const canBuy = trading.canBuyFromStation('tradingStation', 'ore-iron', 5);
+        
+        assert(canBuy.success, 'Should be able to buy available item');
+        assertEqual(typeof canBuy.cost, 'number', 'Should return cost');
+        assert(canBuy.cost > 0, 'Cost should be positive');
+    });
+    
+    test('should reject buy when station not found', function() {
+        const trading = new TradingSystem();
+        
+        const canBuy = trading.canBuyFromStation('nonexistent-station', 'ore-iron', 1);
+        
+        assert(!canBuy.success, 'Should fail for nonexistent station');
+        assertEqual(canBuy.error, 'Station not found', 'Should return correct error');
+    });
+    
+    test('should reject buy when item not available', function() {
+        const trading = new TradingSystem();
+        
+        const canBuy = trading.canBuyFromStation('tradingStation', 'nonexistent-item', 1);
+        
+        assert(!canBuy.success, 'Should fail for unavailable item');
+        assertEqual(canBuy.error, 'Item not available', 'Should return correct error');
+    });
+    
+    test('should reject buy when insufficient stock', function() {
+        const trading = new TradingSystem();
+        
+        const canBuy = trading.canBuyFromStation('tradingStation', 'ore-iron', 1000);
+        
+        assert(!canBuy.success, 'Should fail for excessive quantity');
+        assertEqual(canBuy.error, 'Insufficient stock', 'Should return correct error');
+    });
+    
+    test('should buy from station successfully', function() {
+        const trading = new TradingSystem();
+        const playerCredits = 500;
+        
+        const result = trading.buyFromStation('tradingStation', 'ore-iron', 2, playerCredits);
+        
+        assert(result.success, 'Buy should succeed');
+        assertEqual(typeof result.cost, 'number', 'Should return cost');
+        assertEqual(typeof result.newPlayerQuantity, 'number', 'Should return new player quantity');
+        assertEqual(typeof result.newStationQuantity, 'number', 'Should return new station quantity');
+        
+        // Check player inventory updated
+        const playerQuantity = trading.getPlayerItemQuantity('ore-iron');
+        assertEqual(playerQuantity, 2, 'Player should have bought items');
+    });
+    
+    test('should reject buy with insufficient credits', function() {
+        const trading = new TradingSystem();
+        const playerCredits = 1; // Very low credits
+        
+        const result = trading.buyFromStation('tradingStation', 'ore-iron', 10, playerCredits);
+        
+        assert(!result.success, 'Should fail with insufficient credits');
+        assertEqual(result.error, 'Insufficient credits', 'Should return correct error');
+    });
+    
+    test('should check if player can sell to station', function() {
+        const trading = new TradingSystem();
+        trading.addPlayerItem('ore-iron', 5);
+        
+        const canSell = trading.canSellToStation('tradingStation', 'ore-iron', 3, 0);
+        
+        assert(canSell.success, 'Should be able to sell owned item');
+        assertEqual(typeof canSell.value, 'number', 'Should return value');
+        assert(canSell.value > 0, 'Value should be positive');
+    });
+    
+    test('should reject sell when player lacks inventory', function() {
+        const trading = new TradingSystem();
+        
+        const canSell = trading.canSellToStation('tradingStation', 'ore-iron', 5, 0);
+        
+        assert(!canSell.success, 'Should fail when player has no items');
+        assertEqual(canSell.error, 'Insufficient inventory', 'Should return correct error');
+    });
+    
+    test('should sell to station successfully', function() {
+        const trading = new TradingSystem();
+        trading.addPlayerItem('ore-iron', 10);
+        
+        const result = trading.sellToStation('tradingStation', 'ore-iron', 3);
+        
+        assert(result.success, 'Sell should succeed');
+        assertEqual(typeof result.value, 'number', 'Should return value');
+        assertEqual(typeof result.newPlayerQuantity, 'number', 'Should return new player quantity');
+        assertEqual(typeof result.newStationQuantity, 'number', 'Should return new station quantity');
+        
+        // Check player inventory updated
+        const playerQuantity = trading.getPlayerItemQuantity('ore-iron');
+        assertEqual(playerQuantity, 7, 'Player should have remaining items');
+    });
+    
+    test('should get station inventory', function() {
+        const trading = new TradingSystem();
+        
+        const inventory = trading.getStationInventory('tradingStation');
+        
+        assert(inventory !== null, 'Should return inventory data');
+        assertEqual(typeof inventory.credits, 'number', 'Should have credits');
+        assert(Array.isArray(inventory.items), 'Should have items array');
+        assert(inventory.items.length > 0, 'Should have items');
+        
+        // Check item structure
+        const item = inventory.items[0];
+        assert(item.item !== undefined, 'Should have item data');
+        assertEqual(typeof item.quantity, 'number', 'Should have quantity');
+        assertEqual(typeof item.buyPrice, 'number', 'Should have buy price');
+        assertEqual(typeof item.sellPrice, 'number', 'Should have sell price');
+    });
+    
+    test('should return null for nonexistent station inventory', function() {
+        const trading = new TradingSystem();
+        
+        const inventory = trading.getStationInventory('nonexistent');
+        
+        assertEqual(inventory, null, 'Should return null for nonexistent station');
+    });
+    
+    test('should update prices based on trading activity', function() {
+        const trading = new TradingSystem();
+        const stationInventory = trading.getStationInventory('tradingStation');
+        const ironItem = stationInventory.items.find(item => item.item.id === 'ore-iron');
+        const originalSellPrice = ironItem.sellPrice;
+        
+        // Buy some items (should increase price)
+        trading.buyFromStation('tradingStation', 'ore-iron', 5, 1000);
+        
+        const updatedInventory = trading.getStationInventory('tradingStation');
+        const updatedIronItem = updatedInventory.items.find(item => item.item.id === 'ore-iron');
+        
+        assert(updatedIronItem.sellPrice > originalSellPrice, 'Sell price should increase after buying');
+    });
+    
+    test('should calculate total inventory value', function() {
+        const trading = new TradingSystem();
+        trading.addPlayerItem('ore-iron', 5);
+        trading.addPlayerItem('ore-copper', 3);
+        
+        const totalValue = trading.getTotalInventoryValue();
+        
+        assert(totalValue > 0, 'Total value should be positive');
+        assertEqual(typeof totalValue, 'number', 'Should return number');
+        
+        // Value should be quantity * base price for each item
+        const ironItem = trading.getItem('ore-iron');
+        const copperItem = trading.getItem('ore-copper');
+        const expectedValue = (ironItem.basePrice * 5) + (copperItem.basePrice * 3);
+        
+        assertEqual(totalValue, expectedValue, 'Should calculate correct total value');
+    });
 });
 
 /**

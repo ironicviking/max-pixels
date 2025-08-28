@@ -3,6 +3,8 @@
  * Handles items, resources, prices, and trading mechanics
  */
 
+import { TRADING } from '../constants.js';
+
 export class TradingSystem {
     constructor() {
         this.items = new Map();
@@ -223,24 +225,24 @@ export class TradingSystem {
         if (!stationItem) return;
         
         // Simple supply/demand pricing
-        const priceChange = quantity * 0.1;
+        const priceChange = quantity * TRADING.PRICE_VARIANCE_LOW;
         
         if (action === 'buy') {
             // Player buying increases demand, prices go up
             stationItem.sellPrice += priceChange;
-            stationItem.buyPrice += priceChange * 0.8;
+            stationItem.buyPrice += priceChange * TRADING.PRICE_VARIANCE_HIGH;
         } else if (action === 'sell') {
             // Player selling increases supply, prices go down
             stationItem.sellPrice -= priceChange;
-            stationItem.buyPrice -= priceChange * 0.8;
+            stationItem.buyPrice -= priceChange * TRADING.PRICE_VARIANCE_HIGH;
         }
         
         // Keep prices within reasonable bounds
         const item = this.getItem(itemId);
-        stationItem.sellPrice = Math.max(item.basePrice * 0.5, stationItem.sellPrice);
-        stationItem.buyPrice = Math.max(item.basePrice * 0.3, stationItem.buyPrice);
-        stationItem.sellPrice = Math.min(item.basePrice * 2, stationItem.sellPrice);
-        stationItem.buyPrice = Math.min(item.basePrice * 1.5, stationItem.buyPrice);
+        stationItem.sellPrice = Math.max(item.basePrice * TRADING.PRICE_BOUNDS_MIN_SELL, stationItem.sellPrice);
+        stationItem.buyPrice = Math.max(item.basePrice * TRADING.PRICE_BOUNDS_MIN_BUY, stationItem.buyPrice);
+        stationItem.sellPrice = Math.min(item.basePrice * TRADING.PRICE_BOUNDS_MAX_SELL, stationItem.sellPrice);
+        stationItem.buyPrice = Math.min(item.basePrice * TRADING.PRICE_BOUNDS_MAX_BUY, stationItem.buyPrice);
     }
     
     addPlayerItem(itemId, quantity) {

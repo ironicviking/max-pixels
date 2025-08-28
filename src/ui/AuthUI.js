@@ -3,6 +3,8 @@
  * Handles login/registration forms and user interface
  */
 
+import { TRADING } from '../constants.js';
+
 export class AuthUI {
     constructor(authService, containerElement) {
         this.auth = authService;
@@ -243,7 +245,7 @@ export class AuthUI {
         
         setTimeout(() => {
             message.classList.add('fade-out');
-            setTimeout(() => message.remove(), 300);
-        }, 3000);
+            setTimeout(() => message.remove(), TRADING.FADE_OUT_DELAY);
+        }, TRADING.MESSAGE_DURATION);
     }
 }

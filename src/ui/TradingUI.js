@@ -3,6 +3,8 @@
  * Interactive interface for buying and selling items at stations
  */
 
+import { TRADING } from '../constants.js';
+
 export class TradingUI {
     constructor(tradingSystem, authService) {
         this.trading = tradingSystem;
@@ -93,7 +95,7 @@ export class TradingUI {
         
         const stationInventory = this.trading.getStationInventory(this.currentStation.id);
         const playerInventory = this.trading.getPlayerInventory();
-        const playerCredits = this.auth.currentUser?.credits || 1000;
+        const playerCredits = this.auth.currentUser?.credits || TRADING.DEFAULT_PLAYER_CREDITS;
         
         // Update header
         document.getElementById('stationName').textContent = this.currentStation.name;
@@ -249,7 +251,7 @@ export class TradingUI {
     }
     
     handleBuyItem(itemId, quantity) {
-        const playerCredits = this.auth.currentUser?.credits || 1000;
+        const playerCredits = this.auth.currentUser?.credits || TRADING.DEFAULT_PLAYER_CREDITS;
         const result = this.trading.buyFromStation(this.currentStation.id, itemId, quantity, playerCredits);
         
         if (result.success) {
@@ -271,7 +273,7 @@ export class TradingUI {
         if (result.success) {
             // Update player credits (in a real game this would be handled by the auth system)
             if (this.auth.currentUser) {
-                this.auth.currentUser.credits = (this.auth.currentUser.credits || 1000) + result.value;
+                this.auth.currentUser.credits = (this.auth.currentUser.credits || TRADING.DEFAULT_PLAYER_CREDITS) + result.value;
             }
             
             this.showMessage(`Sold ${quantity} units for ${result.value} credits!`, 'success');
@@ -294,7 +296,7 @@ export class TradingUI {
         
         setTimeout(() => {
             messageDiv.remove();
-        }, 3000);
+        }, TRADING.MESSAGE_DURATION);
     }
     
     addTradingStyles() {
