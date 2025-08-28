@@ -664,18 +664,31 @@ class MaxPixelsGame {
     }
     
     checkLaserHits(startX, startY, endX, endY) {
-        // Simple line-circle intersection for asteroids
+        // Optimized line-circle intersection for asteroids
         for (let i = this.asteroids.length - 1; i >= 0; i--) {
             const asteroid = this.asteroids[i];
             
-            // Distance from asteroid center to laser line
-            const distance = this.distanceFromPointToLine(
+            // Quick bounding box check for early elimination
+            const minX = Math.min(startX, endX) - asteroid.size;
+            const maxX = Math.max(startX, endX) + asteroid.size;
+            const minY = Math.min(startY, endY) - asteroid.size;
+            const maxY = Math.max(startY, endY) + asteroid.size;
+            
+            if (asteroid.x < minX || asteroid.x > maxX || 
+                asteroid.y < minY || asteroid.y > maxY) {
+                continue; // Skip this asteroid, it's too far away
+            }
+            
+            // Optimized squared distance check to avoid sqrt
+            const squaredDistance = this.squaredDistanceFromPointToLineSegment(
                 asteroid.x, asteroid.y,
                 startX, startY,
                 endX, endY
             );
             
-            if (distance < asteroid.size) {
+            const squaredRadius = asteroid.size * asteroid.size;
+            
+            if (squaredDistance < squaredRadius) {
                 // Hit! Create impact effect
                 const impact = this.graphics.createLaserImpact(asteroid.x, asteroid.y, {
                     size: WEAPONS.IMPACT_SIZE,
@@ -720,6 +733,32 @@ class MaxPixelsGame {
         const projectionY = y1 + t * (y2 - y1);
         
         return Math.sqrt(Math.pow(px - projectionX, 2) + Math.pow(py - projectionY, 2));
+    }
+    
+    squaredDistanceFromPointToLineSegment(px, py, x1, y1, x2, y2) {
+        // Optimized version that returns squared distance to avoid sqrt calculation
+        const dx = x2 - x1;
+        const dy = y2 - y1;
+        const lineLengthSquared = dx * dx + dy * dy;
+        
+        // If the line segment is actually a point
+        if (lineLengthSquared === 0) {
+            const dpx = px - x1;
+            const dpy = py - y1;
+            return dpx * dpx + dpy * dpy;
+        }
+        
+        // Calculate the parameter t for the closest point on the line segment
+        const t = Math.max(0, Math.min(1, ((px - x1) * dx + (py - y1) * dy) / lineLengthSquared));
+        
+        // Find the closest point on the line segment
+        const projectionX = x1 + t * dx;
+        const projectionY = y1 + t * dy;
+        
+        // Return squared distance
+        const dpx = px - projectionX;
+        const dpy = py - projectionY;
+        return dpx * dpx + dpy * dpy;
     }
     
     destroyAsteroid(asteroidId) {
