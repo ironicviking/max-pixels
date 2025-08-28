@@ -25,6 +25,7 @@ export class SpaceNavigation {
             bounds: { width: 1920, height: 1080 },
             description: 'A peaceful trading hub with abundant resources',
             backgroundColor: '#000814',
+            nebulaTypes: ['blue', 'purple'],
             stations: [
                 {
                     id: 'tradingStation',
@@ -65,6 +66,7 @@ export class SpaceNavigation {
             bounds: { width: 2400, height: 1400 },
             description: 'Rich mining sector with dangerous asteroid fields',
             backgroundColor: '#1a0e0e',
+            nebulaTypes: ['red', 'purple'],
             stations: [
                 {
                     id: 'miningStation',
@@ -113,6 +115,7 @@ export class SpaceNavigation {
             bounds: { width: 2800, height: 1600 },
             description: 'Frontier sector with unknown dangers and opportunities',
             backgroundColor: '#0e1a0e',
+            nebulaTypes: ['green', 'blue'],
             stations: [
                 {
                     id: 'researchStation',

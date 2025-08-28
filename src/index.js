@@ -171,6 +171,16 @@ class MaxPixelsGame {
             backgroundLayer.style.backgroundColor = sector.backgroundColor;
         }
         
+        // Load nebula background if sector has nebula types
+        if (sector.nebulaTypes && sector.nebulaTypes.length > 0) {
+            const nebulaBackground = this.graphics.createNebulaBackground(
+                sector.bounds.width, 
+                sector.bounds.height, 
+                sector.nebulaTypes
+            );
+            this.graphics.addToLayer('background', nebulaBackground);
+        }
+        
         // Load stars
         const stars = this.graphics.createStarField(200);
         this.graphics.addToLayer('background', stars);
