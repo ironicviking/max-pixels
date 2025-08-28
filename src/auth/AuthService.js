@@ -20,14 +20,43 @@ const AUTH_CONSTANTS = {
 export class AuthService {
     constructor() {
         this.currentUser = null;
-        this.token = localStorage.getItem('maxPixelsToken');
+        this.token = this.getStorageItem('maxPixelsToken');
         this.apiBase = '/api/auth'; // Future server endpoint
         
         // For now, simulate with localStorage until server is implemented
-        this.users = JSON.parse(localStorage.getItem('maxPixelsUsers')) || {};
+        this.users = JSON.parse(this.getStorageItem('maxPixelsUsers') || '{}');
         
         if (this.token) {
             this.validateToken();
+        }
+    }
+    
+    // Helper method to handle localStorage safely
+    getStorageItem(key) {
+        try {
+            return typeof localStorage !== 'undefined' ? localStorage.getItem(key) : null;
+        } catch {
+            return null;
+        }
+    }
+    
+    setStorageItem(key, value) {
+        try {
+            if (typeof localStorage !== 'undefined') {
+                localStorage.setItem(key, value);
+            }
+        } catch {
+            // Silently fail if localStorage is not available
+        }
+    }
+    
+    removeStorageItem(key) {
+        try {
+            if (typeof localStorage !== 'undefined') {
+                localStorage.removeItem(key);
+            }
+        } catch {
+            // Silently fail if localStorage is not available
         }
     }
     
@@ -54,7 +83,7 @@ export class AuthService {
             };
             
             this.users[username] = user;
-            localStorage.setItem('maxPixelsUsers', JSON.stringify(this.users));
+            this.setStorageItem('maxPixelsUsers', JSON.stringify(this.users));
             
             // Auto-login after registration
             await this.login(username, password);
@@ -90,7 +119,7 @@ export class AuthService {
             this.token = token;
             this.currentUser = user;
             
-            localStorage.setItem('maxPixelsToken', token);
+            this.setStorageItem('maxPixelsToken', token);
             
             return {
                 success: true,
@@ -110,7 +139,7 @@ export class AuthService {
     logout() {
         this.currentUser = null;
         this.token = null;
-        localStorage.removeItem('maxPixelsToken');
+        this.removeStorageItem('maxPixelsToken');
         
         return {
             success: true,
@@ -150,8 +179,57 @@ export class AuthService {
         return Boolean(this.currentUser) ? this.sanitizeUser(this.currentUser) : null;
     }
     
+    getUsername() {
+        return this.currentUser ? this.currentUser.username : null;
+    }
+    
     isAuthenticated() {
         return Boolean(this.currentUser);
+    }
+    
+    isLoggedIn() {
+        return this.isAuthenticated();
+    }
+    
+    isGuest() {
+        return Boolean(this.currentUser && this.currentUser.isGuest === true);
+    }
+    
+    async loginAsGuest(displayName = 'Guest') {
+        try {
+            // Generate a unique guest user
+            const guestUser = {
+                id: 'guest_' + Date.now() + '_' + Math.random().toString(AUTH_CONSTANTS.RANDOM_STRING_BASE).substr(2, AUTH_CONSTANTS.RANDOM_STRING_LENGTH),
+                username: displayName,
+                email: null,
+                passwordHash: null,
+                createdAt: new Date().toISOString(),
+                level: 1,
+                experience: 0,
+                credits: 1000,
+                isGuest: true
+            };
+            
+            // Don't store guest users permanently
+            this.currentUser = guestUser;
+            
+            // Generate a temporary token for the guest
+            const token = this.generateToken(guestUser);
+            this.token = token;
+            
+            return {
+                success: true,
+                message: 'Guest login successful',
+                user: this.sanitizeUser(guestUser),
+                token
+            };
+            
+        } catch (error) {
+            return {
+                success: false,
+                message: error.message
+            };
+        }
     }
     
     // Validation helpers
