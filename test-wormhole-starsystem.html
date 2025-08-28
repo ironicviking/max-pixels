@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Max-Pixels: StarSystem Wormhole Integration Test</title>
+    <style>
+        body {
+            background-color: #000011;
+            color: #ffffff;
+            font-family: 'Courier New', monospace;
+            margin: 0;
+            padding: 20px;
+        }
+        .test-info {
+            background: rgba(0, 100, 200, 0.2);
+            border: 1px solid #0066cc;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        .test-results {
+            background: rgba(0, 200, 0, 0.1);
+            border: 1px solid #00cc00;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 20px;
+        }
+        svg {
+            border: 1px solid #333;
+            background-color: #000022;
+        }
+        .wormhole {
+            filter: drop-shadow(0 0 3px rgba(138, 43, 226, 0.8));
+        }
+        pre {
+            background: rgba(50, 50, 50, 0.7);
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>🌌 Max-Pixels: StarSystem Wormhole Integration Test</h1>
+    
+    <div class="test-info">
+        <p><strong>Testing:</strong> Wormhole integration into StarSystem generation</p>
+        <p><strong>Features:</strong> Random wormhole generation, rendering with createWormhole method, system info updates</p>
+    </div>
+    
+    <svg id="gameCanvas" width="1000" height="700">
+        <defs></defs>
+    </svg>
+    
+    <div class="test-results" id="testResults">
+        <h3>Test Results:</h3>
+        <div id="results"></div>
+    </div>
+
+    <script type="module">
+        import { StarSystem } from './src/world/StarSystem.js';
+        import { GraphicsEngine } from './src/graphics/GraphicsEngine.js';
+
+        const canvas = document.getElementById('gameCanvas');
+        const graphics = new GraphicsEngine(canvas);
+        const resultsDiv = document.getElementById('results');
+
+        // Create a test layer
+        graphics.createLayer('test', 1);
+        
+        // Generate multiple star systems to test wormhole generation
+        let totalWormholes = 0;
+        let systemsWithWormholes = 0;
+        const testSystems = 10;
+        
+        resultsDiv.innerHTML += '<p>🧪 Generating ' + testSystems + ' star systems to test wormhole integration...</p>';
+        
+        const systems = [];
+        for (let i = 0; i < testSystems; i++) {
+            const system = new StarSystem(`test-system-${i}`, { x: i * 100, y: 0 });
+            systems.push(system);
+            
+            if (system.wormholes.length > 0) {
+                systemsWithWormholes++;
+                totalWormholes += system.wormholes.length;
+            }
+            
+            console.log(`System ${i}: ${system.wormholes.length} wormholes`, system.getSystemInfo());
+        }
+        
+        // Display results
+        resultsDiv.innerHTML += `<pre>
+Total Systems Generated: ${testSystems}
+Systems with Wormholes: ${systemsWithWormholes}
+Total Wormholes: ${totalWormholes}
+Average per System: ${(totalWormholes / testSystems).toFixed(2)}
+Wormhole Spawn Rate: ${((systemsWithWormholes / testSystems) * 100).toFixed(1)}%
+</pre>`;
+        
+        // Pick the first system with wormholes to render
+        const systemWithWormholes = systems.find(s => s.wormholes.length > 0);
+        
+        if (systemWithWormholes) {
+            resultsDiv.innerHTML += '<p>✅ Rendering system: ' + systemWithWormholes.name + ' (contains ' + systemWithWormholes.wormholes.length + ' wormholes)</p>';
+            
+            // Scale and center the system for display
+            const systemElement = systemWithWormholes.renderSystem(graphics);
+            systemElement.setAttribute('transform', 'translate(500, 350) scale(0.3)');
+            graphics.addToLayer('test', systemElement);
+            
+            // Display detailed wormhole info
+            systemWithWormholes.wormholes.forEach((wormhole, index) => {
+                resultsDiv.innerHTML += `<pre>
+Wormhole ${index + 1}:
+  Name: ${wormhole.name}
+  Type: ${wormhole.type}
+  Position: (${wormhole.x.toFixed(0)}, ${wormhole.y.toFixed(0)})
+  Size: ${wormhole.size.toFixed(0)}
+  Instability: ${(wormhole.instability * 100).toFixed(1)}%
+  Active: ${wormhole.isActive}
+  Energy Fluctuation: ${wormhole.energyFluctuation.toFixed(1)}
+  Temporal Distortion: ${(wormhole.temporalDistortion * 100).toFixed(1)}%
+</pre>`;
+            });
+            
+        } else {
+            resultsDiv.innerHTML += '<p>⚠️ No systems generated with wormholes in this test run. Try refreshing the page.</p>';
+        }
+        
+        // Test system info includes wormhole count
+        const testSystem = systems[0];
+        const info = testSystem.getSystemInfo();
+        resultsDiv.innerHTML += '<p>✅ System info includes wormholeCount: ' + (info.hasOwnProperty('wormholeCount') ? 'YES' : 'NO') + '</p>';
+        
+        // Test getAllBodies includes wormholes
+        const bodies = testSystem.getAllBodies();
+        resultsDiv.innerHTML += '<p>✅ getAllBodies includes wormholes: ' + (bodies.hasOwnProperty('wormholes') ? 'YES' : 'NO') + '</p>';
+        
+        resultsDiv.innerHTML += '<p>🎉 Wormhole integration test completed!</p>';
+    </script>
+</body>
+</html>

@@ -16,6 +16,7 @@ export class StarSystem {
         this.asteroidBelts = [];
         this.spaceStations = [];
         this.jumpGates = [];
+        this.wormholes = [];
         this.generated = false;
         
         this.generateSystem();
@@ -88,6 +89,15 @@ export class StarSystem {
         for (let i = 0; i < gateCount; i++) {
             const gate = this.generateJumpGate();
             this.jumpGates.push(gate);
+        }
+        
+        // Generate wormholes per system (rare phenomena)
+        const wormholeCount = Math.floor(Math.random() * (WORLD_GEN.MAX_WORMHOLES + 1));
+        for (let i = 0; i < wormholeCount; i++) {
+            if (Math.random() < WORLD_GEN.WORMHOLE_SPAWN_PROBABILITY) {
+                const wormhole = this.generateWormhole();
+                this.wormholes.push(wormhole);
+            }
         }
         
         this.generated = true;
@@ -328,6 +338,37 @@ export class StarSystem {
         };
     }
     
+    generateWormhole() {
+        const distance = Math.random() * (WORLD_GEN.MAX_WORMHOLE_DISTANCE - WORLD_GEN.MIN_WORMHOLE_DISTANCE) + WORLD_GEN.MIN_WORMHOLE_DISTANCE;
+        const angle = Math.random() * 2 * Math.PI;
+        const size = Math.random() * (WORLD_GEN.MAX_WORMHOLE_SIZE - WORLD_GEN.MIN_WORMHOLE_SIZE) + WORLD_GEN.MIN_WORMHOLE_SIZE;
+        const instability = Math.random() * (WORLD_GEN.WORMHOLE_INSTABILITY_MAX - WORLD_GEN.WORMHOLE_INSTABILITY_MIN) + WORLD_GEN.WORMHOLE_INSTABILITY_MIN;
+        
+        const wormholeTypes = [
+            { type: 'Stable', color: '#8A2BE2', danger: 0.1 },
+            { type: 'Unstable', color: '#FF4500', danger: 0.5 },
+            { type: 'Collapsed', color: '#8B0000', danger: 0.9 }
+        ];
+        
+        const wormholeType = wormholeTypes[Math.floor(Math.random() * wormholeTypes.length)];
+        
+        return {
+            id: IDGenerator.generate(),
+            name: `Wormhole ${String.fromCharCode(WORLD_GEN.WORMHOLE_NAME_LETTER_BASE + Math.floor(Math.random() * WORLD_GEN.WORMHOLE_NAME_LETTER_COUNT))}${Math.floor(Math.random() * WORLD_GEN.WORMHOLE_NAME_NUMBER_MAX) + 1}`,
+            type: wormholeType.type,
+            x: Math.cos(angle) * distance,
+            y: Math.sin(angle) * distance,
+            size,
+            instability,
+            color: wormholeType.color,
+            dangerLevel: wormholeType.danger,
+            destinationSystem: null, // To be connected by galaxy generator
+            isActive: instability < WORLD_GEN.WORMHOLE_INACTIVE_INSTABILITY_THRESHOLD,
+            energyFluctuation: Math.random() * WORLD_GEN.WORMHOLE_ENERGY_FLUCTUATION_RANGE + WORLD_GEN.WORMHOLE_ENERGY_FLUCTUATION_BASE,
+            temporalDistortion: Math.random() * WORLD_GEN.WORMHOLE_TEMPORAL_DISTORTION_MAX
+        };
+    }
+    
     updateOrbits(deltaTime) {
         // Update planet positions
         this.planets.forEach(planet => {
@@ -379,7 +420,8 @@ export class StarSystem {
             moonCount: totalMoons,
             asteroidBeltCount: this.asteroidBelts.length,
             spaceStationCount: this.spaceStations.length,
-            jumpGateCount: this.jumpGates.length
+            jumpGateCount: this.jumpGates.length,
+            wormholeCount: this.wormholes.length
         };
     }
     
@@ -396,7 +438,8 @@ export class StarSystem {
             moons: allMoons,
             asteroidBelts: this.asteroidBelts,
             spaceStations: this.spaceStations,
-            jumpGates: this.jumpGates
+            jumpGates: this.jumpGates,
+            wormholes: this.wormholes
         };
     }
     
@@ -473,6 +516,15 @@ export class StarSystem {
             systemGroup.appendChild(gateElement);
         });
         
+        // Render wormholes using the graphics engine
+        this.wormholes.forEach(wormhole => {
+            const wormholeElement = graphics.createWormhole(wormhole.x, wormhole.y, wormhole.size, {
+                id: wormhole.id,
+                class: 'wormhole'
+            });
+            systemGroup.appendChild(wormholeElement);
+        });
+        
         return systemGroup;
     }
     
@@ -499,6 +551,21 @@ export class StarSystem {
             const distance = Math.sqrt((gate.x - x) ** 2 + (gate.y - y) ** 2);
             if (distance < nearestDistance && gate.isActive) {
                 nearest = gate;
+                nearestDistance = distance;
+            }
+        });
+        
+        return nearest;
+    }
+    
+    findNearestWormhole(x, y, maxDistance = WORLD_GEN.DEFAULT_INTERACTION_RANGE) {
+        let nearest = null;
+        let nearestDistance = maxDistance;
+        
+        this.wormholes.forEach(wormhole => {
+            const distance = Math.sqrt((wormhole.x - x) ** 2 + (wormhole.y - y) ** 2);
+            if (distance < nearestDistance && wormhole.isActive) {
+                nearest = wormhole;
                 nearestDistance = distance;
             }
         });
