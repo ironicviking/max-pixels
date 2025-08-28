@@ -6,6 +6,7 @@
 export class InputManager {
     constructor() {
         this.keys = new Map();
+        this.previousKeys = new Map();
         this.keyBindings = new Map();
         this.listeners = new Map();
         this.isEnabled = true;
@@ -176,6 +177,18 @@ export class InputManager {
     }
     
     update() {
+        // Copy current states to previous for next frame comparison
+        this.previousKeys.clear();
+        for (const [keyCode, state] of this.keys) {
+            this.previousKeys.set(keyCode, {
+                isPressed: state.isPressed,
+                justPressed: state.justPressed,
+                justReleased: state.justReleased,
+                timestamp: state.timestamp
+            });
+        }
+        
+        // Reset just-pressed and just-released flags for next frame
         // eslint-disable-next-line no-unused-vars
         for (const [keyCode, state] of this.keys) {
             if (state.justPressed) {
@@ -243,5 +256,25 @@ export class InputManager {
             }
         }
         return active;
+    }
+    
+    getPreviousKeyState(keyOrAction) {
+        if (this.keyBindings.has(keyOrAction)) {
+            const keys = this.keyBindings.get(keyOrAction);
+            for (const key of keys) {
+                const state = this.previousKeys.get(key);
+                if (state?.isPressed) {
+                    return state;
+                }
+            }
+            return { isPressed: false, justPressed: false, justReleased: false, timestamp: 0 };
+        }
+        
+        return this.previousKeys.get(keyOrAction) || { 
+            isPressed: false, 
+            justPressed: false, 
+            justReleased: false, 
+            timestamp: 0 
+        };
     }
 }
