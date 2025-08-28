@@ -14,7 +14,7 @@ import { TradingSystem } from './trading/TradingSystem.js';
 import { TradingUI } from './ui/TradingUI.js';
 import { SpaceNavigation } from './navigation/SpaceNavigation.js';
 import { NetworkManager } from './network/NetworkManager.js';
-import { RESOURCES, WEAPONS, PLAYER, UI } from './constants.js';
+import { RESOURCES, WEAPONS, PLAYER, UI, GRAPHICS } from './constants.js';
 
 class MaxPixelsGame {
     constructor() {
@@ -944,6 +944,12 @@ class MaxPixelsGame {
                     <h3>Particles</h3>
                     <div>Active: <span id="particle-count">0</span></div>
                 </div>
+                <div class="hud-section radar">
+                    <h3>Local Radar</h3>
+                    <div class="radar-container">
+                        <svg id="radar-display" width="${GRAPHICS.RADAR_DEFAULT_SIZE}" height="${GRAPHICS.RADAR_DEFAULT_SIZE}"></svg>
+                    </div>
+                </div>
                 <div class="hud-section interaction" id="interaction-prompt" style="display: none;">
                     <h3>Station Nearby</h3>
                     <div id="interaction-text">Press F to Dock</div>
@@ -953,6 +959,120 @@ class MaxPixelsGame {
         `;
         
         this.uiContainer.insertAdjacentHTML('beforeend', hudHTML);
+        this.initializeRadar();
+    }
+    
+    initializeRadar() {
+        const radarSvg = document.getElementById('radar-display');
+        if (!radarSvg) return;
+        
+        // Create RadarEngine instance for the HUD radar display
+        this.radarEngine = new GraphicsEngine(radarSvg);
+        
+        // Create the radar display at center of the SVG
+        const centerX = GRAPHICS.RADAR_DEFAULT_SIZE / 2;
+        const centerY = GRAPHICS.RADAR_DEFAULT_SIZE / 2;
+        const radius = (GRAPHICS.RADAR_DEFAULT_SIZE / 2) - 5; // Leave small margin
+        
+        this.radar = this.radarEngine.createRadar(centerX, centerY, radius, {
+            id: 'hud-radar',
+            backgroundColor: '#001122',
+            borderColor: '#00ff88',
+            gridColor: '#004466',
+            scanlineColor: '#00ff88'
+        });
+        
+        this.radarEngine.addToLayer('ui', this.radar);
+    }
+    
+    updateRadar() {
+        if (!this.radar) return;
+        
+        // Clear existing blips
+        const blipsContainer = this.radar.querySelector('#hud-radar_blips');
+        if (!blipsContainer) return;
+        
+        blipsContainer.innerHTML = '';
+        
+        const centerX = GRAPHICS.RADAR_DEFAULT_SIZE / 2;
+        const centerY = GRAPHICS.RADAR_DEFAULT_SIZE / 2;
+        const radarRadius = (GRAPHICS.RADAR_DEFAULT_SIZE / 2) - 5;
+        const range = GRAPHICS.RADAR_RANGE;
+        
+        // Show player in center as a blip
+        const playerBlip = this.radarEngine.createCircle(centerX, centerY, GRAPHICS.RADAR_PLAYER_BLIP_SIZE, {
+            fill: '#00ff88',
+            opacity: 1,
+            id: 'player-blip'
+        });
+        blipsContainer.appendChild(playerBlip);
+        
+        // Show nearby asteroids
+        this.asteroids.forEach(asteroid => {
+            const distance = Math.sqrt(
+                Math.pow(asteroid.x - this.player.x, 2) + 
+                Math.pow(asteroid.y - this.player.y, 2)
+            );
+            
+            if (distance <= range) {
+                // Calculate relative position on radar
+                const relativeX = (asteroid.x - this.player.x) / range * radarRadius;
+                const relativeY = (asteroid.y - this.player.y) / range * radarRadius;
+                
+                const blipX = centerX + relativeX;
+                const blipY = centerY + relativeY;
+                
+                const asteroidBlip = this.radarEngine.createCircle(blipX, blipY, GRAPHICS.RADAR_ASTEROID_BLIP_SIZE, {
+                    fill: '#cc8800',
+                    opacity: 0.8
+                });
+                blipsContainer.appendChild(asteroidBlip);
+            }
+        });
+        
+        // Show nearby stations
+        this.stations.forEach(station => {
+            const distance = Math.sqrt(
+                Math.pow(station.x - this.player.x, 2) + 
+                Math.pow(station.y - this.player.y, 2)
+            );
+            
+            if (distance <= range) {
+                const relativeX = (station.x - this.player.x) / range * radarRadius;
+                const relativeY = (station.y - this.player.y) / range * radarRadius;
+                
+                const blipX = centerX + relativeX;
+                const blipY = centerY + relativeY;
+                
+                const stationBlip = this.radarEngine.createCircle(blipX, blipY, GRAPHICS.RADAR_STATION_BLIP_SIZE, {
+                    fill: '#00aaff',
+                    opacity: 1
+                });
+                blipsContainer.appendChild(stationBlip);
+            }
+        });
+        
+        // Show other players
+        this.otherPlayers.forEach((playerData, playerId) => {
+            const distance = Math.sqrt(
+                Math.pow(playerData.x - this.player.x, 2) + 
+                Math.pow(playerData.y - this.player.y, 2)
+            );
+            
+            if (distance <= range) {
+                const relativeX = (playerData.x - this.player.x) / range * radarRadius;
+                const relativeY = (playerData.y - this.player.y) / range * radarRadius;
+                
+                const blipX = centerX + relativeX;
+                const blipY = centerY + relativeY;
+                
+                const otherPlayerBlip = this.radarEngine.createCircle(blipX, blipY, GRAPHICS.RADAR_PLAYER_BLIP_SIZE, {
+                    fill: playerData.color || '#ff6b35',
+                    opacity: 0.9
+                });
+                blipsContainer.appendChild(otherPlayerBlip);
+            }
+        });
     }
     
     updateHUD() {
@@ -1017,6 +1137,9 @@ class MaxPixelsGame {
         const copperQuantity = this.trading.getPlayerItemQuantity('ore-copper');
         document.getElementById('inventory-iron').textContent = ironQuantity;
         document.getElementById('inventory-copper').textContent = copperQuantity;
+        
+        // Update radar display
+        this.updateRadar();
     }
     
     fireLaser() {
