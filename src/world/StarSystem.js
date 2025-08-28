@@ -420,8 +420,8 @@ export class StarSystem {
             // Render planet's moons
             planet.moons.forEach(moon => {
                 const moonElement = graphics.createElement('circle');
-                moonElement.setAttribute('cx', planet.x + moon.x);
-                moonElement.setAttribute('cy', planet.y + moon.y);
+                moonElement.setAttribute('cx', moon.x);
+                moonElement.setAttribute('cy', moon.y);
                 moonElement.setAttribute('r', moon.size * planet.size);
                 moonElement.setAttribute('fill', moon.color);
                 moonElement.setAttribute('class', 'moon');
