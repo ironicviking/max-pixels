@@ -326,6 +326,106 @@ describe('Graphics Engine', function() {
         
         TestRunner.cleanupTestDOM();
     });
+    
+    test('should validate createRadar parameters', function() {
+        const testContainer = TestRunner.setupTestDOM();
+        const canvas = testContainer.querySelector('#gameCanvas');
+        const graphics = new GraphicsEngine(canvas);
+        
+        // Test valid parameters
+        const radar = graphics.createRadar(100, 150, 50);
+        assert(radar !== null, 'Should create radar with valid parameters');
+        assertEqual(radar.tagName, 'G', 'Should create group element');
+        assert(radar.getAttribute('transform').includes('translate(100, 150)'), 'Should position radar correctly');
+        
+        // Test with default options
+        const defaultRadar = graphics.createRadar(0, 0, 25);
+        assert(defaultRadar !== null, 'Should create radar with minimal parameters');
+        
+        // Test with custom options
+        const customRadar = graphics.createRadar(50, 75, 30, {
+            backgroundColor: '#112233',
+            borderColor: '#ff8800',
+            gridColor: '#445566',
+            sweepAnimation: false,
+            id: 'test-radar'
+        });
+        assert(customRadar !== null, 'Should create radar with custom options');
+        assertEqual(customRadar.getAttribute('id'), 'test-radar', 'Should use custom ID');
+        
+        // Test invalid cx parameter
+        assertThrows(() => graphics.createRadar('invalid', 150, 50), 'Should throw for invalid cx');
+        assertThrows(() => graphics.createRadar(Infinity, 150, 50), 'Should throw for infinite cx');
+        assertThrows(() => graphics.createRadar(NaN, 150, 50), 'Should throw for NaN cx');
+        
+        // Test invalid cy parameter
+        assertThrows(() => graphics.createRadar(100, 'invalid', 50), 'Should throw for invalid cy');
+        assertThrows(() => graphics.createRadar(100, Infinity, 50), 'Should throw for infinite cy');
+        assertThrows(() => graphics.createRadar(100, NaN, 50), 'Should throw for NaN cy');
+        
+        // Test invalid radius parameter
+        assertThrows(() => graphics.createRadar(100, 150, 'invalid'), 'Should throw for invalid radius');
+        assertThrows(() => graphics.createRadar(100, 150, 0), 'Should throw for zero radius');
+        assertThrows(() => graphics.createRadar(100, 150, -10), 'Should throw for negative radius');
+        assertThrows(() => graphics.createRadar(100, 150, Infinity), 'Should throw for infinite radius');
+        assertThrows(() => graphics.createRadar(100, 150, NaN), 'Should throw for NaN radius');
+        
+        // Test invalid options parameter
+        assertThrows(() => graphics.createRadar(100, 150, 50, null), 'Should throw for null options');
+        assertThrows(() => graphics.createRadar(100, 150, 50, 'invalid'), 'Should throw for non-object options');
+        
+        TestRunner.cleanupTestDOM();
+    });
+    
+    test('should create radar with correct structure', function() {
+        const testContainer = TestRunner.setupTestDOM();
+        const canvas = testContainer.querySelector('#gameCanvas');
+        const graphics = new GraphicsEngine(canvas);
+        
+        const radar = graphics.createRadar(0, 0, 60, { id: 'structured-radar' });
+        
+        // Check main structure
+        assert(radar.querySelector('circle'), 'Should have background circle');
+        
+        // Check grid circles (default 4 lines means 4 concentric circles)
+        // Total circles = 1 background + 4 grid circles = 5
+        const allCircles = radar.querySelectorAll('circle');
+        assertEqual(allCircles.length, 5, 'Should have 5 total circles (1 background + 4 grid)');
+        
+        // Check crosshair lines
+        const lines = radar.querySelectorAll('line');
+        assert(lines.length >= 2, 'Should have at least 2 crosshair lines');
+        
+        // Check blips container
+        const blipsContainer = radar.querySelector('#structured-radar_blips');
+        assert(blipsContainer !== null, 'Should have blips container');
+        assertEqual(blipsContainer.tagName, 'G', 'Blips container should be a group element');
+        
+        TestRunner.cleanupTestDOM();
+    });
+    
+    test('should create radar with sweep animation when enabled', function() {
+        const testContainer = TestRunner.setupTestDOM();
+        const canvas = testContainer.querySelector('#gameCanvas');
+        const graphics = new GraphicsEngine(canvas);
+        
+        // Test with animation enabled (default)
+        const animatedRadar = graphics.createRadar(0, 0, 40);
+        // Count total lines - should have 2 crosshair + 1 sweep = 3 lines
+        const allLines = animatedRadar.querySelectorAll('line');
+        assert(allLines.length >= 3, 'Should have at least 3 lines when animation enabled (2 crosshair + 1 sweep)');
+        
+        // Check for animation elements (sweep should have animateTransform)
+        const animations = animatedRadar.querySelectorAll('animateTransform');
+        assert(animations.length >= 1, 'Should have animation elements when sweep enabled');
+        
+        // Test with animation disabled
+        const staticRadar = graphics.createRadar(0, 0, 40, { sweepAnimation: false });
+        const staticLines = staticRadar.querySelectorAll('line');
+        assertEqual(staticLines.length, 2, 'Should have only 2 lines when animation disabled (crosshairs only)');
+        
+        TestRunner.cleanupTestDOM();
+    });
 });
 
 /**

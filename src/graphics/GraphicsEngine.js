@@ -1496,4 +1496,127 @@ export class GraphicsEngine {
             });
         }
     }
+    
+    /**
+     * Create a radar display showing nearby objects
+     * @param {number} cx - Center X position of the radar
+     * @param {number} cy - Center Y position of the radar  
+     * @param {number} radius - Radius of the radar display
+     * @param {Object} options - Configuration options
+     * @returns {SVGElement} - The radar group element
+     */
+    createRadar(cx, cy, radius, options = {}) {
+        // Parameter validation
+        if (typeof cx !== 'number' || !isFinite(cx)) {
+            throw new Error('GraphicsEngine.createRadar: cx must be a finite number');
+        }
+        if (typeof cy !== 'number' || !isFinite(cy)) {
+            throw new Error('GraphicsEngine.createRadar: cy must be a finite number');
+        }
+        if (typeof radius !== 'number' || !isFinite(radius) || radius <= 0) {
+            throw new Error('GraphicsEngine.createRadar: radius must be a positive finite number');
+        }
+        if (typeof options !== 'object' || options === null) {
+            throw new Error('GraphicsEngine.createRadar: options must be an object');
+        }
+        
+        const {
+            backgroundColor = '#001122',
+            borderColor = '#00ff88',
+            gridColor = '#004466',
+            scanlineColor = '#00ffaa',
+            borderWidth = GRAPHICS.RADAR_BORDER_WIDTH,
+            gridLines = GRAPHICS.RADAR_GRID_LINES,
+            sweepAnimation = true,
+            id = this.generateId('radar')
+        } = options;
+        
+        // Create main radar group
+        const radarGroup = this.createElement('g');
+        radarGroup.setAttribute('id', id);
+        radarGroup.setAttribute('transform', `translate(${cx}, ${cy})`);
+        
+        // Create radar background circle
+        const background = this.createCircle(0, 0, radius, {
+            fill: backgroundColor,
+            stroke: borderColor,
+            'stroke-width': borderWidth,
+            opacity: 0.8
+        });
+        radarGroup.appendChild(background);
+        
+        // Create concentric grid circles
+        for (let i = 1; i <= gridLines; i++) {
+            const gridRadius = (radius / gridLines) * i;
+            const gridCircle = this.createCircle(0, 0, gridRadius, {
+                fill: 'none',
+                stroke: gridColor,
+                'stroke-width': 1,
+                opacity: 0.5
+            });
+            radarGroup.appendChild(gridCircle);
+        }
+        
+        // Create crosshair lines
+        const horizontalLine = this.createLine(-radius, 0, radius, 0, {
+            stroke: gridColor,
+            'stroke-width': 1,
+            opacity: 0.5
+        });
+        radarGroup.appendChild(horizontalLine);
+        
+        const verticalLine = this.createLine(0, -radius, 0, radius, {
+            stroke: gridColor,
+            'stroke-width': 1,
+            opacity: 0.5
+        });
+        radarGroup.appendChild(verticalLine);
+        
+        // Create sweep line (radar scanner)
+        if (sweepAnimation) {
+            const sweepLine = this.createLine(0, 0, 0, -radius, {
+                stroke: scanlineColor,
+                'stroke-width': 2,
+                opacity: 0.8,
+                id: `${id}_sweep`
+            });
+            
+            // Add rotation animation to sweep line
+            const sweepAnimation = this.createElement('animateTransform');
+            sweepAnimation.setAttribute('attributeName', 'transform');
+            sweepAnimation.setAttribute('type', 'rotate');
+            sweepAnimation.setAttribute('values', '0;360;0');
+            sweepAnimation.setAttribute('dur', '4s');
+            sweepAnimation.setAttribute('repeatCount', 'indefinite');
+            
+            sweepLine.appendChild(sweepAnimation);
+            radarGroup.appendChild(sweepLine);
+            
+            // Create sweep trail effect
+            const sweepTrail = this.createPath(`M 0,0 L 0,${-radius} A ${radius},${radius} 0 0,1 ${radius * GRAPHICS.RATIO_SIZE_MID},${-radius * GRAPHICS.MATH_SQRT_3_HALF}`, {
+                fill: scanlineColor,
+                opacity: 0.1,
+                id: `${id}_trail`
+            });
+            
+            // Add rotation animation to trail (slightly delayed)
+            const trailAnimation = this.createElement('animateTransform');
+            trailAnimation.setAttribute('attributeName', 'transform');
+            trailAnimation.setAttribute('type', 'rotate');
+            trailAnimation.setAttribute('values', '0;360;0');
+            trailAnimation.setAttribute('dur', '4s');
+            trailAnimation.setAttribute('begin', '0.2s');
+            trailAnimation.setAttribute('repeatCount', 'indefinite');
+            
+            sweepTrail.appendChild(trailAnimation);
+            radarGroup.appendChild(sweepTrail);
+        }
+        
+        // Create container for radar blips
+        const blipsContainer = this.createElement('g');
+        blipsContainer.setAttribute('id', `${id}_blips`);
+        radarGroup.appendChild(blipsContainer);
+        
+        return radarGroup;
+    }
 }
