@@ -19,7 +19,8 @@ const PARTICLE_DEFAULTS = {
     WIND: { x: 0, y: 0 },
     VELOCITY_MIN: 50,
     VELOCITY_MAX: 100,
-    OFFSET: 10
+    OFFSET: 10,
+    FRAME_DELAY: 16 // ~60fps for setTimeout fallback
 };
 
 export class ParticleSystem {
@@ -29,6 +30,9 @@ export class ParticleSystem {
         this.activeEmitters = new Map();
         this.idCounter = 0;
         this.animationFrameId = null;
+        
+        // Check if we're in a browser environment with full animation frame support
+        this.isBrowser = typeof window !== 'undefined' && typeof requestAnimationFrame !== 'undefined';
         
         this.startUpdateLoop();
     }
@@ -472,10 +476,20 @@ export class ParticleSystem {
         
         const updateLoop = () => {
             this.update();
-            this.animationFrameId = requestAnimationFrame(updateLoop);
+            if (this.isBrowser) {
+                this.animationFrameId = requestAnimationFrame(updateLoop);
+            } else {
+                // Use setTimeout for Node.js testing environment
+                this.animationFrameId = setTimeout(updateLoop, PARTICLE_DEFAULTS.FRAME_DELAY);
+            }
         };
         
-        this.animationFrameId = requestAnimationFrame(updateLoop);
+        if (this.isBrowser) {
+            this.animationFrameId = requestAnimationFrame(updateLoop);
+        } else {
+            // Use setTimeout for Node.js testing environment
+            this.animationFrameId = setTimeout(updateLoop, PARTICLE_DEFAULTS.FRAME_DELAY);
+        }
     }
     
     /**
@@ -483,7 +497,11 @@ export class ParticleSystem {
      */
     stopUpdateLoop() {
         if (this.animationFrameId) {
-            cancelAnimationFrame(this.animationFrameId);
+            if (this.isBrowser) {
+                cancelAnimationFrame(this.animationFrameId);
+            } else {
+                clearTimeout(this.animationFrameId);
+            }
             this.animationFrameId = null;
         }
     }

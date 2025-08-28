@@ -740,7 +740,9 @@ export class GraphicsEngine {
         const corona = this.createSolarCorona(size, color, type);
         if (corona) {
             // Corona should be behind the main star
-            starGroup.insertBefore(corona, star);
+            if (starGroup && typeof starGroup.insertBefore === 'function') {
+                starGroup.insertBefore(corona, star);
+            }
         }
         
         // Add twinkling animation to some stars

@@ -1035,13 +1035,13 @@ describe('Particle System', function() {
         const graphics = new GraphicsEngine(canvas);
         const particles = new ParticleSystem(graphics);
         
-        assert(particles.updateInterval !== null, 'Should start with update loop running');
+        assert(particles.animationFrameId !== null, 'Should start with update loop running');
         
         particles.stopUpdateLoop();
-        assertEqual(particles.updateInterval, null, 'Should stop update loop');
+        assertEqual(particles.animationFrameId, null, 'Should stop update loop');
         
         particles.startUpdateLoop();
-        assert(particles.updateInterval !== null, 'Should restart update loop');
+        assert(particles.animationFrameId !== null, 'Should restart update loop');
         
         particles.stopUpdateLoop();
         TestRunner.cleanupTestDOM();
