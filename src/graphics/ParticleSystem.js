@@ -165,22 +165,37 @@ export class ParticleSystem {
      * Create sparks effect for impact
      * @param {number} x - X position  
      * @param {number} y - Y position
-     * @param {number} direction - Impact direction
+     * @param {Object|number} options - Options object or direction (for backward compatibility)
      */
-    createSparksEffect(x, y, direction = 0) {
+    createSparksEffect(x, y, options = {}) {
+        // Handle backward compatibility - if options is a number, treat as direction
+        let effectOptions;
+        if (typeof options === 'number') {
+            effectOptions = { direction: options };
+        } else {
+            effectOptions = options;
+        }
+
+        // Set up colors - support both single color and colors array for backward compatibility
+        const defaultColors = ['#ffff00'];
+        const colors = effectOptions.colors || defaultColors;
+        const singleColor = colors.length === 1 ? colors[0] : '#ffff00';
+
         const config = {
-            particleCount: PARTICLES.SPARKS_COUNT,
+            particleCount: effectOptions.particleCount || PARTICLES.SPARKS_COUNT,
             particleLife: PARTICLES.SPARKS_LIFE,
             spread: Math.PI * PARTICLES.SPARKS_SPREAD,
             velocity: { min: PARTICLES.SPARKS_VELOCITY_MIN, max: PARTICLES.SPARKS_VELOCITY_MAX },
             size: { min: PARTICLES.SPARKS_SIZE_MIN, max: PARTICLES.SPARKS_SIZE_MAX },
-            color: '#ffff00',
+            colors: colors,
+            color: singleColor, // Backward compatibility for single color access
             opacity: { start: 1.0, end: 0.0 },
-            direction: direction,
+            direction: effectOptions.direction || 0,
             gravity: { x: 0, y: PARTICLES.SPARKS_GRAVITY_Y },
             fadeOut: true,
             burst: true,
-            duration: 0
+            duration: 0,
+            ...effectOptions
         };
         
         return this.createEmitter(x, y, config);
