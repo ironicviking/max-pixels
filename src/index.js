@@ -44,6 +44,10 @@ class MaxPixelsGame {
             rotation: 0,
             energy: WEAPONS.MAX_ENERGY,
             lastEnergyRegenTime: Date.now(),
+            heat: 0,
+            lastHeatDissipationTime: Date.now(),
+            isOverheated: false,
+            overheatEndTime: 0,
             health: PLAYER.MAX_HEALTH,
             lastHealthRegenTime: Date.now(),
             lastDamageTime: 0,
@@ -74,6 +78,7 @@ class MaxPixelsGame {
         this.lastFireTime = 0;
         this.lastEnergyRechargeSound = 0;
         this.weaponChargeIndicator = null;
+        this.weaponHeatIndicator = null;
         
         // Server synchronization
         this.lastServerUpdate = null;
@@ -127,6 +132,15 @@ class MaxPixelsGame {
             }
         );
         this.graphics.addToLayer('game', this.weaponChargeIndicator);
+        
+        // Create weapon heat indicator
+        const initialHeatLevel = this.player.heat / WEAPONS.MAX_HEAT;
+        this.weaponHeatIndicator = this.graphics.createWeaponHeatIndicator(
+            this.player.x, this.player.y + WEAPONS.HEAT_INDICATOR_OFFSET, initialHeatLevel, {
+                id: 'weaponHeatIndicator'
+            }
+        );
+        this.graphics.addToLayer('game', this.weaponHeatIndicator);
         
         this.camera.centerOn(this.player.x, this.player.y);
     }
@@ -535,6 +549,7 @@ class MaxPixelsGame {
         
         this.updatePlayer();
         this.updateEnergy();
+        this.updateHeat();
         this.updateHealth();
         this.updateThrusterEffects();
         this.updateCamera();
@@ -624,6 +639,12 @@ class MaxPixelsGame {
             this.weaponChargeIndicator.setAttribute('transform', 
                 `translate(${this.player.x}, ${this.player.y})`);
         }
+        
+        // Update weapon heat indicator position
+        if (this.weaponHeatIndicator) {
+            this.weaponHeatIndicator.setAttribute('transform', 
+                `translate(${this.player.x}, ${this.player.y + WEAPONS.HEAT_INDICATOR_OFFSET})`);
+        }
             
         // Send position updates to multiplayer server
         this.sendPlayerUpdate();
@@ -666,6 +687,33 @@ class MaxPixelsGame {
         if (this.weaponChargeIndicator) {
             const chargeLevel = this.player.energy / WEAPONS.MAX_ENERGY;
             this.graphics.updateWeaponChargeIndicator(this.weaponChargeIndicator, chargeLevel);
+        }
+    }
+    
+    updateHeat() {
+        const currentTime = Date.now();
+        const deltaTime = (currentTime - this.player.lastHeatDissipationTime) / 1000;
+        
+        // Handle overheat cooldown
+        if (this.player.isOverheated && currentTime > this.player.overheatEndTime) {
+            this.player.isOverheated = false;
+            console.log('Weapon cooling system restored');
+        }
+        
+        // Dissipate heat over time
+        if (this.player.heat > 0) {
+            this.player.heat = Math.max(
+                0,
+                this.player.heat - (WEAPONS.HEAT_DISSIPATION_RATE * deltaTime)
+            );
+        }
+        
+        this.player.lastHeatDissipationTime = currentTime;
+        
+        // Update weapon heat indicator
+        if (this.weaponHeatIndicator) {
+            const heatLevel = this.player.heat / WEAPONS.MAX_HEAT;
+            this.graphics.updateWeaponHeatIndicator(this.weaponHeatIndicator, heatLevel);
         }
     }
     
@@ -763,6 +811,8 @@ class MaxPixelsGame {
     respawnPlayer() {
         this.player.health = PLAYER.MAX_HEALTH;
         this.player.energy = WEAPONS.MAX_ENERGY;
+        this.player.heat = 0;
+        this.player.isOverheated = false;
         this.player.isDead = false;
         this.player.x = PLAYER.SPAWN_X;
         this.player.y = PLAYER.SPAWN_Y;
@@ -1012,6 +1062,13 @@ class MaxPixelsGame {
                         <div id="energy-fill" class="energy-fill"></div>
                     </div>
                 </div>
+                <div class="hud-section heat">
+                    <h3>Heat</h3>
+                    <div>Level: <span id="player-heat">0</span>/100</div>
+                    <div class="heat-bar">
+                        <div id="heat-fill" class="heat-fill"></div>
+                    </div>
+                </div>
                 <div class="hud-section inventory">
                     <h3>Inventory</h3>
                     <div>Iron: <span id="inventory-iron">0</span></div>
@@ -1214,6 +1271,38 @@ class MaxPixelsGame {
             }
         }
         
+        // Update heat display
+        const heatLevel = Math.round(this.player.heat);
+        const heatPercentage = (this.player.heat / WEAPONS.MAX_HEAT) * 100;
+        document.getElementById('player-heat').textContent = heatLevel;
+        
+        const heatFill = document.getElementById('heat-fill');
+        if (heatFill) {
+            heatFill.style.width = heatPercentage + '%';
+            // Change color based on heat level with smooth gradient
+            if (this.player.heat < WEAPONS.MAX_HEAT * 0.5) {
+                // Green to Yellow (0-50% heat)
+                const t = (this.player.heat / WEAPONS.MAX_HEAT) * 2;
+                const r = Math.floor(255 * t);
+                heatFill.style.backgroundColor = `rgb(${r}, 255, 0)`;
+                heatFill.style.boxShadow = '';
+            } else if (this.player.heat < WEAPONS.HEAT_WARNING_THRESHOLD) {
+                // Yellow to Orange (50-70% heat)
+                const t = ((this.player.heat / WEAPONS.MAX_HEAT) - 0.5) * 2.5;
+                const g = Math.floor(255 * (1 - t * 0.5));
+                heatFill.style.backgroundColor = `rgb(255, ${g}, 0)`;
+                heatFill.style.boxShadow = '';
+            } else {
+                // Red with warning glow (70%+ heat)
+                heatFill.style.backgroundColor = '#ff0000';
+                if (this.player.isOverheated) {
+                    heatFill.style.boxShadow = '0 0 12px #ff0000';
+                } else {
+                    heatFill.style.boxShadow = '0 0 6px #ff4444';
+                }
+            }
+        }
+        
         document.getElementById('camera-zoom').textContent = this.camera.zoom.toFixed(1);
         
         // Update particle system debug info
@@ -1236,14 +1325,28 @@ class MaxPixelsGame {
             return;
         }
         
+        // Check if weapon is overheated
+        if (this.player.isOverheated) {
+            console.log('Weapon overheated! Cooling down...');
+            return;
+        }
+        
         // Check if player has enough energy
         if (this.player.energy < WEAPONS.ENERGY_COST) {
             console.log('Insufficient energy to fire laser!');
             return;
         }
         
-        // Consume energy
+        // Consume energy and generate heat
         this.player.energy -= WEAPONS.ENERGY_COST;
+        this.player.heat += WEAPONS.HEAT_PER_SHOT;
+        
+        // Check for overheat
+        if (this.player.heat >= WEAPONS.OVERHEAT_THRESHOLD) {
+            this.player.isOverheated = true;
+            this.player.overheatEndTime = currentTime + WEAPONS.COOLDOWN_DURATION;
+            console.log('Weapon overheated! Forced cooldown initiated.');
+        }
         this.lastFireTime = currentTime;
         
         // Convert rotation to radians (rotation is in degrees)
@@ -1282,6 +1385,12 @@ class MaxPixelsGame {
         if (this.weaponChargeIndicator) {
             const chargeLevel = this.player.energy / WEAPONS.MAX_ENERGY;
             this.graphics.updateWeaponChargeIndicator(this.weaponChargeIndicator, chargeLevel);
+        }
+        
+        // Update weapon heat indicator immediately after heat generation
+        if (this.weaponHeatIndicator) {
+            const heatLevel = this.player.heat / WEAPONS.MAX_HEAT;
+            this.graphics.updateWeaponHeatIndicator(this.weaponHeatIndicator, heatLevel);
         }
         
         // Send fire action to multiplayer server
@@ -2082,6 +2191,7 @@ class MaxPixelsGame {
                     <div class="status-info">
                         <div>Health: <span class="status-value">${Math.round(this.player.health)}/${PLAYER.MAX_HEALTH}</span></div>
                         <div>Energy: <span class="status-value">${Math.round(this.player.energy)}/${WEAPONS.MAX_ENERGY}</span></div>
+                        <div>Heat: <span class="status-value">${Math.round(this.player.heat)}/${WEAPONS.MAX_HEAT}${this.player.isOverheated ? ' (OVERHEAT)' : ''}</span></div>
                         <div>Sector: <span class="status-value">${this.navigation.getCurrentSector()?.name || 'Unknown'}</span></div>
                         <div>Network: <span class="status-value">${this.network.isConnected ? 'Connected' : 'Offline'}</span></div>
                     </div>

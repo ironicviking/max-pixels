@@ -1771,6 +1771,122 @@ export class GraphicsEngine {
         }
     }
     
+    createWeaponHeatIndicator(x, y, heatLevel, attributes = {}) {
+        const {
+            id = this.generateId('weapon-heat')
+        } = attributes;
+        
+        const heatIndicator = this.createGroup({
+            id: id,
+            transform: `translate(${x}, ${y})`
+        });
+        
+        // Heat bar background
+        const heatBackground = this.createRect(
+            -WEAPONS.HEAT_BAR_WIDTH / 2, 
+            0, 
+            WEAPONS.HEAT_BAR_WIDTH, 
+            WEAPONS.HEAT_BAR_HEIGHT, 
+            {
+                fill: 'rgba(0, 0, 0, 0.3)',
+                stroke: '#666666',
+                'stroke-width': 1
+            }
+        );
+        
+        // Heat bar fill
+        const heatWidth = Math.max(0, WEAPONS.HEAT_BAR_WIDTH * heatLevel);
+        const heatFill = this.createRect(
+            -WEAPONS.HEAT_BAR_WIDTH / 2, 
+            0, 
+            heatWidth, 
+            WEAPONS.HEAT_BAR_HEIGHT, 
+            {
+                fill: this.getHeatIndicatorColor(heatLevel),
+                id: 'heat-fill'
+            }
+        );
+        
+        heatIndicator.appendChild(heatBackground);
+        heatIndicator.appendChild(heatFill);
+        
+        // Add warning pulse when overheating
+        this.updateHeatWarning(heatIndicator, heatLevel);
+        
+        return heatIndicator;
+    }
+    
+    updateWeaponHeatIndicator(indicator, heatLevel) {
+        if (!indicator) return;
+        
+        const heatFill = indicator.querySelector('#heat-fill');
+        if (heatFill) {
+            const heatWidth = Math.max(0, WEAPONS.HEAT_BAR_WIDTH * heatLevel);
+            heatFill.setAttribute('width', heatWidth);
+            heatFill.setAttribute('fill', this.getHeatIndicatorColor(heatLevel));
+        }
+        
+        // Update warning animation
+        this.updateHeatWarning(indicator, heatLevel);
+    }
+    
+    getHeatIndicatorColor(heatLevel) {
+        if (heatLevel < WEAPONS.HEAT_COLOR_TRANSITION_MID) {
+            // Green to Yellow (0-50% heat)
+            const t = heatLevel * 2;
+            const r = Math.floor(WEAPONS.HEAT_COLOR_MAX * t);
+            const g = WEAPONS.HEAT_COLOR_MAX;
+            const b = 0;
+            return `rgb(${r}, ${g}, ${b})`;
+        } else {
+            // Yellow to Red (50-100% heat)
+            const t = (heatLevel - WEAPONS.HEAT_COLOR_TRANSITION_MID) * 2;
+            const r = WEAPONS.HEAT_COLOR_MAX;
+            const g = Math.floor(WEAPONS.HEAT_COLOR_MAX * (1 - t));
+            const b = 0;
+            return `rgb(${r}, ${g}, ${b})`;
+        }
+    }
+    
+    updateHeatWarning(indicator, heatLevel) {
+        if (!indicator) return;
+        
+        const isOverheating = heatLevel >= WEAPONS.HEAT_WARNING_THRESHOLD / WEAPONS.MAX_HEAT;
+        const warningId = 'heat-warning-pulse';
+        const existingWarning = indicator.querySelector(`#${warningId}`);
+        
+        if (isOverheating && !existingWarning) {
+            // Create warning pulse effect
+            const warningRect = this.createRect(
+                -WEAPONS.HEAT_BAR_WIDTH / 2 - WEAPONS.HEAT_WARNING_BORDER_OFFSET, 
+                -WEAPONS.HEAT_WARNING_BORDER_OFFSET, 
+                WEAPONS.HEAT_BAR_WIDTH + WEAPONS.HEAT_WARNING_BORDER_EXTRA, 
+                WEAPONS.HEAT_BAR_HEIGHT + WEAPONS.HEAT_WARNING_BORDER_EXTRA, 
+                {
+                    id: warningId,
+                    fill: 'none',
+                    stroke: '#ff0000',
+                    'stroke-width': 2,
+                    opacity: 0.3
+                }
+            );
+            
+            // Add pulsing animation
+            const pulseAnimation = this.createElement('animate');
+            pulseAnimation.setAttribute('attributeName', 'opacity');
+            pulseAnimation.setAttribute('values', '0.3;1.0;0.3');
+            pulseAnimation.setAttribute('dur', WEAPONS.HEAT_WARNING_PULSE_DURATION);
+            pulseAnimation.setAttribute('repeatCount', 'indefinite');
+            
+            warningRect.appendChild(pulseAnimation);
+            indicator.appendChild(warningRect);
+            
+        } else if (!isOverheating && existingWarning) {
+            // Remove warning when heat is manageable
+            existingWarning.remove();
+        }
+    }
+    
     createProjectile(x, y, type = 'plasma', attributes = {}) {
         const projectile = this.createGroup({
             id: this.generateId('projectile'),

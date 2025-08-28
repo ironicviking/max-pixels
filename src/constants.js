@@ -668,7 +668,25 @@ export const WEAPONS = {
     CHARGE_COLOR_GLOW_MED: 150,
     CHARGE_COLOR_GLOW_RANGE_SMALL: 50,
     CHARGE_COLOR_GLOW_RANGE_LARGE: 105,
-    CHARGE_COLOR_HIGH_ENERGY_FRACTION: 0.34
+    CHARGE_COLOR_HIGH_ENERGY_FRACTION: 0.34,
+    
+    // Weapon heating system
+    MAX_HEAT: 100,           // Maximum heat capacity
+    HEAT_PER_SHOT: 15,       // Heat generated per laser shot
+    HEAT_DISSIPATION_RATE: 25, // Heat dissipated per second
+    OVERHEAT_THRESHOLD: 85,  // Above this, weapon overheats
+    COOLDOWN_DURATION: 2000, // Milliseconds weapon is disabled when overheated
+    HEAT_WARNING_THRESHOLD: 70, // Above this, show heating warning
+    
+    // Heat indicator visual effects
+    HEAT_INDICATOR_OFFSET: 20, // Distance from weapon charge indicator
+    HEAT_BAR_WIDTH: 30,
+    HEAT_BAR_HEIGHT: 4,
+    HEAT_WARNING_PULSE_DURATION: '0.6s',
+    HEAT_COLOR_TRANSITION_MID: 0.5,
+    HEAT_COLOR_MAX: 255,
+    HEAT_WARNING_BORDER_OFFSET: 2,
+    HEAT_WARNING_BORDER_EXTRA: 4
 };
 
 // Resource Collection Constants
