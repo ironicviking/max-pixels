@@ -283,6 +283,49 @@ describe('Graphics Engine', function() {
         
         TestRunner.cleanupTestDOM();
     });
+    
+    test('should validate createText parameters', function() {
+        const testContainer = TestRunner.setupTestDOM();
+        const canvas = testContainer.querySelector('#gameCanvas');
+        const graphics = new GraphicsEngine(canvas);
+        
+        // Test valid parameters
+        const text = graphics.createText('Hello World', 50, 100);
+        assert(text !== null, 'Should create text with valid parameters');
+        assertEqual(text.tagName, 'TEXT', 'Should create text element');
+        assertEqual(text.getAttribute('x'), '50', 'Should set x correctly');
+        assertEqual(text.getAttribute('y'), '100', 'Should set y correctly');
+        assertEqual(text.textContent, 'Hello World', 'Should set text content correctly');
+        
+        // Test with default coordinates
+        const defaultText = graphics.createText('Test');
+        assertEqual(defaultText.getAttribute('x'), '0', 'Should use default x=0');
+        assertEqual(defaultText.getAttribute('y'), '0', 'Should use default y=0');
+        
+        // Test invalid content parameter
+        assertThrows(() => graphics.createText(null), 'Should throw for null content');
+        assertThrows(() => graphics.createText(undefined), 'Should throw for undefined content');
+        assertThrows(() => graphics.createText(123), 'Should throw for numeric content');
+        assertThrows(() => graphics.createText({}), 'Should throw for object content');
+        assertThrows(() => graphics.createText([]), 'Should throw for array content');
+        assertThrows(() => graphics.createText(true), 'Should throw for boolean content');
+        
+        // Test invalid x parameter
+        assertThrows(() => graphics.createText('Test', 'invalid', 100), 'Should throw for invalid x');
+        assertThrows(() => graphics.createText('Test', Infinity, 100), 'Should throw for infinite x');
+        assertThrows(() => graphics.createText('Test', NaN, 100), 'Should throw for NaN x');
+        
+        // Test invalid y parameter
+        assertThrows(() => graphics.createText('Test', 50, 'invalid'), 'Should throw for invalid y');
+        assertThrows(() => graphics.createText('Test', 50, Infinity), 'Should throw for infinite y');
+        assertThrows(() => graphics.createText('Test', 50, NaN), 'Should throw for NaN y');
+        
+        // Test invalid attributes parameter
+        assertThrows(() => graphics.createText('Test', 50, 100, null), 'Should throw for null attributes');
+        assertThrows(() => graphics.createText('Test', 50, 100, 'invalid'), 'Should throw for non-object attributes');
+        
+        TestRunner.cleanupTestDOM();
+    });
 });
 
 /**
