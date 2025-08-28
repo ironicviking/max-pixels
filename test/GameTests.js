@@ -660,6 +660,50 @@ describe('Graphics Engine', function() {
         
         TestRunner.cleanupTestDOM();
     });
+    
+    test('should create wormhole with correct structure', function() {
+        const testContainer = TestRunner.setupTestDOM();
+        const canvas = testContainer.querySelector('#gameCanvas');
+        const graphics = new GraphicsEngine(canvas);
+        
+        const wormhole = graphics.createWormhole(100, 200, 50, { id: 'test-wormhole' });
+        
+        assert(wormhole !== null, 'Wormhole should be created');
+        assertEqual(wormhole.tagName, 'G', 'Wormhole should be a group element');
+        assertEqual(wormhole.getAttribute('id'), 'test-wormhole', 'Should have correct ID');
+        assertEqual(wormhole.getAttribute('transform'), 'translate(100, 200)', 'Should be positioned correctly');
+        
+        // Check for circles (both event horizon and core circles should exist)
+        const circles = wormhole.querySelectorAll('circle');
+        assert(circles.length > 0, 'Should have at least one circle element');
+        
+        // Check for paths (spiral energy streams)
+        const paths = wormhole.querySelectorAll('path');
+        assert(paths.length >= 3, 'Should have multiple spiral energy streams');
+        
+        // Check for groups (should contain various component groups)
+        const groups = wormhole.querySelectorAll('g');
+        assert(groups.length >= 2, 'Should have multiple component groups');
+        
+        TestRunner.cleanupTestDOM();
+    });
+    
+    test('should create wormhole with default size when not specified', function() {
+        const testContainer = TestRunner.setupTestDOM();
+        const canvas = testContainer.querySelector('#gameCanvas');
+        const graphics = new GraphicsEngine(canvas);
+        
+        const wormhole = graphics.createWormhole(150, 300);
+        
+        assert(wormhole !== null, 'Wormhole should be created');
+        assertEqual(wormhole.getAttribute('transform'), 'translate(150, 300)', 'Should be positioned correctly');
+        
+        // Check that it has basic structure
+        const circles = wormhole.querySelectorAll('circle');
+        assert(circles.length > 0, 'Should have circle elements');
+        
+        TestRunner.cleanupTestDOM();
+    });
 });
 
 /**
