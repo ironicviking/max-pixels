@@ -654,8 +654,13 @@ describe('Input Manager', function() {
     test('should calculate movement vector', function() {
         const input = new InputManager();
         
-        // Simulate pressing W (up)
-        input.keys.set('KeyW', true);
+        // Simulate pressing W (up) - use correct key state structure
+        input.keys.set('KeyW', {
+            isPressed: true,
+            justPressed: false,
+            justReleased: false,
+            timestamp: Date.now()
+        });
         const movement = input.getMovementVector();
         
         assertEqual(movement.x, 0, 'X movement should be 0');
