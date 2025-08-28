@@ -226,7 +226,7 @@ export class GraphicsEngine {
         let pathData = '';
         
         for (let i = 0; i < points; i++) {
-            const angle = (i / points) * 2 * Math.PI;
+            const angle = (i / points) * GRAPHICS.PI_TIMES_2;
             const radius = size * (GRAPHICS.ASTEROID_RADIUS_MIN + Math.random() * GRAPHICS.ASTEROID_RADIUS_MAX);
             const px = Math.cos(angle) * radius;
             const py = Math.sin(angle) * radius;
@@ -471,7 +471,7 @@ export class GraphicsEngine {
             let pathData = '';
             
             for (let j = 0; j < points; j++) {
-                const pointAngle = (j / points) * 2 * Math.PI;
+                const pointAngle = (j / points) * GRAPHICS.PI_TIMES_2;
                 const pointRadius = radius * (GRAPHICS.PLANET_CONTINENT_RADIUS_MIN + Math.random() * GRAPHICS.PLANET_CONTINENT_RADIUS_MAX);
                 const px = continentX + Math.cos(pointAngle) * pointRadius;
                 const py = continentY + Math.sin(pointAngle) * pointRadius;
