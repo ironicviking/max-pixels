@@ -9,6 +9,7 @@ export class TradingSystem {
         this.playerInventory = new Map();
         this.stationInventories = new Map();
         this.priceHistory = new Map();
+        this.playerCredits = 1000;
         
         this.initializeItems();
         this.initializeStationInventories();
@@ -262,5 +263,78 @@ export class TradingSystem {
         }
         
         return totalValue;
+    }
+    
+    // Test compatibility methods
+    getPlayerItems() {
+        return Array.from(this.playerInventory.entries()).map(([id, quantity]) => ({
+            id,
+            quantity,
+            item: this.getItem(id)
+        }));
+    }
+    
+    getPlayerCredits() {
+        return this.playerCredits;
+    }
+    
+    setPlayerCredits(credits) {
+        this.playerCredits = Math.max(0, credits);
+    }
+    
+    buyItem(station, itemId, quantity) {
+        const stationItem = station.market[itemId];
+        if (!stationItem) {
+            return { success: false, error: 'Item not available' };
+        }
+        
+        const totalCost = stationItem.sellPrice * quantity;
+        if (this.playerCredits < totalCost) {
+            return { success: false, error: 'Insufficient credits' };
+        }
+        
+        if (stationItem.supply < quantity) {
+            return { success: false, error: 'Insufficient stock' };
+        }
+        
+        // Execute transaction
+        this.playerCredits -= totalCost;
+        this.addPlayerItem(itemId, quantity);
+        stationItem.supply -= quantity;
+        
+        return {
+            success: true,
+            cost: totalCost,
+            newPlayerQuantity: this.getPlayerItemQuantity(itemId)
+        };
+    }
+    
+    sellItem(station, itemId, quantity) {
+        const stationItem = station.market[itemId];
+        if (!stationItem) {
+            return { success: false, error: 'Station does not buy this item' };
+        }
+        
+        const playerQuantity = this.getPlayerItemQuantity(itemId);
+        if (playerQuantity < quantity) {
+            return { success: false, error: 'Insufficient inventory' };
+        }
+        
+        const totalValue = stationItem.buyPrice * quantity;
+        
+        // Execute transaction
+        this.playerCredits += totalValue;
+        const currentQuantity = this.playerInventory.get(itemId);
+        this.playerInventory.set(itemId, currentQuantity - quantity);
+        
+        if (this.playerInventory.get(itemId) === 0) {
+            this.playerInventory.delete(itemId);
+        }
+        
+        return {
+            success: true,
+            value: totalValue,
+            newPlayerQuantity: this.getPlayerItemQuantity(itemId)
+        };
     }
 }
