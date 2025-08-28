@@ -2375,4 +2375,163 @@ export class GraphicsEngine {
         
         return radarGroup;
     }
+    
+    /**
+     * Create animated wormhole with swirling visual effects
+     * @param {number} x - X position
+     * @param {number} y - Y position  
+     * @param {number} size - Wormhole size/radius
+     * @param {Object} attributes - Additional SVG attributes
+     * @returns {SVGElement} Wormhole group element
+     */
+    createWormhole(x, y, size = GRAPHICS.WORMHOLE_DEFAULT_SIZE, attributes = {}) {
+        const wormhole = this.createGroup({
+            transform: `translate(${x}, ${y})`,
+            ...attributes
+        });
+        
+        // Outer event horizon - dark ring
+        const eventHorizon = this.createCircle(0, 0, size, {
+            fill: 'none',
+            stroke: '#220066',
+            'stroke-width': size * GRAPHICS.WORMHOLE_EVENT_HORIZON_WIDTH_RATIO,
+            opacity: 0.8
+        });
+        
+        // Inner core - darker center with gradient
+        const gradientId = `wormhole-gradient-${this.generateId()}`;
+        const gradient = this.createElement('radialGradient');
+        gradient.setAttribute('id', gradientId);
+        gradient.setAttribute('cx', '50%');
+        gradient.setAttribute('cy', '50%');
+        gradient.setAttribute('r', '50%');
+        
+        const stop1 = this.createElement('stop');
+        stop1.setAttribute('offset', '0%');
+        stop1.setAttribute('stop-color', '#000000');
+        stop1.setAttribute('stop-opacity', '1');
+        
+        const stop2 = this.createElement('stop');
+        stop2.setAttribute('offset', `${GRAPHICS.WORMHOLE_GRADIENT_STOP_30}%`);
+        stop2.setAttribute('stop-color', '#110033');
+        stop2.setAttribute('stop-opacity', '0.9');
+        
+        const stop3 = this.createElement('stop');
+        stop3.setAttribute('offset', `${GRAPHICS.WORMHOLE_GRADIENT_STOP_70}%`);
+        stop3.setAttribute('stop-color', '#330066');
+        stop3.setAttribute('stop-opacity', '0.6');
+        
+        const stop4 = this.createElement('stop');
+        stop4.setAttribute('offset', '100%');
+        stop4.setAttribute('stop-color', '#660099');
+        stop4.setAttribute('stop-opacity', '0.2');
+        
+        gradient.appendChild(stop1);
+        gradient.appendChild(stop2);
+        gradient.appendChild(stop3);
+        gradient.appendChild(stop4);
+        
+        this.defs.appendChild(gradient);
+        
+        const core = this.createCircle(0, 0, size * GRAPHICS.WORMHOLE_CORE_SIZE_RATIO, {
+            fill: `url(#${gradientId})`,
+            opacity: 0.9
+        });
+        
+        // Swirling energy streams - multiple rotating arcs
+        const spiralGroup = this.createGroup({
+            id: `spiral-${this.generateId()}`
+        });
+        
+        for (let i = 0; i < GRAPHICS.WORMHOLE_SPIRAL_COUNT; i++) {
+            const spiralRadius = size * (GRAPHICS.WORMHOLE_SPIRAL_BASE_RADIUS + i * GRAPHICS.WORMHOLE_SPIRAL_RADIUS_INCREMENT);
+            const rotation = i * GRAPHICS.WORMHOLE_SPIRAL_ROTATION_INCREMENT;
+            
+            // Create spiral path using arc commands
+            const spiralPath = this.createPath(
+                `M ${spiralRadius},0 A ${spiralRadius},${spiralRadius} 0 1,1 ${-spiralRadius * GRAPHICS.WORMHOLE_SPIRAL_ARC_FIRST},${spiralRadius * GRAPHICS.WORMHOLE_SPIRAL_ARC_FIRST} A ${spiralRadius * GRAPHICS.WORMHOLE_SPIRAL_ARC_SECOND},${spiralRadius * GRAPHICS.WORMHOLE_SPIRAL_ARC_SECOND} 0 1,1 0,${-spiralRadius * GRAPHICS.WORMHOLE_SPIRAL_END_RADIUS}`,
+                {
+                    fill: 'none',
+                    stroke: `hsl(${GRAPHICS.WORMHOLE_SPIRAL_HUE_BASE + i * GRAPHICS.WORMHOLE_SPIRAL_HUE_INCREMENT}, 80%, ${GRAPHICS.WORMHOLE_SPIRAL_LIGHTNESS_BASE - i * GRAPHICS.WORMHOLE_SPIRAL_LIGHTNESS_DECREMENT}%)`,
+                    'stroke-width': size * GRAPHICS.WORMHOLE_SPIRAL_STROKE_WIDTH,
+                    opacity: GRAPHICS.WORMHOLE_SPIRAL_OPACITY_BASE - i * GRAPHICS.WORMHOLE_SPIRAL_OPACITY_DECREMENT,
+                    'stroke-linecap': 'round',
+                    transform: `rotate(${rotation})`
+                }
+            );
+            
+            // Add rotation animation to each spiral
+            const spiralAnimation = this.createElement('animateTransform');
+            spiralAnimation.setAttribute('attributeName', 'transform');
+            spiralAnimation.setAttribute('type', 'rotate');
+            spiralAnimation.setAttribute('values', `${rotation} 0 0;${rotation + GRAPHICS.WORMHOLE_FULL_ROTATION} 0 0`);
+            spiralAnimation.setAttribute('dur', `${GRAPHICS.WORMHOLE_SPIRAL_ANIMATION_BASE_DURATION + i * GRAPHICS.WORMHOLE_SPIRAL_ANIMATION_DURATION_INCREMENT}s`);
+            spiralAnimation.setAttribute('repeatCount', 'indefinite');
+            
+            spiralPath.appendChild(spiralAnimation);
+            spiralGroup.appendChild(spiralPath);
+        }
+        
+        // Energy particles orbiting the wormhole
+        const particleGroup = this.createGroup({
+            id: `particles-${this.generateId()}`
+        });
+        
+        for (let i = 0; i < GRAPHICS.WORMHOLE_PARTICLES_COUNT; i++) {
+            const angle = (i / GRAPHICS.WORMHOLE_PARTICLES_COUNT) * GRAPHICS.WORMHOLE_FULL_ROTATION;
+            const particleDistance = size * (GRAPHICS.WORMHOLE_PARTICLE_DISTANCE_BASE + Math.random() * GRAPHICS.WORMHOLE_PARTICLE_DISTANCE_VARIATION);
+            const particleX = Math.cos(angle * Math.PI / GRAPHICS.WORMHOLE_ANGLE_TO_RADIANS) * particleDistance;
+            const particleY = Math.sin(angle * Math.PI / GRAPHICS.WORMHOLE_ANGLE_TO_RADIANS) * particleDistance;
+            
+            const particle = this.createCircle(particleX, particleY, size * GRAPHICS.WORMHOLE_PARTICLE_SIZE, {
+                fill: '#ffffff',
+                opacity: 0.8
+            });
+            
+            particleGroup.appendChild(particle);
+        }
+        
+        // Add orbital animation to particles
+        const particleAnimation = this.createElement('animateTransform');
+        particleAnimation.setAttribute('attributeName', 'transform');
+        particleAnimation.setAttribute('type', 'rotate');
+        particleAnimation.setAttribute('values', `0 0 0;${GRAPHICS.WORMHOLE_FULL_ROTATION} 0 0`);
+        particleAnimation.setAttribute('dur', `${GRAPHICS.WORMHOLE_PARTICLE_ORBIT_DURATION}s`);
+        particleAnimation.setAttribute('repeatCount', 'indefinite');
+        
+        particleGroup.appendChild(particleAnimation);
+        
+        // Distortion rings - pulsing circles to suggest spacetime warping
+        const distortionGroup = this.createGroup();
+        for (let i = 0; i < GRAPHICS.WORMHOLE_DISTORTION_RINGS_COUNT; i++) {
+            const ringRadius = size * (GRAPHICS.WORMHOLE_DISTORTION_RING_BASE_RADIUS + i * GRAPHICS.WORMHOLE_DISTORTION_RING_RADIUS_INCREMENT);
+            const distortionRing = this.createCircle(0, 0, ringRadius, {
+                fill: 'none',
+                stroke: '#4400aa',
+                'stroke-width': 1,
+                opacity: 0.3,
+                'stroke-dasharray': '5,10'
+            });
+            
+            // Add pulsing animation
+            const pulseAnimation = this.createElement('animate');
+            pulseAnimation.setAttribute('attributeName', 'opacity');
+            pulseAnimation.setAttribute('values', '0.1;0.4;0.1');
+            pulseAnimation.setAttribute('dur', `${GRAPHICS.WORMHOLE_DISTORTION_PULSE_BASE_DURATION + i}s`);
+            pulseAnimation.setAttribute('repeatCount', 'indefinite');
+            pulseAnimation.setAttribute('begin', `${i * GRAPHICS.WORMHOLE_DISTORTION_PULSE_DELAY}s`);
+            
+            distortionRing.appendChild(pulseAnimation);
+            distortionGroup.appendChild(distortionRing);
+        }
+        
+        // Assemble wormhole components
+        wormhole.appendChild(distortionGroup);
+        wormhole.appendChild(core);
+        wormhole.appendChild(spiralGroup);
+        wormhole.appendChild(particleGroup);
+        wormhole.appendChild(eventHorizon);
+        
+        return wormhole;
+    }
 }

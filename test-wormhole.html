@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Max-Pixels Wormhole Graphics Test</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            background-color: #000011;
+            color: white;
+            font-family: Arial, sans-serif;
+        }
+        #gameCanvas {
+            border: 1px solid #444;
+            background: radial-gradient(circle, #000033 0%, #000000 100%);
+        }
+        .test-info {
+            margin: 20px 0;
+            padding: 10px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🌌 Max-Pixels Wormhole Graphics Test</h1>
+    
+    <div class="test-info">
+        <p><strong>Testing:</strong> createWormhole method with animated visual effects</p>
+        <p><strong>Features:</strong> Swirling energy streams, orbiting particles, pulsing distortion rings, gradient core</p>
+    </div>
+    
+    <svg id="gameCanvas" width="800" height="600">
+        <defs></defs>
+    </svg>
+    
+    <div class="test-info">
+        <p>✅ Wormhole should appear with:</p>
+        <ul>
+            <li>Rotating spiral energy streams in purple/blue hues</li>
+            <li>Orbiting white particles around the wormhole</li>
+            <li>Pulsing distortion rings suggesting spacetime warping</li>
+            <li>Dark gradient core with event horizon</li>
+        </ul>
+    </div>
+
+    <script type="module">
+        import { GraphicsEngine } from './src/graphics/GraphicsEngine.js';
+        
+        // Initialize graphics engine
+        const canvas = document.getElementById('gameCanvas');
+        const graphics = new GraphicsEngine(canvas);
+        
+        // Create a test layer
+        graphics.createLayer('test', 1);
+        
+        // Create multiple wormholes for testing
+        const wormhole1 = graphics.createWormhole(200, 150, 80, { id: 'wormhole1' });
+        const wormhole2 = graphics.createWormhole(600, 150, 60, { id: 'wormhole2' });
+        const wormhole3 = graphics.createWormhole(400, 400, 100, { id: 'wormhole3' });
+        
+        // Add wormholes to the test layer
+        graphics.addToLayer('test', wormhole1);
+        graphics.addToLayer('test', wormhole2);
+        graphics.addToLayer('test', wormhole3);
+        
+        console.log('✅ Wormhole graphics test loaded successfully!');
+        console.log('🌌 Three wormholes created at different positions and sizes');
+    </script>
+</body>
+</html>
