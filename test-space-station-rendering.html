@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Space Station Rendering Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background: #0f0f23;
+            color: white;
+        }
+        
+        #test-container {
+            display: flex;
+            gap: 20px;
+        }
+        
+        #svg-container {
+            border: 1px solid #333;
+            background: #000011;
+            width: 800px;
+            height: 600px;
+        }
+        
+        #station-info {
+            background: #16213e;
+            padding: 20px;
+            border-radius: 8px;
+            width: 300px;
+        }
+        
+        .space-station { 
+            cursor: pointer;
+            transition: opacity 0.3s ease;
+        }
+        
+        .space-station:hover { 
+            opacity: 0.8; 
+        }
+        
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 10px 5px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        
+        button:hover {
+            background: #45a049;
+        }
+    </style>
+</head>
+<body>
+    <h1>Space Station Rendering Test</h1>
+    <p>Testing the createSpaceStation() method in the GraphicsEngine</p>
+    
+    <div id="test-container">
+        <div id="svg-container">
+            <svg id="testSVG" width="800" height="600" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                    <radialGradient id="spaceBackground" cx="50%" cy="50%" r="100%">
+                        <stop offset="0%" style="stop-color:#000033;stop-opacity:1" />
+                        <stop offset="100%" style="stop-color:#000011;stop-opacity:1" />
+                    </radialGradient>
+                </defs>
+                <rect width="100%" height="100%" fill="url(#spaceBackground)" />
+            </svg>
+        </div>
+        
+        <div id="station-info">
+            <h3>Space Station Test Results</h3>
+            <button onclick="generateStations()">Generate Stations</button>
+            <button onclick="clearStations()">Clear Stations</button>
+            
+            <div id="results">
+                <p>Click "Generate Stations" to test the createSpaceStation() method</p>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { GraphicsEngine } from './src/graphics/GraphicsEngine.js';
+
+        const svg = document.getElementById('testSVG');
+        const graphics = new GraphicsEngine(svg);
+        const resultsDiv = document.getElementById('results');
+
+        // Test different station sizes and configurations
+        const stationConfigs = [
+            { x: 150, y: 150, size: 30, name: 'Standard Trading Station' },
+            { x: 350, y: 200, size: 45, name: 'Large Commercial Hub' },
+            { x: 550, y: 180, size: 25, name: 'Outpost Station' },
+            { x: 200, y: 350, size: 35, name: 'Research Station' },
+            { x: 450, y: 400, size: 60, name: 'Major Starport' },
+            { x: 650, y: 350, size: 20, name: 'Mining Station' }
+        ];
+
+        window.generateStations = function() {
+            clearStations();
+            let testResults = '<h4>Generated Space Stations:</h4><ul>';
+            
+            try {
+                stationConfigs.forEach((config, index) => {
+                    const station = graphics.createSpaceStation(
+                        config.x, 
+                        config.y, 
+                        config.size, 
+                        { 
+                            id: `test-station-${index}`,
+                            class: 'space-station'
+                        }
+                    );
+                    
+                    svg.appendChild(station);
+                    testResults += `<li>${config.name}: ${config.size}px size ✅</li>`;
+                });
+                
+                testResults += '</ul><p style="color: #4CAF50">✅ All stations created successfully!</p>';
+                testResults += '<p>Station features:</p><ul>';
+                testResults += '<li>Central hub with docking rings</li>';
+                testResults += '<li>4 directional docking ports</li>';
+                testResults += '<li>Solar panel arrays</li>';
+                testResults += '<li>Communication arrays</li>';
+                testResults += '<li>Navigation lights</li>';
+                testResults += '</ul>';
+                testResults += '<p><em>Hover over stations to see interactive effects</em></p>';
+                
+            } catch (error) {
+                testResults += `</ul><p style="color: #ff4444">❌ Error: ${error.message}</p>`;
+            }
+            
+            resultsDiv.innerHTML = testResults;
+        };
+
+        window.clearStations = function() {
+            stationConfigs.forEach((_, index) => {
+                const station = document.getElementById(`test-station-${index}`);
+                if (station) {
+                    station.remove();
+                }
+            });
+            resultsDiv.innerHTML = '<p>Stations cleared</p>';
+        };
+
+        // Test error conditions
+        function testErrorConditions() {
+            console.log('Testing space station error conditions...');
+            
+            try {
+                graphics.createSpaceStation('invalid', 100, 20);
+                console.error('Should have thrown error for invalid x');
+            } catch (e) {
+                console.log('✅ Correctly caught invalid x error:', e.message);
+            }
+            
+            try {
+                graphics.createSpaceStation(100, 'invalid', 20);
+                console.error('Should have thrown error for invalid y');
+            } catch (e) {
+                console.log('✅ Correctly caught invalid y error:', e.message);
+            }
+            
+            try {
+                graphics.createSpaceStation(100, 100, -5);
+                console.error('Should have thrown error for negative size');
+            } catch (e) {
+                console.log('✅ Correctly caught negative size error:', e.message);
+            }
+        }
+        
+        testErrorConditions();
+        
+        // Test with default size parameter
+        try {
+            const defaultStation = graphics.createSpaceStation(400, 300);
+            defaultStation.id = 'default-size-test';
+            console.log('✅ Successfully created station with default size parameter');
+        } catch (e) {
+            console.error('❌ Failed to create station with default size:', e.message);
+        }
+    </script>
+</body>
+</html>
