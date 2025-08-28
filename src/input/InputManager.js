@@ -69,6 +69,7 @@ export class InputManager {
         this.keyBindings.set('action', ['Space']);
         this.keyBindings.set('menu', ['Escape']);
         this.keyBindings.set('boost', ['ShiftLeft', 'ShiftRight']);
+        this.keyBindings.set('player_list', ['Tab']);
     }
     
     isPressed(keyOrAction) {

@@ -14,6 +14,7 @@ import { TradingSystem } from './trading/TradingSystem.js';
 import { TradingUI } from './ui/TradingUI.js';
 import { SpaceNavigation } from './navigation/SpaceNavigation.js';
 import { NetworkManager } from './network/NetworkManager.js';
+import { playerList } from './social/PlayerList.js';
 import { RESOURCES, WEAPONS, PLAYER, UI, GRAPHICS } from './constants.js';
 
 class MaxPixelsGame {
@@ -579,6 +580,12 @@ class MaxPixelsGame {
         if (this.input.justPressed('menu')) {
             this.togglePause();
             return; // Don't process other inputs when toggling pause
+        }
+        
+        // Handle player list toggle
+        if (this.input.justPressed('player_list')) {
+            playerList.toggle();
+            return;
         }
         
         // Skip input processing if game is paused
@@ -1261,6 +1268,7 @@ class MaxPixelsGame {
                     <div>Space: Fire Laser</div>
                     <div>G: Toggle Shields</div>
                     <div>Q: Zoom Out | E: Zoom In</div>
+                    <div>Tab: Player List</div>
                 </div>
                 <div class="hud-section camera">
                     <h3>Camera</h3>
@@ -1814,6 +1822,7 @@ class MaxPixelsGame {
         this.network.onConnection('connected', () => {
             console.log('Connected to multiplayer server');
             this.showNetworkStatus('Connected', 'success');
+            playerList.setLocalPlayer(this.network.playerId);
         });
         
         this.network.onConnection('disconnected', () => {
@@ -1834,14 +1843,17 @@ class MaxPixelsGame {
         // Handle incoming player messages
         this.network.on(this.network.MessageTypes.PLAYER_JOIN, (data) => {
             this.handlePlayerJoin(data);
+            playerList.handleNetworkMessage('player_join', data);
         });
         
         this.network.on(this.network.MessageTypes.PLAYER_LEAVE, (data) => {
             this.handlePlayerLeave(data);
+            playerList.handleNetworkMessage('player_leave', data);
         });
         
         this.network.on(this.network.MessageTypes.PLAYER_MOVE, (data) => {
             this.handlePlayerMove(data);
+            playerList.handleNetworkMessage('player_move', data);
         });
         
         this.network.on(this.network.MessageTypes.PLAYER_FIRE, (data) => {
@@ -1854,6 +1866,7 @@ class MaxPixelsGame {
         
         this.network.on(this.network.MessageTypes.GAME_STATE, (data) => {
             this.handleGameState(data);
+            playerList.handleNetworkMessage('game_state', data);
         });
     }
     
