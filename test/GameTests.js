@@ -68,6 +68,42 @@ describe('Graphics Engine', function() {
         
         TestRunner.cleanupTestDOM();
     });
+    
+    test('should validate createCircle parameters', function() {
+        const testContainer = TestRunner.setupTestDOM();
+        const canvas = testContainer.querySelector('#gameCanvas');
+        const graphics = new GraphicsEngine(canvas);
+        
+        // Test valid parameters
+        const circle = graphics.createCircle(10, 20, 5);
+        assert(circle !== null, 'Should create circle with valid parameters');
+        assertEqual(circle.tagName, 'circle', 'Should create circle element');
+        assertEqual(circle.getAttribute('cx'), '10', 'Should set cx correctly');
+        assertEqual(circle.getAttribute('cy'), '20', 'Should set cy correctly');
+        assertEqual(circle.getAttribute('r'), '5', 'Should set r correctly');
+        
+        // Test invalid cx parameter
+        assertThrows(() => graphics.createCircle('invalid', 20, 5), 'Should throw for invalid cx');
+        assertThrows(() => graphics.createCircle(Infinity, 20, 5), 'Should throw for infinite cx');
+        assertThrows(() => graphics.createCircle(NaN, 20, 5), 'Should throw for NaN cx');
+        
+        // Test invalid cy parameter
+        assertThrows(() => graphics.createCircle(10, 'invalid', 5), 'Should throw for invalid cy');
+        assertThrows(() => graphics.createCircle(10, Infinity, 5), 'Should throw for infinite cy');
+        assertThrows(() => graphics.createCircle(10, NaN, 5), 'Should throw for NaN cy');
+        
+        // Test invalid r parameter
+        assertThrows(() => graphics.createCircle(10, 20, 'invalid'), 'Should throw for invalid r');
+        assertThrows(() => graphics.createCircle(10, 20, -1), 'Should throw for negative r');
+        assertThrows(() => graphics.createCircle(10, 20, Infinity), 'Should throw for infinite r');
+        assertThrows(() => graphics.createCircle(10, 20, NaN), 'Should throw for NaN r');
+        
+        // Test invalid attributes parameter
+        assertThrows(() => graphics.createCircle(10, 20, 5, null), 'Should throw for null attributes');
+        assertThrows(() => graphics.createCircle(10, 20, 5, 'invalid'), 'Should throw for non-object attributes');
+        
+        TestRunner.cleanupTestDOM();
+    });
 });
 
 /**

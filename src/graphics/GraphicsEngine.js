@@ -52,6 +52,20 @@ export class GraphicsEngine {
     }
     
     createCircle(cx, cy, r, attributes = {}) {
+        // Parameter validation
+        if (typeof cx !== 'number' || !isFinite(cx)) {
+            throw new Error('GraphicsEngine.createCircle: cx must be a finite number');
+        }
+        if (typeof cy !== 'number' || !isFinite(cy)) {
+            throw new Error('GraphicsEngine.createCircle: cy must be a finite number');
+        }
+        if (typeof r !== 'number' || !isFinite(r) || r < 0) {
+            throw new Error('GraphicsEngine.createCircle: r must be a non-negative finite number');
+        }
+        if (typeof attributes !== 'object' || attributes === null) {
+            throw new Error('GraphicsEngine.createCircle: attributes must be an object');
+        }
+        
         const circle = this.createElement('circle');
         circle.setAttribute('cx', cx);
         circle.setAttribute('cy', cy);
