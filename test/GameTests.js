@@ -132,6 +132,74 @@ describe('Graphics Engine', function() {
         TestRunner.cleanupTestDOM();
     });
     
+    test('should create asteroid belt', function() {
+        const testContainer = TestRunner.setupTestDOM();
+        const canvas = testContainer.querySelector('#gameCanvas');
+        const graphics = new GraphicsEngine(canvas);
+        
+        const asteroidBelt = graphics.createAsteroidBelt(400, 300, 100, 200, 15);
+        assert(asteroidBelt !== null, 'Asteroid belt should be created');
+        assertEqual(asteroidBelt.tagName, 'G', 'Should create group element');
+        
+        // Use querySelectorAll to find child asteroid groups
+        const asteroidGroups = asteroidBelt.querySelectorAll('g');
+        assertEqual(asteroidGroups.length, 15, 'Should contain the correct number of asteroid groups');
+        
+        // Verify all children are asteroid groups with proper IDs
+        for (let i = 0; i < asteroidGroups.length; i++) {
+            const asteroid = asteroidGroups[i];
+            assertEqual(asteroid.tagName, 'G', 'Each child should be an asteroid group');
+            assert(asteroid.id.startsWith('asteroid_'), 'Each asteroid should have proper ID');
+        }
+        
+        TestRunner.cleanupTestDOM();
+    });
+    
+    test('should validate createAsteroidBelt parameters', function() {
+        const testContainer = TestRunner.setupTestDOM();
+        const canvas = testContainer.querySelector('#gameCanvas');
+        const graphics = new GraphicsEngine(canvas);
+        
+        // Test valid parameters
+        const belt = graphics.createAsteroidBelt(100, 100, 50, 150, 10);
+        assert(belt !== null, 'Should create belt with valid parameters');
+        assertEqual(belt.tagName, 'G', 'Should create group element');
+        
+        // Test invalid centerX parameter
+        assertThrows(() => graphics.createAsteroidBelt('invalid', 100, 50, 150, 10), 'Should throw for invalid centerX');
+        assertThrows(() => graphics.createAsteroidBelt(Infinity, 100, 50, 150, 10), 'Should throw for infinite centerX');
+        assertThrows(() => graphics.createAsteroidBelt(NaN, 100, 50, 150, 10), 'Should throw for NaN centerX');
+        
+        // Test invalid centerY parameter
+        assertThrows(() => graphics.createAsteroidBelt(100, 'invalid', 50, 150, 10), 'Should throw for invalid centerY');
+        assertThrows(() => graphics.createAsteroidBelt(100, Infinity, 50, 150, 10), 'Should throw for infinite centerY');
+        assertThrows(() => graphics.createAsteroidBelt(100, NaN, 50, 150, 10), 'Should throw for NaN centerY');
+        
+        // Test invalid innerRadius parameter
+        assertThrows(() => graphics.createAsteroidBelt(100, 100, 'invalid', 150, 10), 'Should throw for invalid innerRadius');
+        assertThrows(() => graphics.createAsteroidBelt(100, 100, -5, 150, 10), 'Should throw for negative innerRadius');
+        assertThrows(() => graphics.createAsteroidBelt(100, 100, Infinity, 150, 10), 'Should throw for infinite innerRadius');
+        assertThrows(() => graphics.createAsteroidBelt(100, 100, NaN, 150, 10), 'Should throw for NaN innerRadius');
+        
+        // Test invalid outerRadius parameter
+        assertThrows(() => graphics.createAsteroidBelt(100, 100, 50, 'invalid', 10), 'Should throw for invalid outerRadius');
+        assertThrows(() => graphics.createAsteroidBelt(100, 100, 50, 25, 10), 'Should throw for outerRadius <= innerRadius');
+        assertThrows(() => graphics.createAsteroidBelt(100, 100, 50, Infinity, 10), 'Should throw for infinite outerRadius');
+        assertThrows(() => graphics.createAsteroidBelt(100, 100, 50, NaN, 10), 'Should throw for NaN outerRadius');
+        
+        // Test invalid count parameter
+        assertThrows(() => graphics.createAsteroidBelt(100, 100, 50, 150, 'invalid'), 'Should throw for invalid count');
+        assertThrows(() => graphics.createAsteroidBelt(100, 100, 50, 150, -5), 'Should throw for negative count');
+        assertThrows(() => graphics.createAsteroidBelt(100, 100, 50, 150, Infinity), 'Should throw for infinite count');
+        assertThrows(() => graphics.createAsteroidBelt(100, 100, 50, 150, NaN), 'Should throw for NaN count');
+        
+        // Test invalid attributes parameter
+        assertThrows(() => graphics.createAsteroidBelt(100, 100, 50, 150, 10, null), 'Should throw for null attributes');
+        assertThrows(() => graphics.createAsteroidBelt(100, 100, 50, 150, 10, 'invalid'), 'Should throw for non-object attributes');
+        
+        TestRunner.cleanupTestDOM();
+    });
+    
     test('should validate createCircle parameters', function() {
         const testContainer = TestRunner.setupTestDOM();
         const canvas = testContainer.querySelector('#gameCanvas');

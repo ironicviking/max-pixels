@@ -769,6 +769,59 @@ export class GraphicsEngine {
         return asteroidField;
     }
     
+    createAsteroidBelt(centerX, centerY, innerRadius, outerRadius, count, attributes = {}) {
+        if (typeof centerX !== 'number' || !isFinite(centerX)) {
+            throw new Error('GraphicsEngine.createAsteroidBelt: centerX must be a finite number');
+        }
+        if (typeof centerY !== 'number' || !isFinite(centerY)) {
+            throw new Error('GraphicsEngine.createAsteroidBelt: centerY must be a finite number');
+        }
+        if (typeof innerRadius !== 'number' || !isFinite(innerRadius) || innerRadius < 0) {
+            throw new Error('GraphicsEngine.createAsteroidBelt: innerRadius must be a non-negative finite number');
+        }
+        if (typeof outerRadius !== 'number' || !isFinite(outerRadius) || outerRadius <= innerRadius) {
+            throw new Error('GraphicsEngine.createAsteroidBelt: outerRadius must be a finite number greater than innerRadius');
+        }
+        if (typeof count !== 'number' || !isFinite(count) || count < 0) {
+            throw new Error('GraphicsEngine.createAsteroidBelt: count must be a non-negative finite number');
+        }
+        if (typeof attributes !== 'object' || attributes === null) {
+            throw new Error('GraphicsEngine.createAsteroidBelt: attributes must be an object');
+        }
+        
+        const asteroidBelt = this.createGroup({ 
+            id: attributes.id || `asteroidBelt_${this.generateId()}`,
+            ...attributes 
+        });
+        
+        for (let i = 0; i < count; i++) {
+            // Random angle for distribution around the belt
+            const angle = Math.random() * 2 * Math.PI;
+            
+            // Random radius between inner and outer radius
+            const radius = innerRadius + Math.random() * (outerRadius - innerRadius);
+            
+            // Calculate position
+            const x = centerX + Math.cos(angle) * radius;
+            const y = centerY + Math.sin(angle) * radius;
+            
+            // Random asteroid size based on belt distance (smaller asteroids on the outside)
+            const distanceFromCenter = (radius - innerRadius) / (outerRadius - innerRadius);
+            const sizeVariation = 1 - distanceFromCenter * GRAPHICS.ASTEROID_BELT_SIZE_REDUCTION; // Outer asteroids are smaller
+            const baseSize = Math.random() * GRAPHICS.ASTEROID_SIZE_RANGE + GRAPHICS.ASTEROID_SIZE_MIN;
+            const size = baseSize * sizeVariation;
+            
+            const asteroid = this.createAsteroid(x, y, size, {
+                id: `asteroid_${this.generateId()}`,
+                opacity: GRAPHICS.ASTEROID_BELT_OPACITY_BASE + Math.random() * GRAPHICS.ASTEROID_BELT_OPACITY_VARIATION // Slight opacity variation
+            });
+            
+            asteroidBelt.appendChild(asteroid);
+        }
+        
+        return asteroidBelt;
+    }
+    
     createAsteroid(x, y, size, attributes = {}) {
         // Parameter validation
         if (typeof x !== 'number' || !isFinite(x)) {
