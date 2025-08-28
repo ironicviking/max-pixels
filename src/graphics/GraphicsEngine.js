@@ -27,6 +27,13 @@ export class GraphicsEngine {
         return `${prefix}_${++this.idCounter}`;
     }
     
+    setAttributes(element, attributes) {
+        Object.entries(attributes).forEach(([key, value]) => {
+            element.setAttribute(key, value);
+        });
+        return element;
+    }
+    
     createLayer(name, zIndex = 0) {
         const layer = this.createElement('g');
         layer.setAttribute('id', `layer_${name}`);
@@ -50,11 +57,7 @@ export class GraphicsEngine {
         circle.setAttribute('cy', cy);
         circle.setAttribute('r', r);
         
-        Object.entries(attributes).forEach(([key, value]) => {
-            circle.setAttribute(key, value);
-        });
-        
-        return circle;
+        return this.setAttributes(circle, attributes);
     }
     
     createRect(x, y, width, height, attributes = {}) {
@@ -64,32 +67,20 @@ export class GraphicsEngine {
         rect.setAttribute('width', width);
         rect.setAttribute('height', height);
         
-        Object.entries(attributes).forEach(([key, value]) => {
-            rect.setAttribute(key, value);
-        });
-        
-        return rect;
+        return this.setAttributes(rect, attributes);
     }
     
     createPath(d, attributes = {}) {
         const path = this.createElement('path');
         path.setAttribute('d', d);
         
-        Object.entries(attributes).forEach(([key, value]) => {
-            path.setAttribute(key, value);
-        });
-        
-        return path;
+        return this.setAttributes(path, attributes);
     }
     
     createGroup(attributes = {}) {
         const group = this.createElement('g');
         
-        Object.entries(attributes).forEach(([key, value]) => {
-            group.setAttribute(key, value);
-        });
-        
-        return group;
+        return this.setAttributes(group, attributes);
     }
     
     createGradient(type, stops, attributes = {}) {
@@ -97,9 +88,7 @@ export class GraphicsEngine {
         const gradient = this.createElement(type === 'radial' ? 'radialGradient' : 'linearGradient');
         gradient.setAttribute('id', gradientId);
         
-        Object.entries(attributes).forEach(([key, value]) => {
-            gradient.setAttribute(key, value);
-        });
+        this.setAttributes(gradient, attributes);
         
         stops.forEach(stop => {
             const stopElement = this.createElement('stop');
