@@ -3,14 +3,14 @@
  * Creates dynamic particle effects for enhanced visual feedback
  */
 
-import { PARTICLES } from '../constants.js';
+import { PARTICLES, GRAPHICS } from '../constants.js';
 
 // Particle system constants
 const PARTICLE_DEFAULTS = {
     COUNT: 20,
     LIFE: 2000,
     EMISSION_RATE: 10,
-    SPREAD: Math.PI * 2,
+    SPREAD: GRAPHICS.PI_TIMES_2,
     SIZE_MIN: 2,
     SIZE_MAX: 6,
     OPACITY_START: 1.0,
@@ -93,7 +93,7 @@ export class ParticleSystem {
         const config = {
             particleCount: PARTICLES.EXPLOSION_PARTICLE_COUNT,
             particleLife: PARTICLES.EXPLOSION_LIFE,
-            spread: Math.PI * 2,
+            spread: GRAPHICS.PI_TIMES_2,
             velocity: { min: PARTICLES.EXPLOSION_VELOCITY_MIN, max: PARTICLES.EXPLOSION_VELOCITY_MAX },
             size: { min: PARTICLES.EXPLOSION_SIZE_MIN, max: PARTICLES.EXPLOSION_SIZE_MAX },
             color: '#ff6600',
@@ -146,7 +146,7 @@ export class ParticleSystem {
         const config = {
             particleCount: Math.floor(asteroidSize / PARTICLES.DEBRIS_SIZE_DIVISOR),
             particleLife: PARTICLES.DEBRIS_LIFE,
-            spread: Math.PI * 2,
+            spread: GRAPHICS.PI_TIMES_2,
             velocity: { min: PARTICLES.DEBRIS_VELOCITY_MIN, max: PARTICLES.DEBRIS_VELOCITY_MAX },
             size: { min: PARTICLES.DEBRIS_SIZE_MIN, max: PARTICLES.DEBRIS_SIZE_MAX },
             color: '#8b7355',
