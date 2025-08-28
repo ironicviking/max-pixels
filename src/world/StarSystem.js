@@ -4,7 +4,7 @@
  */
 
 import { IDGenerator } from '../utils/IDGenerator.js';
-import { WORLD_GEN } from '../constants.js';
+import { WORLD_GEN, GRAPHICS } from '../constants.js';
 
 export class StarSystem {
     constructor(systemId, coordinates = { x: 0, y: 0 }) {
@@ -392,6 +392,82 @@ export class StarSystem {
             spaceStations: this.spaceStations,
             jumpGates: this.jumpGates
         };
+    }
+    
+    renderSystem(graphics) {
+        const systemGroup = graphics.createElement('g');
+        systemGroup.setAttribute('id', `star-system-${this.id}`);
+        
+        // Render star
+        const star = graphics.createElement('circle');
+        star.setAttribute('cx', this.star.x);
+        star.setAttribute('cy', this.star.y);
+        star.setAttribute('r', this.star.size);
+        star.setAttribute('fill', this.star.color);
+        star.setAttribute('class', 'star');
+        systemGroup.appendChild(star);
+        
+        // Render planets and their moons
+        this.planets.forEach(planet => {
+            const planetElement = graphics.createElement('circle');
+            planetElement.setAttribute('cx', planet.x);
+            planetElement.setAttribute('cy', planet.y);
+            planetElement.setAttribute('r', planet.size);
+            planetElement.setAttribute('fill', planet.color);
+            planetElement.setAttribute('class', 'planet');
+            systemGroup.appendChild(planetElement);
+            
+            // Render planet's moons
+            planet.moons.forEach(moon => {
+                const moonElement = graphics.createElement('circle');
+                moonElement.setAttribute('cx', planet.x + moon.x);
+                moonElement.setAttribute('cy', planet.y + moon.y);
+                moonElement.setAttribute('r', moon.size * planet.size);
+                moonElement.setAttribute('fill', moon.color);
+                moonElement.setAttribute('class', 'moon');
+                systemGroup.appendChild(moonElement);
+            });
+        });
+        
+        // Render asteroid belts
+        this.asteroidBelts.forEach(belt => {
+            belt.forEach(asteroid => {
+                const asteroidElement = graphics.createElement('circle');
+                asteroidElement.setAttribute('cx', asteroid.x);
+                asteroidElement.setAttribute('cy', asteroid.y);
+                asteroidElement.setAttribute('r', asteroid.size);
+                asteroidElement.setAttribute('fill', '#8d6e63');
+                asteroidElement.setAttribute('class', 'asteroid');
+                systemGroup.appendChild(asteroidElement);
+            });
+        });
+        
+        // Render space stations
+        this.spaceStations.forEach(station => {
+            const stationElement = graphics.createElement('rect');
+            stationElement.setAttribute('x', station.x - GRAPHICS.STATION_RENDER_SIZE);
+            stationElement.setAttribute('y', station.y - GRAPHICS.STATION_RENDER_SIZE);
+            stationElement.setAttribute('width', GRAPHICS.STATION_RENDER_WIDTH);
+            stationElement.setAttribute('height', GRAPHICS.STATION_RENDER_HEIGHT);
+            stationElement.setAttribute('fill', '#2196f3');
+            stationElement.setAttribute('class', 'space-station');
+            systemGroup.appendChild(stationElement);
+        });
+        
+        // Render jump gates
+        this.jumpGates.forEach(gate => {
+            const gateElement = graphics.createElement('circle');
+            gateElement.setAttribute('cx', gate.x);
+            gateElement.setAttribute('cy', gate.y);
+            gateElement.setAttribute('r', GRAPHICS.JUMP_GATE_RENDER_RADIUS);
+            gateElement.setAttribute('fill', 'none');
+            gateElement.setAttribute('stroke', '#9c27b0');
+            gateElement.setAttribute('stroke-width', '3');
+            gateElement.setAttribute('class', 'jump-gate');
+            systemGroup.appendChild(gateElement);
+        });
+        
+        return systemGroup;
     }
     
     findNearestStation(x, y, maxDistance = WORLD_GEN.DEFAULT_INTERACTION_RANGE) {
