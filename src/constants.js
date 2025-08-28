@@ -315,7 +315,7 @@ export const GRAPHICS = {
     COLOR_LIGHTEN_STEP: 4,
     
     // General geometry
-    PI_TIMES_2: 2.5,
+    PI_TIMES_2: Math.PI * 2,
     ANGLE_180: 180,
     ANGLE_90: 90,
     ANGLE_60: 60,
