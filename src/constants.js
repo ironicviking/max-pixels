@@ -684,3 +684,15 @@ export const RESOURCES = {
     // Resource types available from asteroids
     ASTEROID_RESOURCE_TYPES: ['ore-iron', 'ore-copper']
 };
+
+// Asteroid Damage Indicator Constants
+export const ASTEROID_DAMAGE = {
+    // Damage ring appearance
+    DEFAULT_RING_OPACITY: 0.8,
+    DEFAULT_RING_WIDTH: 3,
+    RING_RADIUS_OFFSET: 15,
+    
+    // Animation timing
+    CLEANUP_DELAY_MS: 100,
+    ANIMATION_DELAY_MULTIPLIER: 1000
+};

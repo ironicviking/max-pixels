@@ -3,7 +3,7 @@
  * Core utilities for creating and manipulating SVG graphics
  */
 
-import { GRAPHICS, WEAPONS } from '../constants.js';
+import { GRAPHICS, WEAPONS, ASTEROID_DAMAGE } from '../constants.js';
 
 export class GraphicsEngine {
     constructor(svgContainer) {
@@ -1516,6 +1516,58 @@ export class GraphicsEngine {
         }, parseFloat(attributes.duration || GRAPHICS.IMPACT_DEFAULT_DURATION) * GRAPHICS.SECONDS_TO_MS + GRAPHICS.IMPACT_CLEANUP_DELAY);
         
         return impact;
+    }
+    
+    createAsteroidDamageIndicator(x, y, size, attributes = {}) {
+        const {
+            ringColor = '#ff4444',
+            ringOpacity = ASTEROID_DAMAGE.DEFAULT_RING_OPACITY,
+            duration = '1.5s',
+            ringWidth = ASTEROID_DAMAGE.DEFAULT_RING_WIDTH,
+            id = this.generateId('damage-ring')
+        } = attributes;
+        
+        const indicator = this.createGroup({
+            id,
+            transform: `translate(${x}, ${y})`
+        });
+        
+        // Create damage ring around asteroid
+        const damageRing = this.createCircle(0, 0, size + ASTEROID_DAMAGE.RING_RADIUS_OFFSET, {
+            fill: 'none',
+            stroke: ringColor,
+            'stroke-width': ringWidth,
+            opacity: ringOpacity,
+            'stroke-linecap': 'round'
+        });
+        
+        // Create pulse animation
+        const pulseAnimation = this.createElement('animate');
+        pulseAnimation.setAttribute('attributeName', 'opacity');
+        pulseAnimation.setAttribute('values', `${ringOpacity};0.3;${ringOpacity};0.3;0`);
+        pulseAnimation.setAttribute('dur', duration);
+        pulseAnimation.setAttribute('fill', 'freeze');
+        pulseAnimation.setAttribute('repeatCount', '1');
+        
+        // Create scale animation for impact effect
+        const scaleAnimation = this.createElement('animateTransform');
+        scaleAnimation.setAttribute('attributeName', 'transform');
+        scaleAnimation.setAttribute('type', 'scale');
+        scaleAnimation.setAttribute('values', '0.8;1.2;1.0;1.1;0.9');
+        scaleAnimation.setAttribute('dur', duration);
+        scaleAnimation.setAttribute('fill', 'freeze');
+        scaleAnimation.setAttribute('additive', 'sum');
+        
+        damageRing.appendChild(pulseAnimation);
+        indicator.appendChild(scaleAnimation);
+        indicator.appendChild(damageRing);
+        
+        // Auto-remove after animation
+        setTimeout(() => {
+            this.remove(indicator);
+        }, parseFloat(duration) * ASTEROID_DAMAGE.ANIMATION_DELAY_MULTIPLIER + ASTEROID_DAMAGE.CLEANUP_DELAY_MS);
+        
+        return indicator;
     }
     
     createWeaponChargeIndicator(x, y, chargeLevel, attributes = {}) {

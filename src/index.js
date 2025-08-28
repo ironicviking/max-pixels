@@ -1325,6 +1325,15 @@ class MaxPixelsGame {
                 });
                 this.graphics.addToLayer('game', impact);
                 
+                // Create damage indicator ring around asteroid
+                const damageIndicator = this.graphics.createAsteroidDamageIndicator(asteroid.x, asteroid.y, asteroid.size, {
+                    ringColor: '#ff6644',
+                    ringOpacity: 0.9,
+                    duration: '2.0s',
+                    ringWidth: 2
+                });
+                this.graphics.addToLayer('game', damageIndicator);
+                
                 // Create explosion particle effect
                 this.particles.createExplosionEffect(asteroid.x, asteroid.y, {
                     particleCount: WEAPONS.HIT_PARTICLE_COUNT,

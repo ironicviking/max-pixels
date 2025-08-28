@@ -531,6 +531,65 @@ describe('Graphics Engine', function() {
         
         TestRunner.cleanupTestDOM();
     });
+    
+    test('should create asteroid damage indicator with correct structure', function() {
+        const testContainer = TestRunner.setupTestDOM();
+        const canvas = testContainer.querySelector('#gameCanvas');
+        const graphics = new GraphicsEngine(canvas);
+        
+        const damageIndicator = graphics.createAsteroidDamageIndicator(100, 150, 25);
+        assert(damageIndicator !== null, 'Should create damage indicator');
+        assertEqual(damageIndicator.tagName, 'G', 'Should create group element');
+        
+        // Check positioning
+        const transform = damageIndicator.getAttribute('transform');
+        assert(transform.includes('translate(100, 150)'), 'Should position indicator correctly');
+        
+        // Check for damage ring
+        const damageRing = damageIndicator.querySelector('circle');
+        assert(damageRing !== null, 'Should have damage ring circle');
+        assertEqual(damageRing.getAttribute('fill'), 'none', 'Ring should have no fill');
+        assertEqual(damageRing.getAttribute('stroke'), '#ff4444', 'Should have correct default color');
+        assertEqual(damageRing.getAttribute('r'), '40', 'Should have correct radius (size + 15)');
+        
+        // Check for animations
+        const pulseAnimation = damageRing.querySelector('animate');
+        assert(pulseAnimation !== null, 'Should have pulse animation');
+        assertEqual(pulseAnimation.getAttribute('attributeName'), 'opacity', 'Should animate opacity');
+        
+        const scaleAnimation = damageIndicator.querySelector('animateTransform');
+        assert(scaleAnimation !== null, 'Should have scale animation');
+        assertEqual(scaleAnimation.getAttribute('type'), 'scale', 'Should be scale animation');
+        
+        TestRunner.cleanupTestDOM();
+    });
+    
+    test('should create damage indicator with custom attributes', function() {
+        const testContainer = TestRunner.setupTestDOM();
+        const canvas = testContainer.querySelector('#gameCanvas');
+        const graphics = new GraphicsEngine(canvas);
+        
+        const customIndicator = graphics.createAsteroidDamageIndicator(200, 300, 30, {
+            ringColor: '#00ff00',
+            ringOpacity: 0.5,
+            duration: '3.0s',
+            ringWidth: 5,
+            id: 'custom-damage-ring'
+        });
+        
+        assertEqual(customIndicator.getAttribute('id'), 'custom-damage-ring', 'Should use custom ID');
+        
+        const ring = customIndicator.querySelector('circle');
+        assertEqual(ring.getAttribute('stroke'), '#00ff00', 'Should use custom color');
+        assertEqual(ring.getAttribute('stroke-width'), '5', 'Should use custom width');
+        assertEqual(ring.getAttribute('opacity'), '0.5', 'Should use custom opacity');
+        assertEqual(ring.getAttribute('r'), '45', 'Should have correct radius (30 + 15)');
+        
+        const animation = ring.querySelector('animate');
+        assertEqual(animation.getAttribute('dur'), '3.0s', 'Should use custom duration');
+        
+        TestRunner.cleanupTestDOM();
+    });
 });
 
 /**
