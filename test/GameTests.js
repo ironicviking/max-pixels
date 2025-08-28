@@ -705,7 +705,7 @@ describe('Graphics Engine', function() {
         TestRunner.cleanupTestDOM();
     });
     
-    test('should create solar corona for large stars', function() {
+    test('should create solar corona for large stars', async function() {
         const testContainer = TestRunner.setupTestDOM();
         const canvas = testContainer.querySelector('#gameCanvas');
         const graphics = new GraphicsEngine(canvas);
