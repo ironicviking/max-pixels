@@ -203,6 +203,20 @@ export class GraphicsEngine {
     }
     
     createStarField(count, bounds = { width: GRAPHICS.DEFAULT_CANVAS_WIDTH, height: GRAPHICS.DEFAULT_CANVAS_HEIGHT }) {
+        // Parameter validation
+        if (typeof count !== 'number' || !isFinite(count) || count < 0) {
+            throw new Error('GraphicsEngine.createStarField: count must be a non-negative finite number');
+        }
+        if (typeof bounds !== 'object' || bounds === null) {
+            throw new Error('GraphicsEngine.createStarField: bounds must be an object');
+        }
+        if (typeof bounds.width !== 'number' || !isFinite(bounds.width) || bounds.width <= 0) {
+            throw new Error('GraphicsEngine.createStarField: bounds.width must be a positive finite number');
+        }
+        if (typeof bounds.height !== 'number' || !isFinite(bounds.height) || bounds.height <= 0) {
+            throw new Error('GraphicsEngine.createStarField: bounds.height must be a positive finite number');
+        }
+        
         const starField = this.createGroup({ id: 'starField' });
         
         for (let i = 0; i < count; i++) {
