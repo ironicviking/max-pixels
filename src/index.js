@@ -13,6 +13,7 @@ import { AuthUI } from './ui/AuthUI.js';
 import { TradingSystem } from './trading/TradingSystem.js';
 import { TradingUI } from './ui/TradingUI.js';
 import { SpaceNavigation } from './navigation/SpaceNavigation.js';
+import { NetworkManager } from './network/NetworkManager.js';
 import { RESOURCES, WEAPONS, PLAYER, UI } from './constants.js';
 
 class MaxPixelsGame {
@@ -29,7 +30,9 @@ class MaxPixelsGame {
         this.trading = new TradingSystem();
         this.tradingUI = new TradingUI(this.trading, this.auth);
         this.navigation = new SpaceNavigation();
+        this.network = new NetworkManager();
         this.initializePlayerInventory();
+        this.initializeNetworking();
         this.isInitialized = false;
         
         this.player = {
@@ -49,6 +52,9 @@ class MaxPixelsGame {
         this.nearbyStation = null;
         this.nearbyJumpGate = null;
         this.interactionRange = 80;
+        
+        // Multiplayer player tracking
+        this.otherPlayers = new Map();
         
         // Visual feedback tracking
         this.highlightedStation = null;
@@ -205,12 +211,15 @@ class MaxPixelsGame {
         }
         
         if (gameLayer) {
-            // Keep only the player ship
+            // Keep only the player ship and other players
             const playerShip = gameLayer.querySelector('#playerShip');
+            const otherPlayerShips = Array.from(gameLayer.querySelectorAll('[id^="otherPlayer_"]'));
             gameLayer.innerHTML = '';
             if (playerShip) {
                 gameLayer.appendChild(playerShip);
             }
+            // Re-add other player ships
+            otherPlayerShips.forEach(ship => gameLayer.appendChild(ship));
         }
     }
     
@@ -542,6 +551,9 @@ class MaxPixelsGame {
         
         this.playerShip.setAttribute('transform', 
             `translate(${this.player.x}, ${this.player.y}) rotate(${this.player.rotation})`);
+            
+        // Send position updates to multiplayer server
+        this.sendPlayerUpdate();
     }
     
     updatePlayerBounds() {
@@ -801,6 +813,9 @@ class MaxPixelsGame {
         // Play laser sound
         this.audio.playLaser(0.4);
         
+        // Send fire action to multiplayer server
+        this.sendFireAction();
+        
         console.log('Laser fired!');
     }
     
@@ -993,6 +1008,348 @@ class MaxPixelsGame {
             setTimeout(() => {
                 loading.style.display = 'none';
             }, 1000);
+        }
+    }
+    
+    initializeNetworking() {
+        // Set up network event handlers
+        this.network.onConnection('connected', () => {
+            console.log('Connected to multiplayer server');
+            this.showNetworkStatus('Connected', 'success');
+        });
+        
+        this.network.onConnection('disconnected', () => {
+            console.log('Disconnected from multiplayer server');
+            this.showNetworkStatus('Disconnected', 'warning');
+        });
+        
+        this.network.onConnection('error', (error) => {
+            console.error('Network connection error:', error);
+            this.showNetworkStatus('Connection Error', 'error');
+        });
+        
+        this.network.onConnection('reconnectFailed', () => {
+            console.error('Failed to reconnect to server');
+            this.showNetworkStatus('Offline Mode', 'info');
+        });
+        
+        // Handle incoming player messages
+        this.network.on(this.network.MessageTypes.PLAYER_JOIN, (data) => {
+            this.handlePlayerJoin(data);
+        });
+        
+        this.network.on(this.network.MessageTypes.PLAYER_LEAVE, (data) => {
+            this.handlePlayerLeave(data);
+        });
+        
+        this.network.on(this.network.MessageTypes.PLAYER_MOVE, (data) => {
+            this.handlePlayerMove(data);
+        });
+        
+        this.network.on(this.network.MessageTypes.PLAYER_FIRE, (data) => {
+            this.handlePlayerFire(data);
+        });
+        
+        this.network.on(this.network.MessageTypes.CHAT_MESSAGE, (data) => {
+            this.handleChatMessage(data);
+        });
+        
+        this.network.on(this.network.MessageTypes.GAME_STATE, (data) => {
+            this.handleGameState(data);
+        });
+    }
+    
+    async connectToMultiplayer(serverUrl = 'ws://localhost:8080') {
+        try {
+            const playerId = this.auth.getCurrentUser()?.username || null;
+            await this.network.connect(serverUrl, playerId);
+            return true;
+        } catch (error) {
+            console.error('Failed to connect to multiplayer server:', error);
+            this.showNetworkStatus('Failed to Connect', 'error');
+            return false;
+        }
+    }
+    
+    disconnectFromMultiplayer() {
+        this.network.disconnect();
+    }
+    
+    sendPlayerUpdate() {
+        if (this.network.isConnected) {
+            this.network.sendPlayerMovement(
+                { x: this.player.x, y: this.player.y },
+                this.player.velocity,
+                this.player.rotation
+            );
+        }
+    }
+    
+    sendFireAction() {
+        if (this.network.isConnected) {
+            this.network.sendPlayerFire(
+                { x: this.player.x, y: this.player.y },
+                this.player.rotation,
+                'laser'
+            );
+        }
+    }
+    
+    handlePlayerJoin(data) {
+        console.log(`Player ${data.playerId} joined the game`);
+        
+        // Generate a unique color for this player
+        const playerColors = ['#ff6b35', '#f7931e', '#ffd700', '#32cd32', '#00ced1', '#9370db', '#ff69b4'];
+        const colorIndex = Array.from(this.otherPlayers.keys()).length % playerColors.length;
+        const playerColor = playerColors[colorIndex];
+        
+        // Create player data
+        const playerData = {
+            id: data.playerId,
+            x: data.position?.x || 500,
+            y: data.position?.y || 500,
+            rotation: data.rotation || 0,
+            color: playerColor,
+            lastUpdate: Date.now()
+        };
+        
+        // Create visual representation
+        const playerShip = this.graphics.createOtherPlayerShip(
+            playerData.x, 
+            playerData.y, 
+            data.playerId, 
+            playerColor
+        );
+        
+        // Add to game layer
+        this.graphics.addToLayer('game', playerShip);
+        
+        // Store player data
+        this.otherPlayers.set(data.playerId, playerData);
+        
+        console.log(`Added visual representation for player ${data.playerId}`);
+    }
+    
+    handlePlayerLeave(data) {
+        console.log(`Player ${data.playerId} left the game`);
+        
+        // Remove visual representation
+        const playerElement = this.graphics.svg.querySelector(`#otherPlayer_${data.playerId}`);
+        if (playerElement) {
+            this.graphics.remove(playerElement);
+            console.log(`Removed visual representation for player ${data.playerId}`);
+        }
+        
+        // Remove from tracking
+        this.otherPlayers.delete(data.playerId);
+    }
+    
+    handlePlayerMove(data) {
+        const player = this.otherPlayers.get(data.playerId);
+        if (!player) return; // Player not tracked yet
+        
+        // Update player data
+        player.x = data.position.x;
+        player.y = data.position.y;
+        player.rotation = data.rotation || player.rotation;
+        player.lastUpdate = Date.now();
+        
+        // Update visual position
+        const playerElement = this.graphics.svg.querySelector(`#otherPlayer_${data.playerId}`);
+        if (playerElement) {
+            playerElement.setAttribute('transform', 
+                `translate(${player.x}, ${player.y}) rotate(${player.rotation})`);
+        }
+        
+        console.log(`Updated player ${data.playerId} position to (${player.x}, ${player.y})`);
+    }
+    
+    handlePlayerFire(data) {
+        const player = this.otherPlayers.get(data.playerId);
+        if (!player) return; // Player not tracked yet
+        
+        console.log(`Player ${data.playerId} fired weapon`);
+        
+        // Calculate laser position and direction for other player
+        const rotationRad = player.rotation * Math.PI / 180;
+        const laserStartX = player.x + Math.sin(rotationRad) * 20;
+        const laserStartY = player.y - Math.cos(rotationRad) * 20;
+        const laserEndX = player.x + Math.sin(rotationRad) * 400;
+        const laserEndY = player.y - Math.cos(rotationRad) * 400;
+        
+        // Create laser beam for other player with different color
+        const laser = this.graphics.createLaserBeam(
+            laserStartX, laserStartY,
+            laserEndX, laserEndY,
+            {
+                color: '#00ff88',
+                glowColor: '#88ffaa',
+                width: 3,
+                duration: 300
+            }
+        );
+        
+        // Add laser to game layer
+        this.graphics.addToLayer('game', laser);
+        
+        // Play distant laser sound (quieter)
+        this.audio.playLaser(0.2);
+    }
+    
+    handleChatMessage(data) {
+        console.log(`Chat from ${data.playerId}: ${data.message}`);
+        this.displayChatMessage(data.playerId, data.message);
+    }
+    
+    displayChatMessage(playerId, message) {
+        let chatContainer = document.getElementById('chat-container');
+        if (!chatContainer) {
+            chatContainer = this.createChatContainer();
+        }
+        
+        const chatMessage = document.createElement('div');
+        chatMessage.className = 'chat-message';
+        chatMessage.innerHTML = `<span class="chat-player">${playerId}:</span> <span class="chat-text">${message}</span>`;
+        
+        chatContainer.appendChild(chatMessage);
+        
+        // Auto-scroll to bottom
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+        
+        // Remove old messages if too many (keep last 50)
+        const messages = chatContainer.querySelectorAll('.chat-message');
+        if (messages.length > 50) {
+            messages[0].remove();
+        }
+        
+        // Fade out message after 10 seconds
+        setTimeout(() => {
+            chatMessage.classList.add('fade-out');
+            setTimeout(() => {
+                if (chatMessage.parentNode) {
+                    chatMessage.remove();
+                }
+            }, 1000);
+        }, 10000);
+    }
+    
+    createChatContainer() {
+        const chatContainer = document.createElement('div');
+        chatContainer.id = 'chat-container';
+        chatContainer.className = 'chat-container';
+        
+        // Add CSS styles for chat container
+        const style = document.createElement('style');
+        style.textContent = `
+            .chat-container {
+                position: absolute;
+                bottom: 20px;
+                left: 20px;
+                width: 350px;
+                height: 200px;
+                background: rgba(0, 50, 100, 0.9);
+                border: 1px solid #4488ff;
+                border-radius: 8px;
+                padding: 10px;
+                overflow-y: auto;
+                backdrop-filter: blur(5px);
+                z-index: 100;
+                font-family: 'Courier New', monospace;
+                font-size: 13px;
+            }
+            
+            .chat-message {
+                margin-bottom: 8px;
+                padding: 4px 8px;
+                background: rgba(255, 255, 255, 0.05);
+                border-radius: 4px;
+                border-left: 3px solid #4488ff;
+                opacity: 1;
+                transition: opacity 1s ease-out;
+            }
+            
+            .chat-message.fade-out {
+                opacity: 0;
+            }
+            
+            .chat-player {
+                color: #88ccff;
+                font-weight: bold;
+            }
+            
+            .chat-text {
+                color: #ffffff;
+                word-wrap: break-word;
+            }
+            
+            .chat-container::-webkit-scrollbar {
+                width: 6px;
+            }
+            
+            .chat-container::-webkit-scrollbar-track {
+                background: rgba(255, 255, 255, 0.1);
+                border-radius: 3px;
+            }
+            
+            .chat-container::-webkit-scrollbar-thumb {
+                background: #4488ff;
+                border-radius: 3px;
+            }
+            
+            .chat-container::-webkit-scrollbar-thumb:hover {
+                background: #88ccff;
+            }
+        `;
+        document.head.appendChild(style);
+        
+        document.getElementById('ui').appendChild(chatContainer);
+        return chatContainer;
+    }
+    
+    handleGameState(data) {
+        // TODO: Update game state with server data
+        console.log('Received game state update:', data);
+    }
+    
+    showNetworkStatus(message, type = 'info') {
+        // Create or update network status indicator
+        let statusElement = document.getElementById('network-status');
+        if (!statusElement) {
+            statusElement = document.createElement('div');
+            statusElement.id = 'network-status';
+            statusElement.style.cssText = `
+                position: fixed;
+                top: 10px;
+                right: 10px;
+                padding: 8px 12px;
+                border-radius: 4px;
+                font-size: 12px;
+                font-family: monospace;
+                z-index: 1000;
+                transition: opacity 0.3s ease;
+            `;
+            document.body.appendChild(statusElement);
+        }
+        
+        // Set color based on status type
+        const colors = {
+            success: { bg: '#4CAF50', text: '#ffffff' },
+            warning: { bg: '#FF9800', text: '#ffffff' },
+            error: { bg: '#F44336', text: '#ffffff' },
+            info: { bg: '#2196F3', text: '#ffffff' }
+        };
+        
+        const color = colors[type] || colors.info;
+        statusElement.style.backgroundColor = color.bg;
+        statusElement.style.color = color.text;
+        statusElement.textContent = message;
+        statusElement.style.opacity = '1';
+        
+        // Auto-hide after 3 seconds for success messages
+        if (type === 'success') {
+            setTimeout(() => {
+                statusElement.style.opacity = '0.7';
+            }, 3000);
         }
     }
 }
