@@ -55,6 +55,35 @@ describe('Graphics Engine', function() {
         TestRunner.cleanupTestDOM();
     });
     
+    test('should validate createSpaceship parameters', function() {
+        const testContainer = TestRunner.setupTestDOM();
+        const canvas = testContainer.querySelector('#gameCanvas');
+        const graphics = new GraphicsEngine(canvas);
+        
+        // Test invalid x parameter
+        assertThrows(() => graphics.createSpaceship('invalid', 100, 25), 'Should throw error for non-numeric x');
+        assertThrows(() => graphics.createSpaceship(NaN, 100, 25), 'Should throw error for NaN x');
+        assertThrows(() => graphics.createSpaceship(Infinity, 100, 25), 'Should throw error for infinite x');
+        
+        // Test invalid y parameter
+        assertThrows(() => graphics.createSpaceship(100, 'invalid', 25), 'Should throw error for non-numeric y');
+        assertThrows(() => graphics.createSpaceship(100, NaN, 25), 'Should throw error for NaN y');
+        assertThrows(() => graphics.createSpaceship(100, Infinity, 25), 'Should throw error for infinite y');
+        
+        // Test invalid size parameter
+        assertThrows(() => graphics.createSpaceship(100, 100, 'invalid'), 'Should throw error for non-numeric size');
+        assertThrows(() => graphics.createSpaceship(100, 100, NaN), 'Should throw error for NaN size');
+        assertThrows(() => graphics.createSpaceship(100, 100, Infinity), 'Should throw error for infinite size');
+        assertThrows(() => graphics.createSpaceship(100, 100, 0), 'Should throw error for zero size');
+        assertThrows(() => graphics.createSpaceship(100, 100, -10), 'Should throw error for negative size');
+        
+        // Test invalid attributes parameter
+        assertThrows(() => graphics.createSpaceship(100, 100, 25, null), 'Should throw error for null attributes');
+        assertThrows(() => graphics.createSpaceship(100, 100, 25, 'invalid'), 'Should throw error for non-object attributes');
+        
+        TestRunner.cleanupTestDOM();
+    });
+    
     test('should create asteroids', function() {
         const testContainer = TestRunner.setupTestDOM();
         const canvas = testContainer.querySelector('#gameCanvas');

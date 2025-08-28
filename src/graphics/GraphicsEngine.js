@@ -373,6 +373,20 @@ export class GraphicsEngine {
     }
     
     createSpaceship(x, y, size = GRAPHICS.SPACESHIP_DEFAULT_SIZE, attributes = {}) {
+        // Parameter validation
+        if (typeof x !== 'number' || !isFinite(x)) {
+            throw new Error('GraphicsEngine.createSpaceship: x must be a finite number');
+        }
+        if (typeof y !== 'number' || !isFinite(y)) {
+            throw new Error('GraphicsEngine.createSpaceship: y must be a finite number');
+        }
+        if (typeof size !== 'number' || !isFinite(size) || size <= 0) {
+            throw new Error('GraphicsEngine.createSpaceship: size must be a positive finite number');
+        }
+        if (typeof attributes !== 'object' || attributes === null) {
+            throw new Error('GraphicsEngine.createSpaceship: attributes must be an object');
+        }
+        
         const ship = this.createGroup({
             transform: `translate(${x}, ${y})`,
             ...attributes
