@@ -494,7 +494,7 @@ export class GraphicsEngine {
         return ship;
     }
     
-    createOtherPlayerShip(x, y, playerId, playerColor = '#ff6b35', size = 20) {
+    createOtherPlayerShip(x, y, playerId, playerColor = '#ff6b35', size = GRAPHICS.PLAYER_SHIP_DEFAULT_SIZE) {
         // Parameter validation
         if (typeof x !== 'number' || !isFinite(x)) {
             throw new Error('GraphicsEngine.createOtherPlayerShip: x must be a finite number');
@@ -535,7 +535,7 @@ export class GraphicsEngine {
         });
         
         // Player name label
-        const nameLabel = this.createText(playerId, 0, -size - 15, {
+        const nameLabel = this.createText(playerId, 0, -size - GRAPHICS.PLAYER_NAME_LABEL_OFFSET, {
             'text-anchor': 'middle',
             fill: '#ffffff',
             'font-family': 'monospace',

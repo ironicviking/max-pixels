@@ -364,6 +364,10 @@ export const GRAPHICS = {
     SIZE_MEDIUM: 30,
     SIZE_LARGE: 40,
     
+    // Player ship specific
+    PLAYER_SHIP_DEFAULT_SIZE: 20,
+    PLAYER_NAME_LABEL_OFFSET: 15,
+    
     // Animation
     THRUSTER_OPACITY: 0.8,
     THRUSTER_FADE: 0.15,
