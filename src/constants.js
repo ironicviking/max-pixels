@@ -71,7 +71,8 @@ export const PLAYER = {
     
     // Movement
     DELTA_TIME: 1/60,
-    BOUNDARY_MARGIN: 25
+    BOUNDARY_MARGIN: 25,
+    ROTATION_SMOOTHING: 0.15
 };
 
 // Graphics Constants

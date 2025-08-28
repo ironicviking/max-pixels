@@ -13,7 +13,7 @@ import { AuthUI } from './ui/AuthUI.js';
 import { TradingSystem } from './trading/TradingSystem.js';
 import { TradingUI } from './ui/TradingUI.js';
 import { SpaceNavigation } from './navigation/SpaceNavigation.js';
-import { RESOURCES, WEAPONS } from './constants.js';
+import { RESOURCES, WEAPONS, PLAYER } from './constants.js';
 
 class MaxPixelsGame {
     constructor() {
@@ -469,7 +469,7 @@ class MaxPixelsGame {
             if (angleDiff < -180) angleDiff += 360;
             
             // Apply rotation smoothing
-            this.player.rotation += angleDiff * 0.15;
+            this.player.rotation += angleDiff * PLAYER.ROTATION_SMOOTHING;
             
             // Keep rotation within -180 to 180 range
             if (this.player.rotation > 180) this.player.rotation -= 360;
