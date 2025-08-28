@@ -3,7 +3,7 @@
  * Core utilities for creating and manipulating SVG graphics
  */
 
-import { GRAPHICS } from '../constants.js';
+import { GRAPHICS, WEAPONS } from '../constants.js';
 
 export class GraphicsEngine {
     constructor(svgContainer) {
@@ -1216,6 +1216,116 @@ export class GraphicsEngine {
         }, parseFloat(attributes.duration || GRAPHICS.IMPACT_DEFAULT_DURATION) * GRAPHICS.SECONDS_TO_MS + GRAPHICS.IMPACT_CLEANUP_DELAY);
         
         return impact;
+    }
+    
+    createWeaponChargeIndicator(x, y, chargeLevel, attributes = {}) {
+        const {
+            maxRadius = WEAPONS.CHARGE_INDICATOR_MAX_RADIUS,
+            color = '#00aaff',
+            glowColor = '#4488ff',
+            id = this.generateId('weapon-charge')
+        } = attributes;
+        
+        const chargeIndicator = this.createGroup({
+            id: id,
+            transform: `translate(${x}, ${y})`
+        });
+        
+        // Calculate charge-based radius and opacity
+        const currentRadius = Math.max(WEAPONS.CHARGE_INDICATOR_MIN_RADIUS, maxRadius * chargeLevel);
+        const opacity = Math.max(WEAPONS.CHARGE_INDICATOR_MIN_OPACITY, chargeLevel);
+        
+        // Outer glow ring
+        const outerGlow = this.createCircle(0, 0, currentRadius + WEAPONS.CHARGE_INDICATOR_GLOW_OFFSET, {
+            fill: 'none',
+            stroke: glowColor,
+            'stroke-width': 2,
+            opacity: opacity * WEAPONS.CHARGE_INDICATOR_GLOW_OPACITY,
+            filter: 'blur(2px)'
+        });
+        
+        // Main charge ring
+        const chargeRing = this.createCircle(0, 0, currentRadius, {
+            fill: 'none',
+            stroke: color,
+            'stroke-width': 1.5,
+            opacity: opacity,
+            'stroke-dasharray': chargeLevel < WEAPONS.CHARGE_INDICATOR_DASH_THRESHOLD ? '2,4' : 'none'
+        });
+        
+        // Central energy core (only shows when highly charged)
+        if (chargeLevel > WEAPONS.CHARGE_CORE_THRESHOLD) {
+            const energyCore = this.createCircle(0, 0, WEAPONS.CHARGE_INDICATOR_MIN_RADIUS, {
+                fill: '#ffffff',
+                opacity: (chargeLevel - WEAPONS.CHARGE_CORE_THRESHOLD) / WEAPONS.CHARGE_CORE_OPACITY_DIVISOR
+            });
+            chargeIndicator.appendChild(energyCore);
+        }
+        
+        // Energy pulses when near full charge
+        if (chargeLevel > WEAPONS.CHARGE_PULSE_THRESHOLD) {
+            const pulseRing = this.createCircle(0, 0, currentRadius, {
+                fill: 'none',
+                stroke: '#ffffff',
+                'stroke-width': 0.5,
+                opacity: 0
+            });
+            
+            // Pulse animation
+            const pulseAnimation = this.createElement('animate');
+            pulseAnimation.setAttribute('attributeName', 'opacity');
+            pulseAnimation.setAttribute('values', '0;0.8;0');
+            pulseAnimation.setAttribute('dur', '1.5s');
+            pulseAnimation.setAttribute('repeatCount', 'indefinite');
+            
+            pulseRing.appendChild(pulseAnimation);
+            chargeIndicator.appendChild(pulseRing);
+        }
+        
+        chargeIndicator.appendChild(outerGlow);
+        chargeIndicator.appendChild(chargeRing);
+        
+        return chargeIndicator;
+    }
+    
+    updateWeaponChargeIndicator(indicator, chargeLevel) {
+        if (!indicator) return;
+        
+        const maxRadius = WEAPONS.CHARGE_INDICATOR_MAX_RADIUS;
+        const currentRadius = Math.max(WEAPONS.CHARGE_INDICATOR_MIN_RADIUS, maxRadius * chargeLevel);
+        const opacity = Math.max(WEAPONS.CHARGE_INDICATOR_MIN_OPACITY, chargeLevel);
+        
+        // Update outer glow
+        const outerGlow = indicator.firstElementChild;
+        if (outerGlow) {
+            outerGlow.setAttribute('r', currentRadius + WEAPONS.CHARGE_INDICATOR_GLOW_OFFSET);
+            outerGlow.setAttribute('opacity', opacity * WEAPONS.CHARGE_INDICATOR_GLOW_OPACITY);
+        }
+        
+        // Update main ring
+        const chargeRing = indicator.children[1];
+        if (chargeRing) {
+            chargeRing.setAttribute('r', currentRadius);
+            chargeRing.setAttribute('opacity', opacity);
+            chargeRing.setAttribute('stroke-dasharray', chargeLevel < WEAPONS.CHARGE_INDICATOR_DASH_THRESHOLD ? '2,4' : 'none');
+        }
+        
+        // Handle energy core visibility
+        const hasEnergyCore = indicator.children.length > 2 && indicator.children[2].tagName === 'circle' && indicator.children[2].getAttribute('fill') === '#ffffff';
+        if (chargeLevel > WEAPONS.CHARGE_CORE_THRESHOLD && !hasEnergyCore) {
+            // Add energy core
+            const energyCore = this.createCircle(0, 0, WEAPONS.CHARGE_INDICATOR_MIN_RADIUS, {
+                fill: '#ffffff',
+                opacity: (chargeLevel - WEAPONS.CHARGE_CORE_THRESHOLD) / WEAPONS.CHARGE_CORE_OPACITY_DIVISOR
+            });
+            indicator.appendChild(energyCore);
+        } else if (chargeLevel <= WEAPONS.CHARGE_CORE_THRESHOLD && hasEnergyCore) {
+            // Remove energy core
+            indicator.children[2].remove();
+        } else if (hasEnergyCore) {
+            // Update energy core opacity
+            indicator.children[2].setAttribute('opacity', (chargeLevel - WEAPONS.CHARGE_CORE_THRESHOLD) / WEAPONS.CHARGE_CORE_OPACITY_DIVISOR);
+        }
     }
     
     createProjectile(x, y, type = 'plasma', attributes = {}) {

@@ -73,6 +73,7 @@ class MaxPixelsGame {
         // Weapon system
         this.lastFireTime = 0;
         this.lastEnergyRechargeSound = 0;
+        this.weaponChargeIndicator = null;
         
         // Server synchronization
         this.lastServerUpdate = null;
@@ -113,6 +114,15 @@ class MaxPixelsGame {
         });
         this.graphics.addToLayer('game', playerShip);
         this.playerShip = playerShip;
+        
+        // Create weapon charge indicator
+        const initialChargeLevel = this.player.energy / WEAPONS.MAX_ENERGY;
+        this.weaponChargeIndicator = this.graphics.createWeaponChargeIndicator(
+            this.player.x, this.player.y, initialChargeLevel, {
+                id: 'weaponChargeIndicator'
+            }
+        );
+        this.graphics.addToLayer('game', this.weaponChargeIndicator);
         
         this.camera.centerOn(this.player.x, this.player.y);
     }
@@ -552,6 +562,12 @@ class MaxPixelsGame {
         this.playerShip.setAttribute('transform', 
             `translate(${this.player.x}, ${this.player.y}) rotate(${this.player.rotation})`);
             
+        // Update weapon charge indicator position
+        if (this.weaponChargeIndicator) {
+            this.weaponChargeIndicator.setAttribute('transform', 
+                `translate(${this.player.x}, ${this.player.y})`);
+        }
+            
         // Send position updates to multiplayer server
         this.sendPlayerUpdate();
     }
@@ -588,6 +604,12 @@ class MaxPixelsGame {
         }
         
         this.player.lastEnergyRegenTime = currentTime;
+        
+        // Update weapon charge indicator
+        if (this.weaponChargeIndicator) {
+            const chargeLevel = this.player.energy / WEAPONS.MAX_ENERGY;
+            this.graphics.updateWeaponChargeIndicator(this.weaponChargeIndicator, chargeLevel);
+        }
     }
     
     updateHealth() {
@@ -1189,6 +1211,12 @@ class MaxPixelsGame {
         
         // Play laser sound
         this.audio.playLaser(0.4);
+        
+        // Update weapon charge indicator immediately after energy consumption
+        if (this.weaponChargeIndicator) {
+            const chargeLevel = this.player.energy / WEAPONS.MAX_ENERGY;
+            this.graphics.updateWeaponChargeIndicator(this.weaponChargeIndicator, chargeLevel);
+        }
         
         // Send fire action to multiplayer server
         this.sendFireAction();
