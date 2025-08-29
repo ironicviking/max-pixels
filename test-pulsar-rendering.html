@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pulsar Rendering Test - Max-Pixels</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: 'Courier New', monospace;
+            background-color: #000011;
+            color: #00ff00;
+            overflow: auto;
+        }
+        
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        h1 {
+            text-align: center;
+            color: #00ffff;
+            margin-bottom: 10px;
+            font-size: 24px;
+        }
+        
+        .description {
+            text-align: center;
+            margin-bottom: 30px;
+            max-width: 800px;
+            line-height: 1.6;
+        }
+        
+        .test-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 30px;
+            width: 100%;
+            max-width: 1400px;
+        }
+        
+        .test-case {
+            border: 2px solid #333;
+            padding: 20px;
+            background-color: #001122;
+            border-radius: 8px;
+        }
+        
+        .test-case h3 {
+            color: #ffaa00;
+            margin-top: 0;
+            text-align: center;
+            font-size: 18px;
+        }
+        
+        .test-case svg {
+            display: block;
+            margin: 0 auto;
+            background-color: #000008;
+            border: 1px solid #444;
+        }
+        
+        .properties {
+            margin-top: 15px;
+            font-size: 12px;
+            color: #888;
+        }
+        
+        .properties strong {
+            color: #00ff00;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🌟 Pulsar Rendering System Test</h1>
+        
+        <div class="description">
+            <p>This test demonstrates the comprehensive pulsar graphics system for the Max-Pixels space exploration game.</p>
+            <p>Pulsars are rapidly rotating neutron stars that emit beams of radiation from their magnetic poles. This implementation shows different types including millisecond pulsars, normal pulsars, and magnetars with realistic animations.</p>
+        </div>
+        
+        <div class="test-grid" id="testGrid">
+            <!-- Test cases will be dynamically generated -->
+        </div>
+    </div>
+
+    <script type="module">
+        import { GRAPHICS } from './src/constants.js';
+        import { GraphicsEngine } from './src/graphics/GraphicsEngine.js';
+
+        const testCases = [
+            {
+                title: 'Normal Pulsar',
+                description: 'Standard pulsar with moderate rotation and beam intensity',
+                size: 25,
+                attributes: {
+                    type: 'normal',
+                    rotationSpeed: 'normal'
+                }
+            },
+            {
+                title: 'Millisecond Pulsar',
+                description: 'Ultra-fast spinning pulsar with intense beams',
+                size: 20,
+                attributes: {
+                    type: 'millisecond',
+                    rotationSpeed: 'millisecond'
+                }
+            },
+            {
+                title: 'Magnetar',
+                description: 'Highly magnetized neutron star with powerful magnetic field',
+                size: 30,
+                attributes: {
+                    type: 'magnetar',
+                    rotationSpeed: 'slow'
+                }
+            },
+            {
+                title: 'Fast Pulsar',
+                description: 'Normal pulsar with rapid rotation',
+                size: 25,
+                attributes: {
+                    type: 'normal',
+                    rotationSpeed: 'fast'
+                }
+            },
+            {
+                title: 'Slow Pulsar',
+                description: 'Older pulsar spinning down over time',
+                size: 28,
+                attributes: {
+                    type: 'normal',
+                    rotationSpeed: 'slow'
+                }
+            },
+            {
+                title: 'Hidden Beam Pulsar',
+                description: 'Pulsar with beams pointing away from observer',
+                size: 25,
+                attributes: {
+                    type: 'normal',
+                    beamVisible: false,
+                    rotationSpeed: 'normal'
+                }
+            }
+        ];
+
+        function createTestCase(testCase, index) {
+            const testElement = document.createElement('div');
+            testElement.className = 'test-case';
+            
+            const title = document.createElement('h3');
+            title.textContent = testCase.title;
+            testElement.appendChild(title);
+            
+            const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+            svg.setAttribute('width', '280');
+            svg.setAttribute('height', '280');
+            svg.setAttribute('viewBox', '0 0 280 280');
+            
+            const engine = new GraphicsEngine(svg);
+            
+            try {
+                const pulsar = engine.createPulsar(140, 140, testCase.size, testCase.attributes);
+                svg.appendChild(pulsar);
+                
+                testElement.appendChild(svg);
+                
+                const properties = document.createElement('div');
+                properties.className = 'properties';
+                properties.innerHTML = `
+                    <strong>Type:</strong> ${testCase.attributes.type || 'normal'}<br>
+                    <strong>Size:</strong> ${testCase.size}px<br>
+                    <strong>Rotation:</strong> ${testCase.attributes.rotationSpeed || 'normal'}<br>
+                    <strong>Beams:</strong> ${testCase.attributes.beamVisible !== false ? 'visible' : 'hidden'}<br>
+                    <strong>Description:</strong> ${testCase.description}
+                `;
+                testElement.appendChild(properties);
+                
+            } catch (error) {
+                console.error(`Failed to create pulsar for test case ${index}:`, error);
+                const errorDiv = document.createElement('div');
+                errorDiv.style.color = '#ff4444';
+                errorDiv.style.padding = '20px';
+                errorDiv.style.textAlign = 'center';
+                errorDiv.innerHTML = `<strong>Error:</strong><br>${error.message}`;
+                testElement.appendChild(errorDiv);
+            }
+            
+            return testElement;
+        }
+
+        // Generate test cases
+        const testGrid = document.getElementById('testGrid');
+        testCases.forEach((testCase, index) => {
+            const testElement = createTestCase(testCase, index);
+            testGrid.appendChild(testElement);
+        });
+        
+        console.log('Pulsar rendering test completed. Check browser for visual results.');
+    </script>
+</body>
+</html>

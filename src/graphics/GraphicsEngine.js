@@ -1729,6 +1729,177 @@ export class GraphicsEngine {
         return blackHole;
     }
     
+    createPulsar(x, y, size = GRAPHICS.PULSAR_DEFAULT_SIZE, attributes = {}) {
+        if (!Number.isFinite(x)) {
+            throw new Error('GraphicsEngine.createPulsar: x must be a finite number');
+        }
+        if (!Number.isFinite(y)) {
+            throw new Error('GraphicsEngine.createPulsar: y must be a finite number');
+        }
+        if (!Number.isFinite(size) || size <= 0) {
+            throw new Error('GraphicsEngine.createPulsar: size must be a positive finite number');
+        }
+        if (typeof attributes !== 'object' || attributes === null) {
+            throw new Error('GraphicsEngine.createPulsar: attributes must be an object');
+        }
+
+        const pulsar = this.createGroup({
+            transform: `translate(${x}, ${y})`,
+            class: 'pulsar',
+            ...attributes
+        });
+
+        // Extract pulsar properties
+        const pulsarType = attributes.type || 'normal'; // 'millisecond', 'normal', 'magnetar'
+        const beamVisible = attributes.beamVisible !== false; // Default to visible beams
+        const rotationSpeed = attributes.rotationSpeed || 'normal'; // 'slow', 'normal', 'fast', 'millisecond'
+
+        // Scale sizes and properties based on pulsar type
+        const typeScales = {
+            millisecond: { 
+                size: GRAPHICS.PULSAR_TYPE_SCALES.MILLISECOND.SIZE, 
+                fieldStrength: GRAPHICS.PULSAR_TYPE_SCALES.MILLISECOND.FIELD, 
+                beamIntensity: GRAPHICS.PULSAR_TYPE_SCALES.MILLISECOND.BEAM 
+            },
+            normal: { 
+                size: GRAPHICS.PULSAR_TYPE_SCALES.NORMAL.SIZE, 
+                fieldStrength: GRAPHICS.PULSAR_TYPE_SCALES.NORMAL.FIELD, 
+                beamIntensity: GRAPHICS.PULSAR_TYPE_SCALES.NORMAL.BEAM 
+            },
+            magnetar: { 
+                size: GRAPHICS.PULSAR_TYPE_SCALES.MAGNETAR.SIZE, 
+                fieldStrength: GRAPHICS.PULSAR_TYPE_SCALES.MAGNETAR.FIELD, 
+                beamIntensity: GRAPHICS.PULSAR_TYPE_SCALES.MAGNETAR.BEAM 
+            }
+        };
+        const typeScale = typeScales[pulsarType] || typeScales.normal;
+        const scaledSize = size * typeScale.size;
+
+        // Neutron star core (extremely dense)
+        const core = this.createCircle(0, 0, scaledSize * GRAPHICS.PULSAR_CORE_RATIO, {
+            fill: '#ffffff',
+            stroke: '#ccccff',
+            'stroke-width': 2,
+            opacity: GRAPHICS.PULSAR_CORE_OPACITY
+        });
+
+        // Magnetosphere visualization (magnetic field region)
+        const magnetosphereGradient = this.createGradient('radial', [
+            { offset: '0%', color: '#ffffff', opacity: GRAPHICS.PULSAR_MAGNETOSPHERE_GRADIENTS.INNER * typeScale.fieldStrength },
+            { offset: '50%', color: '#aaaaff', opacity: GRAPHICS.PULSAR_MAGNETOSPHERE_GRADIENTS.MID * typeScale.fieldStrength },
+            { offset: '100%', color: '#6666cc', opacity: GRAPHICS.PULSAR_MAGNETOSPHERE_GRADIENTS.OUTER * typeScale.fieldStrength }
+        ], { id: `pulsar-magnetosphere-${Date.now()}-${Math.random().toString(GRAPHICS.PULSAR_FIELD_LINE_COUNT + GRAPHICS.STAR_SIZE_MAX).substr(2, GRAPHICS.PULSAR_FIELD_LINE_COUNT + GRAPHICS.STAR_SIZE_MAX)}` });
+
+        const magnetosphere = this.createCircle(0, 0, scaledSize * GRAPHICS.PULSAR_MAGNETOSPHERE_RATIO, {
+            fill: `url(#${magnetosphereGradient.id})`,
+            opacity: GRAPHICS.PULSAR_MAGNETOSPHERE_OPACITY
+        });
+
+        // Magnetic field lines
+        const fieldLinesGroup = this.createGroup({
+            class: 'pulsar-field-lines',
+            opacity: GRAPHICS.PULSAR_FIELD_LINE_OPACITY * typeScale.fieldStrength
+        });
+
+        for (let i = 0; i < GRAPHICS.PULSAR_FIELD_LINE_COUNT; i++) {
+            const angle = (i / GRAPHICS.PULSAR_FIELD_LINE_COUNT) * GRAPHICS.FULL_CIRCLE_DEGREES;
+            const fieldRadius = scaledSize * GRAPHICS.PULSAR_MAGNETOSPHERE_RATIO * GRAPHICS.PULSAR_FIELD_RADIUS_RATIO;
+            
+            const fieldLine = this.createElement('ellipse');
+            fieldLine.setAttribute('cx', 0);
+            fieldLine.setAttribute('cy', 0);
+            fieldLine.setAttribute('rx', fieldRadius * GRAPHICS.PULSAR_FIELD_RX_RATIO);
+            fieldLine.setAttribute('ry', fieldRadius);
+            fieldLine.setAttribute('transform', `rotate(${angle})`);
+            fieldLine.setAttribute('fill', 'none');
+            fieldLine.setAttribute('stroke', '#aaaaff');
+            fieldLine.setAttribute('stroke-width', 1);
+            fieldLine.setAttribute('stroke-dasharray', '3,2');
+            
+            fieldLinesGroup.appendChild(fieldLine);
+        }
+
+        // Pulsed radio beams from magnetic poles
+        if (beamVisible) {
+            const beamsGroup = this.createGroup({
+                class: 'pulsar-beams'
+            });
+
+            for (let i = 0; i < GRAPHICS.PULSAR_BEAM_COUNT; i++) {
+                const beamAngle = i * GRAPHICS.PULSAR_BEAM_POLE_ANGLE; // Opposite beams from magnetic poles
+                const beamLength = scaledSize * GRAPHICS.PULSAR_BEAM_LENGTH_RATIO;
+                const beamWidth = scaledSize * GRAPHICS.PULSAR_BEAM_WIDTH_RATIO;
+
+                // Create beam gradient for intensity falloff
+                const beamGradientId = this.createGradient('linear', [
+                    { offset: '0%', color: '#ffffff', opacity: GRAPHICS.PULSAR_BEAM_INTENSITY_GRADIENTS.CORE * typeScale.beamIntensity },
+                    { offset: '30%', color: '#aaffaa', opacity: GRAPHICS.PULSAR_BEAM_INTENSITY_GRADIENTS.MID * typeScale.beamIntensity },
+                    { offset: '70%', color: '#66ff66', opacity: GRAPHICS.PULSAR_BEAM_INTENSITY_GRADIENTS.OUTER * typeScale.beamIntensity },
+                    { offset: '100%', color: '#33aa33', opacity: GRAPHICS.PULSAR_BEAM_INTENSITY_GRADIENTS.FADE * typeScale.beamIntensity }
+                ], { 
+                    id: `pulsar-beam-${Date.now()}-${i}-${Math.random().toString(GRAPHICS.PULSAR_FIELD_LINE_COUNT + GRAPHICS.STAR_SIZE_MAX).substr(2, GRAPHICS.PULSAR_FIELD_LINE_COUNT + GRAPHICS.STAR_SIZE_MAX)}`,
+                    x1: '0%', y1: '0%', x2: '100%', y2: '0%'
+                });
+
+                const beam = this.createElement('ellipse');
+                beam.setAttribute('cx', 0);
+                beam.setAttribute('cy', -beamLength / 2);
+                beam.setAttribute('rx', beamWidth);
+                beam.setAttribute('ry', beamLength / 2);
+                beam.setAttribute('transform', `rotate(${beamAngle + GRAPHICS.PULSAR_BEAM_ANGLE})`);
+                beam.setAttribute('fill', `url(#${beamGradientId.id})`);
+                beam.setAttribute('opacity', GRAPHICS.PULSAR_BEAM_OPACITY);
+
+                // Add pulsing animation
+                const pulseAnimation = this.createElement('animate');
+                pulseAnimation.setAttribute('attributeName', 'opacity');
+                pulseAnimation.setAttribute('values', `0;${GRAPHICS.PULSAR_BEAM_OPACITY};0`);
+                pulseAnimation.setAttribute('dur', GRAPHICS.PULSAR_PULSE_DURATION);
+                pulseAnimation.setAttribute('repeatCount', 'indefinite');
+                pulseAnimation.setAttribute('begin', `${i * GRAPHICS.PULSAR_ANIMATION_OFFSET}s`);
+                beam.appendChild(pulseAnimation);
+
+                beamsGroup.appendChild(beam);
+            }
+
+            // Rotate the entire beam system to simulate pulsar rotation
+            const rotationSpeeds = {
+                slow: GRAPHICS.PULSAR_ROTATION_SPEEDS.SLOW,
+                normal: GRAPHICS.PULSAR_ROTATION_DURATION,
+                fast: GRAPHICS.PULSAR_ROTATION_SPEEDS.FAST,
+                millisecond: GRAPHICS.PULSAR_ROTATION_SPEEDS.MILLISECOND // Real millisecond pulsars can spin ~700 times per second
+            };
+            const rotationDuration = rotationSpeeds[rotationSpeed] || rotationSpeeds.normal;
+
+            const beamRotation = this.createElement('animateTransform');
+            beamRotation.setAttribute('attributeName', 'transform');
+            beamRotation.setAttribute('attributeType', 'XML');
+            beamRotation.setAttribute('type', 'rotate');
+            beamRotation.setAttribute('from', '0');
+            beamRotation.setAttribute('to', '360');
+            beamRotation.setAttribute('dur', rotationDuration);
+            beamRotation.setAttribute('repeatCount', 'indefinite');
+            beamsGroup.appendChild(beamRotation);
+
+            pulsar.appendChild(beamsGroup);
+        }
+
+        // Add core pulsing animation
+        const corePulse = this.createElement('animate');
+        corePulse.setAttribute('attributeName', 'opacity');
+        corePulse.setAttribute('values', `${GRAPHICS.PULSAR_CORE_OPACITY * GRAPHICS.PULSAR_CORE_PULSE_MIN};${GRAPHICS.PULSAR_CORE_OPACITY};${GRAPHICS.PULSAR_CORE_OPACITY * GRAPHICS.PULSAR_CORE_PULSE_MIN}`);
+        corePulse.setAttribute('dur', GRAPHICS.PULSAR_PULSE_DURATION);
+        corePulse.setAttribute('repeatCount', 'indefinite');
+        core.appendChild(corePulse);
+
+        // Assemble pulsar elements
+        pulsar.appendChild(magnetosphere);
+        pulsar.appendChild(fieldLinesGroup);
+        pulsar.appendChild(core);
+
+        return pulsar;
+    }
+    
     createSpaceStation(x, y, size = GRAPHICS.STATION_DEFAULT_SIZE, attributes = {}) {
         const station = this.createGroup({
             transform: `translate(${x}, ${y})`,
