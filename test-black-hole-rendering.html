@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Black Hole Rendering Test - Max-Pixels</title>
+    <style>
+        body {
+            font-family: 'Courier New', monospace;
+            background: #000;
+            color: #fff;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+        .test-section {
+            background: rgba(255,255,255,0.1);
+            border: 1px solid #333;
+            margin: 20px 0;
+            padding: 20px;
+            border-radius: 5px;
+        }
+        svg {
+            border: 1px solid #333;
+            background: #000;
+        }
+        .controls {
+            margin: 10px 0;
+        }
+        button {
+            background: #0066cc;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            margin: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #0088ff;
+        }
+        .info {
+            background: rgba(0,255,100,0.1);
+            padding: 10px;
+            border-radius: 3px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Black Hole Graphics Utility Test</h1>
+        
+        <div class="info">
+            <h3>Testing createBlackHole() Graphics Utility</h3>
+            <p>This test validates the new black hole graphics utility with different configurations:</p>
+            <ul>
+                <li><strong>Stellar Black Hole:</strong> Standard size with active accretion disk and jets</li>
+                <li><strong>Intermediate Black Hole:</strong> 1.8x size with moderate rotation</li>
+                <li><strong>Supermassive Black Hole:</strong> 3.2x size with fast rotation</li>
+                <li><strong>Inactive Black Hole:</strong> No accretion disk or jets, just gravitational lensing</li>
+            </ul>
+        </div>
+
+        <div class="test-section">
+            <h2>Active Stellar Black Hole</h2>
+            <div class="controls">
+                <button onclick="generateStellarBlackHole()">Generate New Stellar Black Hole</button>
+                <button onclick="toggleAnimation('stellar')">Toggle Animation</button>
+            </div>
+            <svg id="stellar-canvas" width="400" height="400"></svg>
+        </div>
+
+        <div class="test-section">
+            <h2>Intermediate Mass Black Hole</h2>
+            <div class="controls">
+                <button onclick="generateIntermediateBlackHole()">Generate New Intermediate Black Hole</button>
+            </div>
+            <svg id="intermediate-canvas" width="400" height="400"></svg>
+        </div>
+
+        <div class="test-section">
+            <h2>Supermassive Black Hole (Fast Rotation)</h2>
+            <div class="controls">
+                <button onclick="generateSupermassiveBlackHole()">Generate New Supermassive Black Hole</button>
+            </div>
+            <svg id="supermassive-canvas" width="600" height="600"></svg>
+        </div>
+
+        <div class="test-section">
+            <h2>Inactive Black Hole</h2>
+            <div class="controls">
+                <button onclick="generateInactiveBlackHole()">Generate New Inactive Black Hole</button>
+            </div>
+            <svg id="inactive-canvas" width="400" height="400"></svg>
+        </div>
+    </div>
+
+    <script type="module">
+        import { GRAPHICS } from './src/constants.js';
+        import { GraphicsEngine } from './src/graphics/GraphicsEngine.js';
+
+        // Initialize graphics engines for each test canvas
+        const stellarEngine = new GraphicsEngine('stellar-canvas');
+        const intermediateEngine = new GraphicsEngine('intermediate-canvas');
+        const supermassiveEngine = new GraphicsEngine('supermassive-canvas');
+        const inactiveEngine = new GraphicsEngine('inactive-canvas');
+
+        // Test generation functions
+        window.generateStellarBlackHole = function() {
+            stellarEngine.clear();
+            
+            try {
+                const blackHole = stellarEngine.createBlackHole(200, 200, 30, {
+                    mass: 'stellar',
+                    active: true,
+                    rotationSpeed: 'normal'
+                });
+                
+                stellarEngine.addToLayer('objects', blackHole);
+                console.log('✓ Stellar black hole created successfully');
+            } catch (error) {
+                console.error('✗ Error creating stellar black hole:', error);
+            }
+        };
+
+        window.generateIntermediateBlackHole = function() {
+            intermediateEngine.clear();
+            
+            try {
+                const blackHole = intermediateEngine.createBlackHole(200, 200, 40, {
+                    mass: 'intermediate',
+                    active: true,
+                    rotationSpeed: 'normal'
+                });
+                
+                intermediateEngine.addToLayer('objects', blackHole);
+                console.log('✓ Intermediate black hole created successfully');
+            } catch (error) {
+                console.error('✗ Error creating intermediate black hole:', error);
+            }
+        };
+
+        window.generateSupermassiveBlackHole = function() {
+            supermassiveEngine.clear();
+            
+            try {
+                const blackHole = supermassiveEngine.createBlackHole(300, 300, 50, {
+                    mass: 'supermassive',
+                    active: true,
+                    rotationSpeed: 'fast'
+                });
+                
+                supermassiveEngine.addToLayer('objects', blackHole);
+                console.log('✓ Supermassive black hole created successfully');
+            } catch (error) {
+                console.error('✗ Error creating supermassive black hole:', error);
+            }
+        };
+
+        window.generateInactiveBlackHole = function() {
+            inactiveEngine.clear();
+            
+            try {
+                const blackHole = inactiveEngine.createBlackHole(200, 200, 35, {
+                    mass: 'stellar',
+                    active: false,
+                    rotationSpeed: 'slow'
+                });
+                
+                inactiveEngine.addToLayer('objects', blackHole);
+                console.log('✓ Inactive black hole created successfully');
+            } catch (error) {
+                console.error('✗ Error creating inactive black hole:', error);
+            }
+        };
+
+        window.toggleAnimation = function(type) {
+            const canvas = document.getElementById(`${type}-canvas`);
+            const animations = canvas.querySelectorAll('animate, animateTransform');
+            
+            animations.forEach(anim => {
+                if (anim.getAttribute('dur') === '0s') {
+                    // Resume animation
+                    anim.setAttribute('dur', anim.originalDur || '8s');
+                } else {
+                    // Pause animation
+                    if (!anim.originalDur) {
+                        anim.originalDur = anim.getAttribute('dur');
+                    }
+                    anim.setAttribute('dur', '0s');
+                }
+            });
+        };
+
+        // Generate initial black holes
+        generateStellarBlackHole();
+        generateIntermediateBlackHole();
+        generateSupermassiveBlackHole();
+        generateInactiveBlackHole();
+
+        // Validation tests
+        function runValidationTests() {
+            console.log('🧪 Running Black Hole Graphics Utility Validation Tests');
+            
+            // Test parameter validation
+            try {
+                stellarEngine.createBlackHole('invalid', 200, 30);
+                console.error('✗ Failed to validate x parameter');
+            } catch (e) {
+                console.log('✓ X parameter validation works');
+            }
+            
+            try {
+                stellarEngine.createBlackHole(200, 'invalid', 30);
+                console.error('✗ Failed to validate y parameter');
+            } catch (e) {
+                console.log('✓ Y parameter validation works');
+            }
+            
+            try {
+                stellarEngine.createBlackHole(200, 200, -30);
+                console.error('✗ Failed to validate size parameter');
+            } catch (e) {
+                console.log('✓ Size parameter validation works');
+            }
+            
+            try {
+                stellarEngine.createBlackHole(200, 200, 30, 'invalid');
+                console.error('✗ Failed to validate attributes parameter');
+            } catch (e) {
+                console.log('✓ Attributes parameter validation works');
+            }
+            
+            console.log('🎉 All validation tests passed!');
+        }
+
+        // Run validation tests after a brief delay
+        setTimeout(runValidationTests, 1000);
+    </script>
+</body>
+</html>

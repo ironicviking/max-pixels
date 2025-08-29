@@ -20,14 +20,12 @@ You are developing Max-Pixels, a web-based multiplayer space exploration and tra
 - DO NOT work on phases or multiple related tasks
 - Test your implementation if possible
 - Commit with clear message
+- Push to remote origin
 
 ## Task Size Examples:
 ✅ Good single tasks:
 - Implement one SVG graphics utility
 - Add one authentication endpoint
-- Create one trading system component
-- Build one space navigation function
-- Write tests for one game mechanic
 
 ❌ Too big for single run:
 - "Implement entire authentication system"

@@ -1528,6 +1528,206 @@ export class GraphicsEngine {
 
         return comet;
     }
+
+    createBlackHole(x, y, size = GRAPHICS.BLACK_HOLE_DEFAULT_SIZE, attributes = {}) {
+        if (!Number.isFinite(x)) {
+            throw new Error('GraphicsEngine.createBlackHole: x must be a finite number');
+        }
+        if (!Number.isFinite(y)) {
+            throw new Error('GraphicsEngine.createBlackHole: y must be a finite number');
+        }
+        if (!Number.isFinite(size) || size <= 0) {
+            throw new Error('GraphicsEngine.createBlackHole: size must be a positive finite number');
+        }
+        if (typeof attributes !== 'object' || attributes === null) {
+            throw new Error('GraphicsEngine.createBlackHole: attributes must be an object');
+        }
+
+        const blackHole = this.createGroup({
+            transform: `translate(${x}, ${y})`,
+            class: 'black-hole',
+            ...attributes
+        });
+
+        // Extract black hole properties
+        const mass = attributes.mass || 'stellar'; // 'stellar', 'intermediate', 'supermassive'
+        const isActive = attributes.active !== false; // Default to active
+        const rotationSpeed = attributes.rotationSpeed || 'normal'; // 'slow', 'normal', 'fast'
+
+        // Scale sizes based on mass
+        const massScales = {
+            stellar: 1.0,
+            intermediate: 1.8,
+            supermassive: 3.2
+        };
+        const massScale = massScales[mass] || 1.0;
+        const scaledSize = size * massScale;
+
+        // Event horizon (completely black circle)
+        const eventHorizon = this.createCircle(0, 0, scaledSize * GRAPHICS.BLACK_HOLE_EVENT_HORIZON_RATIO, {
+            fill: '#000000',
+            stroke: 'none',
+            opacity: GRAPHICS.BLACK_HOLE_EVENT_HORIZON_OPACITY
+        });
+
+        // Photon sphere (faint ring around event horizon)
+        const photonSphere = this.createCircle(0, 0, scaledSize * GRAPHICS.BLACK_HOLE_PHOTON_SPHERE_RATIO, {
+            fill: 'none',
+            stroke: '#ffaa33',
+            'stroke-width': 2,
+            opacity: GRAPHICS.BLACK_HOLE_PHOTON_SPHERE_OPACITY
+        });
+
+        // Gravitational lensing ring (distorted space effect)
+        const lensingRing = this.createCircle(0, 0, scaledSize * GRAPHICS.BLACK_HOLE_LENSING_RING_RATIO, {
+            fill: 'none',
+            stroke: '#ccccff',
+            'stroke-width': 1,
+            opacity: GRAPHICS.BLACK_HOLE_LENSING_RING_OPACITY,
+            'stroke-dasharray': '5,10'
+        });
+
+        if (isActive) {
+            // Accretion disk gradients
+            const diskGradientId = this.createGradient('radial', [
+                { offset: '0%', color: '#ffaa00', opacity: 0 },
+                { offset: '40%', color: '#ff6600', opacity: 0.9 },
+                { offset: '70%', color: '#ff3300', opacity: 0.6 },
+                { offset: '90%', color: '#cc0000', opacity: 0.4 },
+                { offset: '100%', color: '#660000', opacity: 0.1 }
+            ], {
+                cx: '50%',
+                cy: '50%'
+            });
+
+            // Inner accretion disk (hot, bright material)
+            const accretionDiskInner = this.createElement('ellipse');
+            accretionDiskInner.setAttribute('cx', 0);
+            accretionDiskInner.setAttribute('cy', 0);
+            accretionDiskInner.setAttribute('rx', scaledSize * GRAPHICS.BLACK_HOLE_ACCRETION_DISK_INNER_RATIO);
+            accretionDiskInner.setAttribute('ry', scaledSize * GRAPHICS.BLACK_HOLE_ACCRETION_DISK_INNER_RATIO * 0.3);
+            accretionDiskInner.setAttribute('fill', `url(#${diskGradientId})`);
+            accretionDiskInner.setAttribute('opacity', GRAPHICS.BLACK_HOLE_ACCRETION_DISK_OPACITY);
+
+            // Outer accretion disk (cooler, dimmer material)
+            const accretionDiskOuter = this.createElement('ellipse');
+            accretionDiskOuter.setAttribute('cx', 0);
+            accretionDiskOuter.setAttribute('cy', 0);
+            accretionDiskOuter.setAttribute('rx', scaledSize * GRAPHICS.BLACK_HOLE_ACCRETION_DISK_OUTER_RATIO);
+            accretionDiskOuter.setAttribute('ry', scaledSize * GRAPHICS.BLACK_HOLE_ACCRETION_DISK_OUTER_RATIO * 0.2);
+            accretionDiskOuter.setAttribute('fill', `url(#${diskGradientId})`);
+            accretionDiskOuter.setAttribute('opacity', GRAPHICS.BLACK_HOLE_ACCRETION_DISK_OPACITY * 0.6);
+
+            // Relativistic jets (for active black holes)
+            const jetGradientId = this.createGradient('linear', [
+                { offset: '0%', color: '#aaccff', opacity: 0.8 },
+                { offset: '50%', color: '#6699ff', opacity: 0.5 },
+                { offset: '100%', color: '#4477cc', opacity: 0 }
+            ], {
+                x1: '50%', y1: '0%', x2: '50%', y2: '100%'
+            });
+
+            // Top jet
+            const topJet = this.createElement('ellipse');
+            topJet.setAttribute('cx', 0);
+            topJet.setAttribute('cy', -scaledSize * GRAPHICS.BLACK_HOLE_JET_LENGTH_RATIO / 2);
+            topJet.setAttribute('rx', scaledSize * GRAPHICS.BLACK_HOLE_JET_WIDTH_RATIO);
+            topJet.setAttribute('ry', scaledSize * GRAPHICS.BLACK_HOLE_JET_LENGTH_RATIO / 2);
+            topJet.setAttribute('fill', `url(#${jetGradientId})`);
+            topJet.setAttribute('opacity', GRAPHICS.BLACK_HOLE_JET_OPACITY);
+
+            // Bottom jet
+            const bottomJet = this.createElement('ellipse');
+            bottomJet.setAttribute('cx', 0);
+            bottomJet.setAttribute('cy', scaledSize * GRAPHICS.BLACK_HOLE_JET_LENGTH_RATIO / 2);
+            bottomJet.setAttribute('rx', scaledSize * GRAPHICS.BLACK_HOLE_JET_WIDTH_RATIO);
+            bottomJet.setAttribute('ry', scaledSize * GRAPHICS.BLACK_HOLE_JET_LENGTH_RATIO / 2);
+            bottomJet.setAttribute('fill', `url(#${jetGradientId})`);
+            bottomJet.setAttribute('opacity', GRAPHICS.BLACK_HOLE_JET_OPACITY);
+
+            // Orbiting debris/matter
+            const debrisGroup = this.createGroup({
+                id: `blackhole_debris_${this.generateId('blackhole')}`
+            });
+
+            for (let i = 0; i < GRAPHICS.BLACK_HOLE_DEBRIS_COUNT; i++) {
+                const angle = (i / GRAPHICS.BLACK_HOLE_DEBRIS_COUNT) * 2 * Math.PI;
+                const orbitRadius = scaledSize * (GRAPHICS.BLACK_HOLE_DEBRIS_ORBIT_MIN + 
+                    Math.random() * (GRAPHICS.BLACK_HOLE_DEBRIS_ORBIT_MAX - GRAPHICS.BLACK_HOLE_DEBRIS_ORBIT_MIN));
+                
+                const debrisX = Math.cos(angle) * orbitRadius;
+                const debrisY = Math.sin(angle) * orbitRadius;
+                const debrisSize = GRAPHICS.BLACK_HOLE_DEBRIS_SIZE_MIN + 
+                    Math.random() * (GRAPHICS.BLACK_HOLE_DEBRIS_SIZE_MAX - GRAPHICS.BLACK_HOLE_DEBRIS_SIZE_MIN);
+
+                const debris = this.createCircle(debrisX, debrisY, debrisSize, {
+                    fill: '#ffcc66',
+                    stroke: '#ff9933',
+                    'stroke-width': 0.5,
+                    opacity: GRAPHICS.BLACK_HOLE_DEBRIS_OPACITY
+                });
+
+                debrisGroup.appendChild(debris);
+            }
+
+            // Add rotation animation to debris
+            const debrisRotation = this.createElement('animateTransform');
+            debrisRotation.setAttribute('attributeName', 'transform');
+            debrisRotation.setAttribute('type', 'rotate');
+            debrisRotation.setAttribute('values', '0;360');
+            debrisRotation.setAttribute('dur', GRAPHICS.BLACK_HOLE_DEBRIS_ANIMATION_DURATION);
+            debrisRotation.setAttribute('repeatCount', 'indefinite');
+            debrisGroup.appendChild(debrisRotation);
+
+            // Add rotation to accretion disks
+            const diskRotationSpeed = rotationSpeed === 'fast' ? '4s' : 
+                rotationSpeed === 'slow' ? '12s' : 
+                    GRAPHICS.BLACK_HOLE_ANIMATION_DURATION;
+
+            const innerDiskRotation = this.createElement('animateTransform');
+            innerDiskRotation.setAttribute('attributeName', 'transform');
+            innerDiskRotation.setAttribute('type', 'rotate');
+            innerDiskRotation.setAttribute('values', '0;360');
+            innerDiskRotation.setAttribute('dur', diskRotationSpeed);
+            innerDiskRotation.setAttribute('repeatCount', 'indefinite');
+            accretionDiskInner.appendChild(innerDiskRotation);
+
+            const outerDiskRotation = this.createElement('animateTransform');
+            outerDiskRotation.setAttribute('attributeName', 'transform');
+            outerDiskRotation.setAttribute('type', 'rotate');
+            outerDiskRotation.setAttribute('values', '0;-360');
+            outerDiskRotation.setAttribute('dur', diskRotationSpeed.replace(/\d+/, (match) => parseInt(match) * 1.5));
+            outerDiskRotation.setAttribute('repeatCount', 'indefinite');
+            accretionDiskOuter.appendChild(outerDiskRotation);
+
+            // Add jet pulsing animation
+            const jetPulse = this.createElement('animate');
+            jetPulse.setAttribute('attributeName', 'opacity');
+            jetPulse.setAttribute('values', `${GRAPHICS.BLACK_HOLE_JET_OPACITY * 0.7};${GRAPHICS.BLACK_HOLE_JET_OPACITY};${GRAPHICS.BLACK_HOLE_JET_OPACITY * 0.7}`);
+            jetPulse.setAttribute('dur', GRAPHICS.BLACK_HOLE_JET_ANIMATION_DURATION);
+            jetPulse.setAttribute('repeatCount', 'indefinite');
+            
+            topJet.appendChild(jetPulse.cloneNode());
+            bottomJet.appendChild(jetPulse);
+
+            // Assemble active black hole (order matters for layering)
+            blackHole.appendChild(lensingRing);
+            blackHole.appendChild(accretionDiskOuter);
+            blackHole.appendChild(accretionDiskInner);
+            blackHole.appendChild(debrisGroup);
+            blackHole.appendChild(bottomJet);
+            blackHole.appendChild(topJet);
+            blackHole.appendChild(photonSphere);
+            blackHole.appendChild(eventHorizon);
+        } else {
+            // Inactive black hole - just the gravitational effects
+            blackHole.appendChild(lensingRing);
+            blackHole.appendChild(photonSphere);
+            blackHole.appendChild(eventHorizon);
+        }
+
+        return blackHole;
+    }
     
     createSpaceStation(x, y, size = GRAPHICS.STATION_DEFAULT_SIZE, attributes = {}) {
         const station = this.createGroup({
